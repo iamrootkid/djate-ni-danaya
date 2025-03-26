@@ -1,11 +1,15 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceTableSkeleton } from "./InvoiceTableSkeleton";
 import { useDashboardInvoices } from "@/hooks/use-dashboard-invoices";
 
-export const DashboardInvoices = () => {
-  const { data: invoices, isLoading, error } = useDashboardInvoices();
+interface DashboardInvoicesProps {
+  dateFilter: "all" | "daily" | "monthly" | "yesterday";
+  startDate: Date;
+}
+
+export const DashboardInvoices = ({ dateFilter, startDate }: DashboardInvoicesProps) => {
+  const { data: invoices, isLoading, error } = useDashboardInvoices(dateFilter, startDate);
 
   return (
     <Card className="col-span-3">

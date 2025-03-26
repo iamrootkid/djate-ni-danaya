@@ -3,9 +3,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 interface Order {
   id: string;
-  product: string;
+  total_amount: number;
   status: string;
-  total: string;
+  created_at: string;
+  sale_items: Array<{
+    quantity: number;
+    products: {
+      name: string;
+    };
+  }>;
 }
 
 interface RecentOrdersProps {
@@ -43,7 +49,7 @@ export const RecentOrders = ({ orders }: RecentOrdersProps) => {
             {orders?.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>{order.product}</TableCell>
+                <TableCell>{order.sale_items[0]?.products.name || "N/A"}</TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                     order.status === 'completed' ? 'bg-green-100 text-green-700' :
@@ -53,7 +59,7 @@ export const RecentOrders = ({ orders }: RecentOrdersProps) => {
                     {getStatusText(order.status)}
                   </span>
                 </TableCell>
-                <TableCell className="text-right">{order.total}</TableCell>
+                <TableCell className="text-right">{order.total_amount.toLocaleString()} F CFA</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -1,10 +1,10 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StockSummary as StockSummaryType } from "@/integrations/supabase/types/functions";
 import { ArrowUp, ArrowDown, DollarSign, Banknote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useShopId } from "@/hooks/use-shop-id";
 
 interface StockSummaryProps {
   startDate: Date;
@@ -12,9 +12,9 @@ interface StockSummaryProps {
 }
 
 export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
-  const shopId = localStorage.getItem("shopId") || "";
+  const { shopId } = useShopId();
 
-  const { data: summary } = useQuery<StockSummaryType>({
+  const { data: summary, isLoading } = useQuery<StockSummaryType>({
     queryKey: ["stock-summary", dateFilter, startDate, shopId],
     queryFn: async () => {
       if (!shopId) return {
@@ -24,6 +24,40 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
         stock_out: 0,
         profit: 0
       };
+
+      // Verify the current user has access to this shop
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("No authenticated user found");
+        return {
+          total_income: 0,
+          total_expenses: 0,
+          stock_in: 0,
+          stock_out: 0,
+          profit: 0
+        };
+      }
+
+      const { data: userProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("shop_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError || !userProfile || userProfile.shop_id !== shopId) {
+        console.error("User does not have access to this shop:", {
+          userId: user.id,
+          shopId,
+          profileShopId: userProfile?.shop_id
+        });
+        return {
+          total_income: 0,
+          total_expenses: 0,
+          stock_in: 0,
+          stock_out: 0,
+          profit: 0
+        };
+      }
 
       const { data, error } = await supabase.rpc("get_stock_summary", {
         start_date: startDate.toISOString(),
@@ -58,12 +92,27 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
   const netStockChange = (summary?.stock_in || 0) - (summary?.stock_out || 0);
   const isStockIncreasing = netStockChange >= 0;
 
+  if (isLoading) {
+    return (
+      <Card className="col-span-4">
+        <CardHeader>
+          <CardTitle>Résumé des stocks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center p-6">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="col-span-4">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Résumé des stocks</CardTitle>
         <Badge variant={summary?.profit && summary.profit > 0 ? "success" : "destructive"}>
-          {summary?.profit ? (summary.profit > 0 ? "+" : "") + summary.profit.toLocaleString() + " F CFA" : "Chargement..."}
+          {summary?.profit ? (summary.profit > 0 ? "+" : "") + summary.profit.toLocaleString() + " F CFA" : "0 F CFA"}
         </Badge>
       </CardHeader>
       <CardContent>
@@ -74,7 +123,7 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
               <p className="text-sm font-medium">Revenu total</p>
             </div>
             <p className="text-2xl font-bold text-green-600">
-              {summary?.total_income?.toLocaleString() || "0"} F CFA
+              {(summary?.total_income || 0).toLocaleString()} F CFA
             </p>
           </div>
           <div className="space-y-2">
@@ -83,7 +132,7 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
               <p className="text-sm font-medium">Dépenses totales</p>
             </div>
             <p className="text-2xl font-bold text-red-600">
-              {summary?.total_expenses?.toLocaleString() || "0"} F CFA
+              {(summary?.total_expenses || 0).toLocaleString()} F CFA
             </p>
           </div>
           <div className="space-y-2">

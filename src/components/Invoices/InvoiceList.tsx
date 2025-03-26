@@ -47,14 +47,42 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
   const { data: invoices, isLoading, refetch } = useQuery({
     queryKey: ["invoices", dateFilter, startDate, endDate, shopId],
     queryFn: async () => {
-      if (!shopId) return [];
+      if (!shopId) {
+        console.error("No shop ID available for fetching invoices");
+        return [];
+      }
+
+      // Verify the current user has access to this shop
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("No authenticated user found");
+        return [];
+      }
+
+      const { data: userProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("shop_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError || !userProfile || userProfile.shop_id !== shopId) {
+        console.error("User does not have access to this shop:", {
+          userId: user.id,
+          shopId,
+          profileShopId: userProfile?.shop_id
+        });
+        return [];
+      }
+
+      console.log("Fetching invoices for verified shop:", shopId);
 
       let query = supabase
         .from("invoices")
         .select(`
           *,
-          sales (
+          sales!inner (
             total_amount,
+            shop_id,
             sale_items (
               quantity,
               price_at_sale,
@@ -66,6 +94,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
           )
         `)
         .eq("shop_id", shopId)
+        .eq("sales.shop_id", shopId)
         .order("created_at", { ascending: false });
 
       if (dateFilter === "daily" && startDate) {
@@ -80,8 +109,45 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Error fetching invoices:", error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.log("No invoices found for shop:", shopId);
+        return [];
+      }
+
+      console.log("Raw invoice data for shop:", shopId, data);
+
+      return data.map(invoice => {
+        const sale = invoice.sales as {
+          total_amount: number;
+          shop_id: string;
+          sale_items: Array<{
+            quantity: number;
+            price_at_sale: number;
+            product_id: string;
+            products: { name: string };
+          }>;
+        };
+
+        // Double check shop ID match
+        if (sale.shop_id !== shopId) {
+          console.warn("Shop ID mismatch:", {
+            invoiceShopId: invoice.shop_id,
+            saleShopId: sale.shop_id,
+            expectedShopId: shopId
+          });
+          return null;
+        }
+
+        return {
+          ...invoice,
+          sales: sale
+        };
+      }).filter(Boolean);
     },
     enabled: !!shopId
   });
@@ -118,7 +184,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
               {invoices?.map((invoice) => {
                 // Check if the invoice has been modified by comparing created_at and updated_at timestamps
                 const isModified = new Date(invoice.updated_at).getTime() > 
-                                  new Date(invoice.created_at).getTime() + 60000; // Add 1 minute buffer
+                                  new Date(invoice.created_at).getTime() + 60000;
                 
                 return (
                   <TableRow key={invoice.id}>

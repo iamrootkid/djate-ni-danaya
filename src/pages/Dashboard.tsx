@@ -13,6 +13,7 @@ import { BestSellingProducts } from "@/components/Dashboard/BestSellingProducts"
 import { StockSummary } from "@/components/Dashboard/StockSummary";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { useRecentOrders } from "@/hooks/use-recent-orders";
+import { useShopId } from "@/hooks/use-shop-id";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -20,7 +21,7 @@ const Dashboard = () => {
   const [dateFilter, setDateFilter] = useState<"all" | "daily" | "monthly">("daily");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const queryClient = useQueryClient();
-  const shopId = localStorage.getItem("shopId");
+  const { shopId } = useShopId();
 
   useEffect(() => {
     const getUserRole = async () => {
@@ -40,13 +41,20 @@ const Dashboard = () => {
     getUserRole();
   }, []);
 
-  // Redirect if no shop ID is found
   useEffect(() => {
     if (!shopId) {
       console.error("No shop ID found, user should be redirected to login");
-      // This is handled by the ProtectedRoute in App.tsx
+      return;
     }
-  }, [shopId]);
+
+    const today = new Date();
+    setStartDate(today);
+
+    queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
+  }, [shopId, queryClient]);
 
   const handleFilterChange = (filter: "all" | "daily" | "monthly") => {
     setDateFilter(filter);
@@ -60,11 +68,11 @@ const Dashboard = () => {
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       setStartDate(firstDayOfMonth);
     }
-    
-    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard_sales'] });
-    queryClient.invalidateQueries({ queryKey: ['recent-orders'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
+
+    queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
   };
 
   useEffect(() => {
@@ -75,11 +83,11 @@ const Dashboard = () => {
         .channel('dashboard-sales-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'sales' },
+          { event: '*', schema: 'public', table: 'sales', filter: `shop_id=eq.${shopId}` },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard_sales'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-            queryClient.invalidateQueries({ queryKey: ['recent-orders'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
+            queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
           }
         )
         .subscribe(),
@@ -88,10 +96,10 @@ const Dashboard = () => {
         .channel('dashboard-products-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'products' },
+          { event: '*', schema: 'public', table: 'products', filter: `shop_id=eq.${shopId}` },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-            queryClient.invalidateQueries({ queryKey: ['products-stock'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
+            queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
           }
         )
         .subscribe(),
@@ -100,9 +108,9 @@ const Dashboard = () => {
         .channel('dashboard-staff-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'staff' },
+          { event: '*', schema: 'public', table: 'staff', filter: `shop_id=eq.${shopId}` },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
           }
         )
         .subscribe(),
@@ -111,10 +119,10 @@ const Dashboard = () => {
         .channel('dashboard-expenses-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'expenses' },
+          { event: '*', schema: 'public', table: 'expenses', filter: `shop_id=eq.${shopId}` },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-            queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
+            queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId] });
           }
         )
         .subscribe(),
@@ -125,7 +133,7 @@ const Dashboard = () => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'profiles' },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard-invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-invoices', shopId] });
           }
         )
         .subscribe()
@@ -138,6 +146,10 @@ const Dashboard = () => {
 
   const { data: stats } = useDashboardStats(dateFilter, startDate);
   const { data: recentOrders } = useRecentOrders(dateFilter, startDate);
+
+  if (!shopId) {
+    return null;
+  }
 
   return (
     <AppLayout>
@@ -154,7 +166,7 @@ const Dashboard = () => {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <SalesChart dateFilter={dateFilter} startDate={startDate} />
-          <DashboardInvoices />
+          <DashboardInvoices dateFilter={dateFilter} startDate={startDate} />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">

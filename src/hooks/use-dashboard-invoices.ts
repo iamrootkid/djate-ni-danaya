@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
+import { useShopId } from "./use-shop-id";
 
 export interface InvoiceData {
   id: string;
@@ -12,14 +14,11 @@ export interface InvoiceData {
   employee_email?: string;
 }
 
-export const useDashboardInvoices = () => {
+export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "yesterday" = "daily", startDate: Date = new Date()) => {
   const queryClient = useQueryClient();
-
-  // Get shop ID from local storage to ensure we have the current session's shop ID
-  const getCurrentShopId = () => localStorage.getItem("shopId");
+  const { shopId } = useShopId();
 
   useEffect(() => {
-    const shopId = getCurrentShopId();
     if (!shopId) {
       console.log("No shop ID available for invoice subscription");
       return;
@@ -42,12 +41,11 @@ export const useDashboardInvoices = () => {
       console.log("Cleaning up invoice subscription for shop:", shopId);
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, shopId]);
 
   return useQuery({
-    queryKey: ["dashboard_invoices", getCurrentShopId()],
+    queryKey: ["dashboard_invoices", dateFilter, startDate, shopId],
     queryFn: async () => {
-      const shopId = getCurrentShopId();
       if (!shopId) {
         console.log("No shop ID available for fetching invoices");
         return [];
@@ -75,10 +73,9 @@ export const useDashboardInvoices = () => {
         return [];
       }
 
-      console.log("Fetching invoices for verified shop:", shopId);
+      console.log("Fetching invoices for verified shop:", shopId, "with filter:", dateFilter);
 
-      // Get invoices with sales and employee data in a single query
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoices")
         .select(`
           id,
@@ -96,9 +93,37 @@ export const useDashboardInvoices = () => {
           )
         `)
         .eq("shop_id", shopId)
-        .eq("sales.shop_id", shopId)
-        .order("created_at", { ascending: false })
-        .limit(5);
+        .eq("sales.shop_id", shopId);
+
+      // Apply date filtering
+      if (dateFilter === "daily") {
+        const dayStart = startOfDay(startDate);
+        const dayEnd = endOfDay(startDate);
+        query = query
+          .gte("created_at", dayStart.toISOString())
+          .lte("created_at", dayEnd.toISOString());
+      } else if (dateFilter === "yesterday") {
+        const yesterday = subDays(startDate, 1);
+        const dayStart = startOfDay(yesterday);
+        const dayEnd = endOfDay(yesterday);
+        query = query
+          .gte("created_at", dayStart.toISOString())
+          .lte("created_at", dayEnd.toISOString());
+      } else if (dateFilter === "monthly") {
+        const monthStart = startOfMonth(startDate);
+        const monthEnd = endOfMonth(startDate);
+        console.log("Monthly filter dates:", {
+          start: monthStart.toISOString(),
+          end: monthEnd.toISOString()
+        });
+        query = query
+          .gte("created_at", monthStart.toISOString())
+          .lte("created_at", monthEnd.toISOString());
+      }
+
+      query = query.order("created_at", { ascending: false }).limit(5);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching invoices:", error);
@@ -140,6 +165,6 @@ export const useDashboardInvoices = () => {
         };
       }).filter(Boolean);
     },
-    enabled: !!getCurrentShopId(),
+    enabled: !!shopId,
   });
 };
