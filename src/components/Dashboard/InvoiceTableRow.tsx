@@ -1,0 +1,29 @@
+import { InvoiceData } from "@/hooks/use-dashboard-invoices";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+
+interface InvoiceTableRowProps {
+  invoice: InvoiceData;
+}
+
+export const InvoiceTableRow = ({ invoice }: InvoiceTableRowProps) => {
+  // Format date to French locale
+  const date = new Date(invoice.created_at);
+  const formattedDate = format(date, "d MMMM yyyy", { locale: fr });
+  const formattedTime = format(date, "HH:mm", { locale: fr });
+
+  // Format amount to French locale with F CFA
+  const formattedAmount = new Intl.NumberFormat("fr-FR").format(invoice.total_amount || 0) + " F CFA";
+
+  return (
+    <TableRow>
+      <TableCell>{invoice.invoice_number}</TableCell>
+      <TableCell>{invoice.employee_email || "Email inconnu"}</TableCell>
+      <TableCell>{formattedDate}</TableCell>
+      <TableCell>{formattedTime}</TableCell>
+      <TableCell className="text-right">{formattedAmount}</TableCell>
+    </TableRow>
+  );
+};

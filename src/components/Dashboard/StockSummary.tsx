@@ -1,0 +1,116 @@
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { StockSummary as StockSummaryType } from "@/integrations/supabase/types/functions";
+import { ArrowUp, ArrowDown, DollarSign, Banknote } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface StockSummaryProps {
+  startDate: Date;
+  dateFilter: "all" | "daily" | "monthly";
+}
+
+export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
+  const shopId = localStorage.getItem("shopId") || "";
+
+  const { data: summary } = useQuery<StockSummaryType>({
+    queryKey: ["stock-summary", dateFilter, startDate, shopId],
+    queryFn: async () => {
+      if (!shopId) return {
+        total_income: 0,
+        total_expenses: 0,
+        stock_in: 0,
+        stock_out: 0,
+        profit: 0
+      };
+
+      const { data, error } = await supabase.rpc("get_stock_summary", {
+        start_date: startDate.toISOString(),
+        filter_type: dateFilter,
+        shop_id: shopId
+      });
+
+      if (error) {
+        console.error("Error fetching stock summary:", error);
+        throw error;
+      }
+
+      // Handle the response which might be an array with a single item or a single object
+      if (Array.isArray(data) && data.length > 0) {
+        // First, cast to unknown then to StockSummaryType to avoid direct type conversion error
+        return data[0] as unknown as StockSummaryType;
+      }
+
+      // First, cast to unknown then to StockSummaryType to avoid direct type conversion error
+      return (data as unknown as StockSummaryType) || {
+        total_income: 0,
+        total_expenses: 0,
+        stock_in: 0,
+        stock_out: 0,
+        profit: 0
+      };
+    },
+    enabled: !!shopId,
+  });
+
+  // Calculate net stock change
+  const netStockChange = (summary?.stock_in || 0) - (summary?.stock_out || 0);
+  const isStockIncreasing = netStockChange >= 0;
+
+  return (
+    <Card className="col-span-4">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Résumé des stocks</CardTitle>
+        <Badge variant={summary?.profit && summary.profit > 0 ? "success" : "destructive"}>
+          {summary?.profit ? (summary.profit > 0 ? "+" : "") + summary.profit.toLocaleString() + " F CFA" : "Chargement..."}
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-500" />
+              <p className="text-sm font-medium">Revenu total</p>
+            </div>
+            <p className="text-2xl font-bold text-green-600">
+              {summary?.total_income?.toLocaleString() || "0"} F CFA
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Banknote className="h-4 w-4 text-red-500" />
+              <p className="text-sm font-medium">Dépenses totales</p>
+            </div>
+            <p className="text-2xl font-bold text-red-600">
+              {summary?.total_expenses?.toLocaleString() || "0"} F CFA
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <ArrowUp className="h-4 w-4 text-blue-500" />
+              <p className="text-sm font-medium">Stock entrant</p>
+            </div>
+            <p className="text-2xl font-bold text-blue-600">
+              {summary?.stock_in || 0} unités
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <ArrowDown className="h-4 w-4 text-orange-500" />
+              <p className="text-sm font-medium">Stock sortant</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold text-orange-600">
+                {summary?.stock_out || 0} unités
+              </p>
+              <Badge variant={isStockIncreasing ? "success" : "destructive"} className="ml-2">
+                {isStockIncreasing ? "+" : ""}{netStockChange} net
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
