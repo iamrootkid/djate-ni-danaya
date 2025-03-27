@@ -1,8 +1,10 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useShopId } from "@/hooks/use-shop-id";
 
 export const useInventoryReport = () => {
-  const shopId = localStorage.getItem("shopId");
+  const { shopId } = useShopId();
 
   return useQuery({
     queryKey: ["inventory-report", shopId],

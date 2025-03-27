@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useShopId } from "@/hooks/use-shop-id";
 
 export const InventoryReport = () => {
-  const shopId = localStorage.getItem("shopId") || "";
+  const { shopId } = useShopId();
 
   const { data: inventoryData, isLoading } = useQuery({
     queryKey: ["inventory-report", shopId],

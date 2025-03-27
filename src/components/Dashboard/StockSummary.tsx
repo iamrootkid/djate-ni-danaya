@@ -26,40 +26,6 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
         profit: 0
       };
 
-      // Verify the current user has access to this shop
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error("No authenticated user found");
-        return {
-          total_income: 0,
-          total_expenses: 0,
-          stock_in: 0,
-          stock_out: 0,
-          profit: 0
-        };
-      }
-
-      const { data: userProfile, error: profileError } = await supabase
-        .from("profiles")
-        .select("shop_id")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError || !userProfile || userProfile.shop_id !== shopId) {
-        console.error("User does not have access to this shop:", {
-          userId: user.id,
-          shopId,
-          profileShopId: userProfile?.shop_id
-        });
-        return {
-          total_income: 0,
-          total_expenses: 0,
-          stock_in: 0,
-          stock_out: 0,
-          profit: 0
-        };
-      }
-
       try {
         // Format the date for filtering
         const startDateStr = startDate.toISOString();
@@ -74,7 +40,10 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
           }
         );
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching stock summary:", error);
+          throw error;
+        }
         
         // The function returns an array with one object, so take the first item
         return data && data[0] ? data[0] : {
