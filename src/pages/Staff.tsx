@@ -1,14 +1,14 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { StaffHeader } from "@/components/Staff/StaffHeader";
-import { StaffTabs } from "@/components/Staff/StaffTabs";
 import { StaffDialogs } from "@/components/Staff/StaffDialogs";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Database } from "@/types/supabase";
+import { EnhancedStaffList } from "@/components/Staff/EnhancedStaffList";
 
 type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
 type Department = Database["public"]["Tables"]["departments"]["Row"];
@@ -184,25 +184,17 @@ const Staff = () => {
     <AppLayout>
       <div className="space-y-6">
         <StaffHeader onSuccess={() => queryClient.invalidateQueries({ queryKey: ["staff", shopId] })} />
+        
         <Card>
           <CardContent className="pt-6">
-            <StaffTabs
-              onEditEmployee={(employee) => {
+            <EnhancedStaffList 
+              onEdit={(employee) => {
                 setSelectedEmployee(employee);
                 setEditDialogOpen(true);
               }}
-              onDeleteEmployee={(employee) => {
+              onDelete={(employee) => {
                 setSelectedEmployee(employee);
                 setDeleteDialogOpen(true);
-              }}
-              onAddDepartment={() => setDepartmentDialogOpen(true)}
-              onEditDepartment={(department) => {
-                setSelectedDepartment(department);
-                setDepartmentDialogOpen(true);
-              }}
-              onDeleteDepartment={(department) => {
-                setSelectedDepartment(department);
-                setDeleteDepartmentDialogOpen(true);
               }}
             />
           </CardContent>
