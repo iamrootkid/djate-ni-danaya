@@ -35,12 +35,20 @@ type Department = {
   created_at: string;
   name: string;
   description: string | null;
-  shop_id: string | null;  // Changed from required to nullable to match database
+  shop_id: string | null;  // Nullable to match database
 };
 
+// Define a union type for items that can be edited or deleted
+type StaffOrDepartment = StaffMember | Department;
+
+// Type guard to check if an item is a StaffMember
+function isStaffMember(item: StaffOrDepartment): item is StaffMember {
+  return 'first_name' in item && 'last_name' in item;
+}
+
 interface EnhancedStaffListProps {
-  onEdit: (item: StaffMember | Department) => void;
-  onDelete: (item: StaffMember | Department) => void;
+  onEdit: (item: StaffOrDepartment) => void;
+  onDelete: (item: StaffOrDepartment) => void;
 }
 
 export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) => {
@@ -76,8 +84,16 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
         .order("name", { ascending: true });
 
       if (error) throw error;
-      // Use type assertion to explicitly convert the query result to Department[]
-      return (data || []) as Department[];
+      
+      // Explicitly convert raw data to comply with Department type
+      // This is safer than a direct cast when dealing with data from external sources
+      return (data || []).map(item => ({
+        id: item.id,
+        created_at: item.created_at,
+        name: item.name,
+        description: item.description,
+        shop_id: item.shop_id
+      } as Department));
     },
     enabled: !!shopId,
   });
