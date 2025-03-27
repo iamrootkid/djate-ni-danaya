@@ -35,7 +35,7 @@ type Department = {
   created_at: string;
   name: string;
   description: string | null;
-  shop_id: string;
+  shop_id: string | null;  // Changed from required to nullable to match database
 };
 
 interface EnhancedStaffListProps {
@@ -76,7 +76,8 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
         .order("name", { ascending: true });
 
       if (error) throw error;
-      return data as Department[];
+      // Use type assertion to explicitly convert the query result to Department[]
+      return (data || []) as Department[];
     },
     enabled: !!shopId,
   });
