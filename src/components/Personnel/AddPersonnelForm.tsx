@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,6 +39,7 @@ interface AddPersonnelFormProps {
 
 export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -52,6 +54,7 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
   });
 
   const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
     try {
       // Get current user's session
       const { data: { session } } = await supabase.auth.getSession();
@@ -89,7 +92,19 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
 
       if (error) {
         console.error('Edge Function Error:', error);
-        throw new Error(error.message || "Failed to create employee");
+        let errorMessage = error.message || "Failed to create employee";
+        
+        // Try to extract more detailed error from the message if it's JSON
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          // If JSON parsing fails, use the original error message
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -107,6 +122,8 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
         description: error.message || "Failed to add personnel",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -186,12 +203,12 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
-              Add Personnel
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Adding..." : "Add Personnel"}
             </Button>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
-}; 
+};

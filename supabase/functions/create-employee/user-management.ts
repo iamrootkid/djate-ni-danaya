@@ -46,6 +46,7 @@ export async function createStaffRecord(supabase: any, userData: any, userId: st
     return { success: true }
   }
   
+  // Remove the status field which doesn't exist in the staff table
   const { error: staffError } = await supabase
     .from('staff')
     .insert({
@@ -55,8 +56,7 @@ export async function createStaffRecord(supabase: any, userData: any, userId: st
       email,
       role,
       phone,
-      shop_id: shopId,
-      status: 'active'
+      shop_id: shopId
     })
 
   if (staffError) {

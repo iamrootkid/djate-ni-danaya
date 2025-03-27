@@ -52,6 +52,10 @@ export const useAddEmployee = (onSuccess: () => void) => {
     }
     
     try {
+      console.log("Calling create-employee with data:", {
+        email, password, firstName, lastName, phone, role, shopId
+      });
+      
       const { data, error } = await supabase.functions.invoke('create-employee', {
         body: {
           email,
@@ -73,8 +77,10 @@ export const useAddEmployee = (onSuccess: () => void) => {
           if (errorBody.error) {
             errorMessage = errorBody.error;
           }
-        } catch {
+        } catch (e) {
           // If parsing fails, use the original error message
+          console.error("Error parsing error message:", e);
+          console.log("Original error:", error);
         }
 
         throw new Error(errorMessage);
