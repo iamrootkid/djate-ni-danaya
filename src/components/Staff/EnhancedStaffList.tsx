@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,7 +75,6 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Stock Managed</TableHead>
             <TableHead>Created At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -82,7 +82,7 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
         <TableBody>
           {!staff?.length ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
+              <TableCell colSpan={6} className="h-24 text-center">
                 No employees found
               </TableCell>
             </TableRow>
@@ -103,7 +103,6 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
                     Active
                   </Badge>
                 </TableCell>
-                <TableCell>43 units</TableCell>
                 <TableCell>{formatDate(member.created_at)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -142,8 +141,7 @@ const StaffListSkeleton = () => {
       
       <div className="rounded-md border">
         <div className="py-3 px-4 border-b">
-          <div className="grid grid-cols-8 gap-4">
-            <Skeleton className="h-6 w-full" />
+          <div className="grid grid-cols-7 gap-4">
             <Skeleton className="h-6 w-full" />
             <Skeleton className="h-6 w-full" />
             <Skeleton className="h-6 w-full" />
@@ -156,8 +154,7 @@ const StaffListSkeleton = () => {
         
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="py-4 px-4 border-b">
-            <div className="grid grid-cols-8 gap-4">
-              <Skeleton className="h-6 w-full" />
+            <div className="grid grid-cols-7 gap-4">
               <Skeleton className="h-6 w-full" />
               <Skeleton className="h-6 w-full" />
               <Skeleton className="h-6 w-full" />
