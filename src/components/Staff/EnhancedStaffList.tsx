@@ -16,32 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Database } from "@/types/supabase";
 
-interface StaffMember {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  role: string;
-  phone: string | null;
-  created_at: string;
-  updated_at: string;
-  shop_id: string;
-  department?: string;
-}
-
-interface Department {
-  id: string;
-  name: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-  shop_id: string;
-}
+type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
+type Department = Database["public"]["Tables"]["departments"]["Row"];
 
 interface EnhancedStaffListProps {
-  onEdit: (staff: StaffMember | Department) => void;
-  onDelete: (staff: StaffMember | Department) => void;
+  onEdit: (item: StaffMember | Department) => void;
+  onDelete: (item: StaffMember | Department) => void;
 }
 
 export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) => {
