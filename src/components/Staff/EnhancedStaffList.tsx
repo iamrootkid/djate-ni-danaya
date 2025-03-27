@@ -85,15 +85,15 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
 
       if (error) throw error;
       
-      // Explicitly convert raw data to comply with Department type
-      // This is safer than a direct cast when dealing with data from external sources
+      // Using a type assertion with an optional transform to handle missing shop_id
       return (data || []).map(item => ({
         id: item.id,
         created_at: item.created_at,
         name: item.name,
         description: item.description,
-        shop_id: item.shop_id
-      } as Department));
+        // Using optional chaining to handle the case where shop_id might not exist
+        shop_id: item.shop_id || null
+      })) as Department[];
     },
     enabled: !!shopId,
   });
