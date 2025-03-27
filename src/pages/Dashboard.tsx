@@ -1,3 +1,4 @@
+
 import { useLocation } from "react-router-dom";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useQueryClient } from "@tanstack/react-query";
@@ -55,6 +56,7 @@ const Dashboard = () => {
     queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
     queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
     queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['inventory-report', shopId] });
   }, [shopId, queryClient]);
 
   const handleFilterChange = (filter: "all" | "daily" | "monthly") => {
@@ -74,6 +76,7 @@ const Dashboard = () => {
     queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
     queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
     queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId] });
   };
 
   useEffect(() => {
@@ -89,6 +92,7 @@ const Dashboard = () => {
             queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
             queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
+            queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId] });
           }
         )
         .subscribe(),
@@ -101,6 +105,7 @@ const Dashboard = () => {
           () => {
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
             queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
+            queryClient.invalidateQueries({ queryKey: ['inventory-report', shopId] });
           }
         )
         .subscribe(),
@@ -123,6 +128,17 @@ const Dashboard = () => {
           { event: '*', schema: 'public', table: 'expenses', filter: `shop_id=eq.${shopId}` },
           () => {
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
+            queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId] });
+          }
+        )
+        .subscribe(),
+      
+      supabase
+        .channel('dashboard-sale-items-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'sale_items' },
+          () => {
             queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId] });
           }
         )
