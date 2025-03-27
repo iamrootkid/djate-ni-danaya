@@ -1,10 +1,10 @@
-
 import { useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, UserRound, UserPlus, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useShopId } from "@/hooks/use-shop-id";
 
 // Define explicit type for staff item to avoid recursive type instantiation
 interface StaffItem {
@@ -14,15 +14,23 @@ interface StaffItem {
   role: string;
   email: string;
   phone: string | null;
+  shop_id: string;
   created_at: string;
   updated_at: string;
 }
 
 export const StaffList = () => {
+  const { shopId } = useShopId();
+
   const fetchStaff = useCallback(async () => {
+    if (!shopId) {
+      throw new Error("No shop ID found");
+    }
+
     const { data, error } = await supabase
       .from("staff")
       .select("*")
+      .eq("shop_id", shopId)
       .order("first_name", { ascending: true });
 
     if (error) {
@@ -30,11 +38,12 @@ export const StaffList = () => {
     }
 
     return data as StaffItem[];
-  }, []);
+  }, [shopId]);
 
   const { data: staff, isLoading, error } = useQuery({
-    queryKey: ["staff"],
+    queryKey: ["staff", shopId],
     queryFn: fetchStaff,
+    enabled: !!shopId,
   });
 
   if (isLoading) {
@@ -75,6 +84,9 @@ export const StaffList = () => {
                   <p className="text-sm font-medium">{member.first_name} {member.last_name}</p>
                   <p className="text-xs text-muted-foreground">{member.email}</p>
                   <p className="text-xs text-muted-foreground">Role: {member.role}</p>
+                  {member.phone && (
+                    <p className="text-xs text-muted-foreground">Téléphone: {member.phone}</p>
+                  )}
                 </div>
               </div>
             ))}

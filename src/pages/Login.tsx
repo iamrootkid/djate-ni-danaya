@@ -1,13 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoleSelection } from "@/components/auth/RoleSelection";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { ShopIdVerification } from "@/components/auth/ShopIdVerification";
-import { Button } from "@/components/ui/button";
-import { createPredefinedUsers } from "@/utils/createPredefinedUsers";
-import { toast } from "sonner";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -16,7 +12,6 @@ const Login = () => {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [shopId, setShopId] = useState<string | null>(null);
   const [showShopIdForm, setShowShopIdForm] = useState(true);
-  const [creatingUsers, setCreatingUsers] = useState(false);
 
   const handleRoleSelect = (role: 'admin' | 'employee') => {
     setSelectedRole(role);
@@ -27,21 +22,6 @@ const Login = () => {
     if (verified) {
       setShopId(verifiedShopId);
       setShowShopIdForm(false);
-    }
-  };
-
-  const handleCreateUsers = async () => {
-    setCreatingUsers(true);
-    try {
-      const users = await createPredefinedUsers();
-      toast.success(`Created admin (${users.admin.email}) and employee (${users.employee.email}) users`, {
-        description: "You can now login with these credentials",
-        duration: 10000,
-      });
-    } catch (error) {
-      console.error("Failed to create users:", error);
-    } finally {
-      setCreatingUsers(false);
     }
   };
 
@@ -91,22 +71,6 @@ const Login = () => {
           )}
         </CardContent>
       </Card>
-      
-      <div className="mt-4 text-center">
-        <Button 
-          variant="outline" 
-          onClick={handleCreateUsers}
-          disabled={creatingUsers}
-          className="hover:bg-gray-100"
-        >
-          {creatingUsers ? "Creating Users..." : "Create Demo Users"}
-        </Button>
-        {!creatingUsers && (
-          <p className="text-xs text-gray-500 mt-2">
-            This will create an admin and employee account for testing
-          </p>
-        )}
-      </div>
     </div>
   );
 };

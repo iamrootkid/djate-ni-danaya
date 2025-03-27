@@ -7,26 +7,44 @@ import { useToast } from "@/hooks/use-toast";
 import { StaffHeader } from "@/components/Staff/StaffHeader";
 import { StaffTabs } from "@/components/Staff/StaffTabs";
 import { StaffDialogs } from "@/components/Staff/StaffDialogs";
+import { useShopId } from "@/hooks/use-shop-id";
+import { Database } from "@/types/supabase";
+
+type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
+type Department = Database["public"]["Tables"]["departments"]["Row"];
+
+interface StaffEditData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  password?: string;
+}
+
+interface DepartmentData {
+  name: string;
+  description: string;
+}
 
 const Staff = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<StaffMember | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [deleteDepartmentDialogOpen, setDeleteDepartmentDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { shopId } = useShopId();
 
   const handleDelete = async () => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee || !shopId) return;
 
     try {
-      // Delete the employee from the staff table
       const { error } = await supabase
         .from("staff")
         .delete()
-        .eq("id", selectedEmployee.id);
+        .match({ id: selectedEmployee.id, shop_id: shopId });
 
       if (error) throw error;
 
@@ -35,7 +53,7 @@ const Staff = () => {
         description: "Employee deleted successfully",
       });
       
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", shopId] });
       setDeleteDialogOpen(false);
       setSelectedEmployee(null);
     } catch (error: any) {
@@ -47,8 +65,8 @@ const Staff = () => {
     }
   };
 
-  const handleEdit = async (data: any) => {
-    if (!selectedEmployee) return;
+  const handleEdit = async (data: StaffEditData) => {
+    if (!selectedEmployee || !shopId) return;
 
     try {
       const { error } = await supabase
@@ -60,7 +78,7 @@ const Staff = () => {
           phone: data.phone,
           ...(data.password && { password_hash: data.password }),
         })
-        .eq("id", selectedEmployee.id);
+        .match({ id: selectedEmployee.id, shop_id: shopId });
 
       if (error) throw error;
 
@@ -69,7 +87,7 @@ const Staff = () => {
         description: "Employee updated successfully",
       });
       
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", shopId] });
       setEditDialogOpen(false);
       setSelectedEmployee(null);
     } catch (error: any) {
@@ -81,7 +99,9 @@ const Staff = () => {
     }
   };
 
-  const handleDepartmentSave = async (data: any) => {
+  const handleDepartmentSave = async (data: DepartmentData) => {
+    if (!shopId) return;
+
     try {
       if (selectedDepartment) {
         const { error } = await supabase
@@ -90,7 +110,7 @@ const Staff = () => {
             name: data.name,
             description: data.description,
           })
-          .eq("id", selectedDepartment.id);
+          .match({ id: selectedDepartment.id, shop_id: shopId });
 
         if (error) throw error;
       } else {
@@ -99,6 +119,7 @@ const Staff = () => {
           .insert({
             name: data.name,
             description: data.description,
+            shop_id: shopId
           });
 
         if (error) throw error;
@@ -109,7 +130,7 @@ const Staff = () => {
         description: `Department ${selectedDepartment ? "updated" : "added"} successfully`,
       });
       
-      queryClient.invalidateQueries({ queryKey: ["departments"] });
+      queryClient.invalidateQueries({ queryKey: ["departments", shopId] });
       setDepartmentDialogOpen(false);
       setSelectedDepartment(null);
     } catch (error: any) {
@@ -122,13 +143,13 @@ const Staff = () => {
   };
 
   const handleDepartmentDelete = async () => {
-    if (!selectedDepartment) return;
+    if (!selectedDepartment || !shopId) return;
 
     try {
       const { error } = await supabase
         .from("departments")
         .delete()
-        .eq("id", selectedDepartment.id);
+        .match({ id: selectedDepartment.id, shop_id: shopId });
 
       if (error) throw error;
 
@@ -137,7 +158,7 @@ const Staff = () => {
         description: "Department deleted successfully",
       });
       
-      queryClient.invalidateQueries({ queryKey: ["departments"] });
+      queryClient.invalidateQueries({ queryKey: ["departments", shopId] });
       setDeleteDepartmentDialogOpen(false);
       setSelectedDepartment(null);
     } catch (error: any) {
@@ -149,10 +170,20 @@ const Staff = () => {
     }
   };
 
+  if (!shopId) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Please select a shop to manage staff.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
-        <StaffHeader onSuccess={() => queryClient.invalidateQueries({ queryKey: ["employees"] })} />
+        <StaffHeader onSuccess={() => queryClient.invalidateQueries({ queryKey: ["staff", shopId] })} />
         <Card>
           <CardContent className="pt-6">
             <StaffTabs

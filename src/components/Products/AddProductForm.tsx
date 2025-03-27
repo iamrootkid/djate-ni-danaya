@@ -6,6 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ProductForm } from "./ProductForm";
+import { useShopId } from "@/hooks/use-shop-id";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const STORAGE_BUCKET = 'product-images';
 
 export const AddProductForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const [name, setName] = useState("");
@@ -17,10 +22,10 @@ export const AddProductForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const [image, setImage] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
-  const shopId = localStorage.getItem("shopId");
+  const { shopId } = useShopId();
 
   const { data: categories } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories", shopId],
     queryFn: async () => {
       if (!shopId) return [];
       const { data, error } = await supabase
@@ -33,18 +38,112 @@ export const AddProductForm = ({ onSuccess }: { onSuccess: () => void }) => {
     enabled: !!shopId,
   });
 
+  const validateImage = (file: File) => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast({
+        title: "Error",
+        description: "Please upload a valid image file (JPEG, PNG, or WebP)",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: "Error",
+        description: "Image size should be less than 5MB",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
+      const file = e.target.files[0];
+      if (validateImage(file)) {
+        setImage(file);
+      }
+    }
+  };
+
+  const validateForm = () => {
+    if (!name.trim()) {
+      toast({
+        title: "Error",
+        description: "Product name is required",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!price || Number(price) <= 0) {
+      toast({
+        title: "Error",
+        description: "Valid price is required",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!stock || Number(stock) < 0) {
+      toast({
+        title: "Error",
+        description: "Valid stock quantity is required",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${shopId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      // Try to upload directly to the bucket
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        // If the error is due to bucket not existing, we'll handle it differently
+        if (uploadError.message.includes('bucket not found')) {
+          toast({
+            title: "Error",
+            description: "Storage bucket not configured. Please contact support.",
+            variant: "destructive",
+          });
+          return null;
+        }
+        console.error("Error uploading image:", uploadError);
+        throw new Error(uploadError.message || "Failed to upload image");
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Error in uploadImage:", error);
+      throw error;
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     if (!shopId) {
       toast({
         title: "Error",
-        description: "No shop ID found",
+        description: "No shop ID found. Please try logging in again.",
         variant: "destructive",
       });
       return;
@@ -56,41 +155,42 @@ export const AddProductForm = ({ onSuccess }: { onSuccess: () => void }) => {
       let imageUrl = null;
 
       if (image) {
-        const fileExt = image.name.split('.').pop();
-        const filePath = `${Math.random()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('products')
-          .upload(filePath, image);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('products')
-          .getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
+        try {
+          imageUrl = await uploadImage(image);
+        } catch (error: any) {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to upload image. Please try again.",
+            variant: "destructive",
+          });
+          setUploading(false);
+          return;
+        }
       }
 
       const { error } = await supabase
         .from("products")
         .insert([{ 
-          name, 
-          description, 
+          name: name.trim(), 
+          description: description.trim() || null, 
           price: Number(price), 
           stock: Number(stock),
-          category_id: categoryId,
+          category_id: categoryId || null,
           image_url: imageUrl,
           shop_id: shopId
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting product:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
         description: "Product added successfully",
       });
 
+      // Reset form
       setName("");
       setDescription("");
       setPrice("");
@@ -99,11 +199,11 @@ export const AddProductForm = ({ onSuccess }: { onSuccess: () => void }) => {
       setImage(null);
       setIsOpen(false);
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding product:", error);
       toast({
         title: "Error",
-        description: "Failed to add product",
+        description: error.message || "Failed to add product",
         variant: "destructive",
       });
     } finally {

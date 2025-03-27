@@ -51,6 +51,20 @@ export const ProductForm = ({
   existingImageUrl,
   onCancel,
 }: ProductFormProps) => {
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setPrice(value);
+    }
+  };
+
+  const handleStockChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || /^\d*$/.test(value)) {
+      setStock(value);
+    }
+  };
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <ImageUpload
@@ -60,13 +74,14 @@ export const ProductForm = ({
       />
       <div>
         <label htmlFor="name" className="block text-sm font-medium mb-1">
-          Name
+          Name *
         </label>
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
+          placeholder="Enter product name"
         />
       </div>
       <div>
@@ -77,6 +92,7 @@ export const ProductForm = ({
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          placeholder="Enter product description"
         />
       </div>
       <div>
@@ -98,29 +114,31 @@ export const ProductForm = ({
       </div>
       <div>
         <label htmlFor="price" className="block text-sm font-medium mb-1">
-          Price
+          Price (F CFA) *
         </label>
         <Input
           id="price"
-          type="number"
+          type="text"
+          value={price}
+          onChange={handlePriceChange}
+          required
+          placeholder="0.00"
           min="0"
           step="0.01"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
         />
       </div>
       <div>
         <label htmlFor="stock" className="block text-sm font-medium mb-1">
-          Stock
+          Stock *
         </label>
         <Input
           id="stock"
-          type="number"
-          min="0"
+          type="text"
           value={stock}
-          onChange={(e) => setStock(e.target.value)}
+          onChange={handleStockChange}
           required
+          placeholder="0"
+          min="0"
         />
       </div>
       <div className="flex justify-end gap-2">

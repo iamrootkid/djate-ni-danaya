@@ -59,31 +59,59 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
         };
       }
 
-      const { data, error } = await supabase.rpc("get_stock_summary", {
-        start_date: startDate.toISOString(),
-        filter_type: dateFilter,
-        shop_id: shopId
-      });
-
-      if (error) {
+      try {
+        // Format the date for filtering
+        const startDateStr = startDate.toISOString();
+        
+        // Get income from sales
+        const { data: salesData, error: salesError } = await supabase
+          .from("sales")
+          .select("total_amount")
+          .eq("shop_id", shopId)
+          .gte("created_at", startDateStr);
+          
+        if (salesError) throw salesError;
+        
+        // Get expenses
+        const { data: expensesData, error: expensesError } = await supabase
+          .from("expenses")
+          .select("amount")
+          .eq("shop_id", shopId)
+          .gte("date", startDateStr);
+          
+        if (expensesError) throw expensesError;
+        
+        // Get stock movements
+        const { data: stockMovements, error: stockError } = await supabase
+          .from("stock_movements")
+          .select("type, quantity")
+          .eq("shop_id", shopId)
+          .gte("created_at", startDateStr);
+          
+        if (stockError) throw stockError;
+        
+        // Calculate summary
+        const totalIncome = salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+        const totalExpenses = expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+        const stockIn = stockMovements
+          .filter(mov => mov.type === 'in')
+          .reduce((sum, mov) => sum + (mov.quantity || 0), 0);
+        const stockOut = stockMovements
+          .filter(mov => mov.type === 'out')
+          .reduce((sum, mov) => sum + (mov.quantity || 0), 0);
+        const profit = totalIncome - totalExpenses;
+        
+        return {
+          total_income: totalIncome,
+          total_expenses: totalExpenses,
+          stock_in: stockIn,
+          stock_out: stockOut,
+          profit: profit
+        };
+      } catch (error) {
         console.error("Error fetching stock summary:", error);
         throw error;
       }
-
-      // Handle the response which might be an array with a single item or a single object
-      if (Array.isArray(data) && data.length > 0) {
-        // First, cast to unknown then to StockSummaryType to avoid direct type conversion error
-        return data[0] as unknown as StockSummaryType;
-      }
-
-      // First, cast to unknown then to StockSummaryType to avoid direct type conversion error
-      return (data as unknown as StockSummaryType) || {
-        total_income: 0,
-        total_expenses: 0,
-        stock_in: 0,
-        stock_out: 0,
-        profit: 0
-      };
     },
     enabled: !!shopId,
   });

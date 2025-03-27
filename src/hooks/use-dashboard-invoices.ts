@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
+import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays, isValid } from "date-fns";
 import { useShopId } from "./use-shop-id";
 
 export interface InvoiceData {
@@ -48,6 +48,11 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
     queryFn: async () => {
       if (!shopId) {
         console.log("No shop ID available for fetching invoices");
+        return [];
+      }
+
+      if (!isValid(startDate)) {
+        console.error("Invalid start date provided:", startDate);
         return [];
       }
 
@@ -99,6 +104,10 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
       if (dateFilter === "daily") {
         const dayStart = startOfDay(startDate);
         const dayEnd = endOfDay(startDate);
+        console.log("Daily filter dates:", {
+          start: dayStart.toISOString(),
+          end: dayEnd.toISOString()
+        });
         query = query
           .gte("created_at", dayStart.toISOString())
           .lte("created_at", dayEnd.toISOString());
@@ -106,6 +115,10 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
         const yesterday = subDays(startDate, 1);
         const dayStart = startOfDay(yesterday);
         const dayEnd = endOfDay(yesterday);
+        console.log("Yesterday filter dates:", {
+          start: dayStart.toISOString(),
+          end: dayEnd.toISOString()
+        });
         query = query
           .gte("created_at", dayStart.toISOString())
           .lte("created_at", dayEnd.toISOString());
@@ -119,8 +132,11 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
         query = query
           .gte("created_at", monthStart.toISOString())
           .lte("created_at", monthEnd.toISOString());
+      } else {
+        console.log("Fetching all invoices (no date filter)");
       }
 
+      // Always order by most recent and limit to 5 results
       query = query.order("created_at", { ascending: false }).limit(5);
 
       const { data, error } = await query;
@@ -131,11 +147,11 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
       }
 
       if (!data || data.length === 0) {
-        console.log("No invoices found for shop:", shopId);
+        console.log("No invoices found for shop:", shopId, "with filter:", dateFilter);
         return [];
       }
 
-      console.log("Raw invoice data for shop:", shopId, data);
+      console.log(`Found ${data.length} invoices for shop:`, shopId);
 
       return data.map(invoice => {
         const sale = invoice.sales as {

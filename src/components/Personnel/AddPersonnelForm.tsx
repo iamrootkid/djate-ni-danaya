@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useShopData } from "@/hooks/use-shop-data";
-import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -19,94 +19,102 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
-  email: z.string().email("Invalid email address"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
-  role: z.enum(["admin", "employee"], {
-    required_error: "Please select a role",
-  }),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormData = z.infer<typeof formSchema>;
 
 interface AddPersonnelFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
 
-export function AddPersonnelForm({
-  open,
-  onOpenChange,
-  onSuccess,
-}: AddPersonnelFormProps) {
+export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const { shopId } = useShopData();
-  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
       first_name: "",
       last_name: "",
+      email: "",
       phone: "",
+      password: "",
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
-    setIsLoading(true);
+  const onSubmit = async (data: FormData) => {
     try {
-      // Create the personnel records
-      const response = await fetch("/api/personnel", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      // Get current user's session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error("No authenticated user found");
+      }
+
+      // Get user's profile to get the shop ID
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError || !profile?.shop_id) {
+        throw new Error("Failed to get shop information");
+      }
+
+      const shopId = profile.shop_id;
+
+      // Use the built-in Supabase function invoker instead of direct fetch
+      const { data: result, error } = await supabase.functions.invoke('create-employee', {
+        body: {
+          firstName: data.first_name,
+          lastName: data.last_name,
+          email: data.email,
+          password: data.password,
+          phone: data.phone || null,
+          role: "employee",
+          shopId: shopId,
+          isPredefinedUser: false
         },
-        body: JSON.stringify({
-          ...values,
-          shop_id: shopId,
-        }),
+        method: 'POST'
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add personnel");
+      if (error) {
+        console.error('Edge Function Error:', error);
+        throw new Error(error.message || "Failed to create employee");
       }
 
       toast({
         title: "Success",
         description: "Personnel added successfully",
-        variant: "default",
       });
 
       form.reset();
+      setOpen(false);
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error in onSubmit:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add personnel",
+        description: error.message || "Failed to add personnel",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Add Personnel</Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Personnel</DialogTitle>
@@ -115,25 +123,12 @@ export function AddPersonnelForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="first_name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter first name" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -146,7 +141,20 @@ export function AddPersonnelForm({
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter last name" {...field} />
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,9 +165,9 @@ export function AddPersonnelForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone (Optional)</FormLabel>
+                  <FormLabel>Phone</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter phone number" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -167,43 +175,23 @@ export function AddPersonnelForm({
             />
             <FormField
               control={form.control}
-              name="role"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="employee">Employee</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Adding..." : "Add Personnel"}
-              </Button>
-            </div>
+            <Button type="submit" className="w-full">
+              Add Personnel
+            </Button>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
-} 
+}; 

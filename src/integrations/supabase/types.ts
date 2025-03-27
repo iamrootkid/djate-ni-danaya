@@ -357,6 +357,7 @@ export type Database = {
           created_at: string
           id: number
           key: string
+          shop_id: string | null
           updated_at: string
           value: string
         }
@@ -364,6 +365,7 @@ export type Database = {
           created_at?: string
           id?: number
           key: string
+          shop_id?: string | null
           updated_at?: string
           value: string
         }
@@ -371,10 +373,19 @@ export type Database = {
           created_at?: string
           id?: number
           key?: string
+          shop_id?: string | null
           updated_at?: string
           value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "settings_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       shops: {
         Row: {

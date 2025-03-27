@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useShopId } from "@/hooks/use-shop-id";
 
 interface StaffActionsProps {
   isOpen: boolean;
@@ -16,14 +17,20 @@ export const StaffActions = ({ isOpen, onClose, onSave, employee }: StaffActions
   const [editEmail, setEditEmail] = useState(employee?.email || "");
   const [editPhone, setEditPhone] = useState(employee?.phone || "");
   const [password, setPassword] = useState("");
+  const { shopId } = useShopId();
 
   const handleSave = () => {
+    if (!shopId) {
+      return;
+    }
+
     onSave({
-      first_name: editFirstName,
-      last_name: editLastName,
-      email: editEmail,
-      phone: editPhone,
+      first_name: editFirstName.trim(),
+      last_name: editLastName.trim(),
+      email: editEmail.trim(),
+      phone: editPhone.trim() || null,
       password: password || undefined,
+      shop_id: shopId
     });
     setPassword("");
   };
@@ -77,6 +84,7 @@ export const StaffActions = ({ isOpen, onClose, onSave, employee }: StaffActions
               id="phone"
               value={editPhone}
               onChange={(e) => setEditPhone(e.target.value)}
+              placeholder="Optionnel"
             />
           </div>
           <div>
