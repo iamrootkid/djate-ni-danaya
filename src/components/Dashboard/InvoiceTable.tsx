@@ -14,7 +14,7 @@ export const InvoiceTable = ({ invoices, isLoading }: InvoiceTableProps) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>N° Facture</TableHead>
+          <TableHead>Numéro de facture</TableHead>
           <TableHead>Client</TableHead>
           <TableHead>Employé</TableHead>
           <TableHead>Date</TableHead>
