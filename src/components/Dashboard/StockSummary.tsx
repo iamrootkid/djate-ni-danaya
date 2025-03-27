@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,50 +64,25 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
         // Format the date for filtering
         const startDateStr = startDate.toISOString();
         
-        // Get income from sales
-        const { data: salesData, error: salesError } = await supabase
-          .from("sales")
-          .select("total_amount")
-          .eq("shop_id", shopId)
-          .gte("created_at", startDateStr);
-          
-        if (salesError) throw salesError;
+        // Call the get_stock_summary function using RPC
+        const { data, error } = await supabase.rpc(
+          'get_stock_summary',
+          { 
+            start_date: startDateStr,
+            filter_type: dateFilter,
+            shop_id: shopId
+          }
+        );
         
-        // Get expenses
-        const { data: expensesData, error: expensesError } = await supabase
-          .from("expenses")
-          .select("amount")
-          .eq("shop_id", shopId)
-          .gte("date", startDateStr);
-          
-        if (expensesError) throw expensesError;
+        if (error) throw error;
         
-        // Get stock movements
-        const { data: stockMovements, error: stockError } = await supabase
-          .from("stock_movements")
-          .select("type, quantity")
-          .eq("shop_id", shopId)
-          .gte("created_at", startDateStr);
-          
-        if (stockError) throw stockError;
-        
-        // Calculate summary
-        const totalIncome = salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
-        const totalExpenses = expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-        const stockIn = stockMovements
-          .filter(mov => mov.type === 'in')
-          .reduce((sum, mov) => sum + (mov.quantity || 0), 0);
-        const stockOut = stockMovements
-          .filter(mov => mov.type === 'out')
-          .reduce((sum, mov) => sum + (mov.quantity || 0), 0);
-        const profit = totalIncome - totalExpenses;
-        
-        return {
-          total_income: totalIncome,
-          total_expenses: totalExpenses,
-          stock_in: stockIn,
-          stock_out: stockOut,
-          profit: profit
+        // The function returns an array with one object, so take the first item
+        return data && data[0] ? data[0] : {
+          total_income: 0,
+          total_expenses: 0,
+          stock_in: 0,
+          stock_out: 0,
+          profit: 0
         };
       } catch (error) {
         console.error("Error fetching stock summary:", error);

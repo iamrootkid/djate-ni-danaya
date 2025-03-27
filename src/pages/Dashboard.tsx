@@ -54,6 +54,7 @@ const Dashboard = () => {
     queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
     queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
     queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId] });
   }, [shopId, queryClient]);
 
   const handleFilterChange = (filter: "all" | "daily" | "monthly") => {
