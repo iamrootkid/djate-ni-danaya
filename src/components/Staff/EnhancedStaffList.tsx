@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -30,31 +28,13 @@ type StaffMember = {
   updated_at: string;
 };
 
-// Define Department type with shop_id as nullable to match actual data structure
-type Department = {
-  id: string;
-  created_at: string;
-  name: string;
-  description: string | null;
-  shop_id: string | null;  // Nullable to match database
-};
-
-// Define a union type for items that can be edited or deleted
-type StaffOrDepartment = StaffMember | Department;
-
-// Type guard to check if an item is a StaffMember
-function isStaffMember(item: StaffOrDepartment): item is StaffMember {
-  return 'first_name' in item && 'last_name' in item;
-}
-
 interface EnhancedStaffListProps {
-  onEdit: (item: StaffOrDepartment) => void;
-  onDelete: (item: StaffOrDepartment) => void;
+  onEdit: (item: StaffMember) => void;
+  onDelete: (item: StaffMember) => void;
 }
 
 export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) => {
   const { shopId } = useShopId();
-  const [activeTab, setActiveTab] = useState("employees");
 
   const { data: staff, isLoading } = useQuery({
     queryKey: ["staff", shopId],
@@ -73,32 +53,6 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
     enabled: !!shopId,
   });
 
-  const { data: departments } = useQuery({
-    queryKey: ["departments", shopId],
-    queryFn: async () => {
-      if (!shopId) return [];
-      
-      const { data, error } = await supabase
-        .from("departments")
-        .select("*")
-        .eq("shop_id", shopId)
-        .order("name", { ascending: true });
-
-      if (error) throw error;
-      
-      // Using a type assertion with an optional transform to handle missing shop_id
-      return (data || []).map(item => ({
-        id: item.id,
-        created_at: item.created_at,
-        name: item.name,
-        description: item.description,
-        // Using optional chaining to handle the case where shop_id might not exist
-        shop_id: item.shop_id || null
-      })) as Department[];
-    },
-    enabled: !!shopId,
-  });
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.toLocaleDateString('fr-FR', { 
@@ -112,130 +66,69 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
   }
 
   return (
-    <Tabs defaultValue="employees" onValueChange={setActiveTab} className="w-full">
-      <TabsList>
-        <TabsTrigger value="employees">Employees</TabsTrigger>
-        <TabsTrigger value="departments">Departments</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="employees" className="pt-4">
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Stock Managed</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Stock Managed</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {!staff?.length ? (
+            <TableRow>
+              <TableCell colSpan={7} className="h-24 text-center">
+                No employees found
+              </TableCell>
+            </TableRow>
+          ) : (
+            staff.map((member) => (
+              <TableRow key={member.id}>
+                <TableCell className="font-medium">
+                  {`${member.first_name} ${member.last_name}`}
+                </TableCell>
+                <TableCell>{member.email}</TableCell>
+                <TableCell>
+                  <Badge variant={member.role === 'admin' ? 'secondary' : 'outline'}>
+                    {member.role === 'admin' ? 'Admin' : 'Employee'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="success" className="bg-green-500 hover:bg-green-600">
+                    Active
+                  </Badge>
+                </TableCell>
+                <TableCell>43 units</TableCell>
+                <TableCell>{formatDate(member.created_at)}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEdit(member)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDelete(member)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!staff?.length ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
-                    No employees found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                staff.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">
-                      {`${member.first_name} ${member.last_name}`}
-                    </TableCell>
-                    <TableCell>{member.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={member.role === 'admin' ? 'secondary' : 'outline'}>
-                        {member.role === 'admin' ? 'Admin' : 'Employee'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>N/A</TableCell>
-                    <TableCell>
-                      <Badge variant="success" className="bg-green-500 hover:bg-green-600">
-                        Active
-                      </Badge>
-                    </TableCell>
-                    <TableCell>43 units</TableCell>
-                    <TableCell>{formatDate(member.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEdit(member)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onDelete(member)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="departments" className="pt-4">
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Number of Employees</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!departments?.length ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    No departments found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                departments.map((department) => (
-                  <TableRow key={department.id}>
-                    <TableCell className="font-medium">{department.name}</TableCell>
-                    <TableCell>{department.description || "No description"}</TableCell>
-                    <TableCell>0</TableCell> {/* This would need data linking staff to departments */}
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEdit(department)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onDelete(department)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </TabsContent>
-    </Tabs>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 

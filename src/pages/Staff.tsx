@@ -12,7 +12,6 @@ import { Database } from "@/types/supabase";
 import { EnhancedStaffList } from "@/components/Staff/EnhancedStaffList";
 
 type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
-type Department = Database["public"]["Tables"]["departments"]["Row"];
 
 interface StaffEditData {
   first_name: string;
@@ -22,18 +21,10 @@ interface StaffEditData {
   password?: string;
 }
 
-interface DepartmentData {
-  name: string;
-  description: string;
-}
-
 const Staff = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<StaffMember | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
-  const [deleteDepartmentDialogOpen, setDeleteDepartmentDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { shopId } = useShopId();
@@ -100,77 +91,6 @@ const Staff = () => {
     }
   };
 
-  const handleDepartmentSave = async (data: DepartmentData) => {
-    if (!shopId) return;
-
-    try {
-      if (selectedDepartment) {
-        const { error } = await supabase
-          .from("departments")
-          .update({
-            name: data.name,
-            description: data.description,
-          })
-          .match({ id: selectedDepartment.id, shop_id: shopId });
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("departments")
-          .insert({
-            name: data.name,
-            description: data.description,
-            shop_id: shopId
-          });
-
-        if (error) throw error;
-      }
-
-      toast({
-        title: "Success",
-        description: `Department ${selectedDepartment ? "updated" : "added"} successfully`,
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ["departments", shopId] });
-      setDepartmentDialogOpen(false);
-      setSelectedDepartment(null);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || `Failed to ${selectedDepartment ? "update" : "add"} department`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDepartmentDelete = async () => {
-    if (!selectedDepartment || !shopId) return;
-
-    try {
-      const { error } = await supabase
-        .from("departments")
-        .delete()
-        .match({ id: selectedDepartment.id, shop_id: shopId });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Department deleted successfully",
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ["departments", shopId] });
-      setDeleteDepartmentDialogOpen(false);
-      setSelectedDepartment(null);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete department",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (!shopId) {
     return (
       <AppLayout>
@@ -181,28 +101,6 @@ const Staff = () => {
     );
   }
 
-  const handleEditAction = (item: StaffMember | Department) => {
-    // Check if it's a staff member or department based on properties
-    if ('first_name' in item) {
-      setSelectedEmployee(item as StaffMember);
-      setEditDialogOpen(true);
-    } else {
-      setSelectedDepartment(item as Department);
-      setDepartmentDialogOpen(true);
-    }
-  };
-  
-  const handleDeleteAction = (item: StaffMember | Department) => {
-    // Check if it's a staff member or department based on properties
-    if ('first_name' in item) {
-      setSelectedEmployee(item as StaffMember);
-      setDeleteDialogOpen(true);
-    } else {
-      setSelectedDepartment(item as Department);
-      setDeleteDepartmentDialogOpen(true);
-    }
-  };
-
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -211,8 +109,11 @@ const Staff = () => {
         <Card>
           <CardContent className="pt-6">
             <EnhancedStaffList 
-              onEdit={handleEditAction}
-              onDelete={handleDeleteAction}
+              onEdit={setSelectedEmployee}
+              onDelete={(employee) => {
+                setSelectedEmployee(employee);
+                setDeleteDialogOpen(true);
+              }}
             />
           </CardContent>
         </Card>
@@ -232,19 +133,6 @@ const Staff = () => {
         }}
         onSaveEdit={handleEdit}
         selectedEmployee={selectedEmployee}
-        departmentDialogOpen={departmentDialogOpen}
-        onCloseDepartmentDialog={() => {
-          setDepartmentDialogOpen(false);
-          setSelectedDepartment(null);
-        }}
-        onSaveDepartment={handleDepartmentSave}
-        selectedDepartment={selectedDepartment}
-        deleteDepartmentDialogOpen={deleteDepartmentDialogOpen}
-        onCloseDepartmentDeleteDialog={() => {
-          setDeleteDepartmentDialogOpen(false);
-          setSelectedDepartment(null);
-        }}
-        onConfirmDepartmentDelete={handleDepartmentDelete}
       />
     </AppLayout>
   );

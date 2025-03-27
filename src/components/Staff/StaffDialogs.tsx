@@ -1,6 +1,6 @@
+
 import { DeleteDialog } from "@/components/ui/DeleteDialog";
 import { StaffActions } from "./StaffActions";
-import { DepartmentDialog } from "./DepartmentDialog";
 
 interface StaffDialogsProps {
   deleteDialogOpen: boolean;
@@ -10,13 +10,6 @@ interface StaffDialogsProps {
   onCloseEditDialog: () => void;
   onSaveEdit: (data: any) => void;
   selectedEmployee: any;
-  departmentDialogOpen: boolean;
-  onCloseDepartmentDialog: () => void;
-  onSaveDepartment: (data: any) => void;
-  selectedDepartment: any;
-  deleteDepartmentDialogOpen: boolean;
-  onCloseDepartmentDeleteDialog: () => void;
-  onConfirmDepartmentDelete: () => void;
 }
 
 export const StaffDialogs = ({
@@ -27,13 +20,6 @@ export const StaffDialogs = ({
   onCloseEditDialog,
   onSaveEdit,
   selectedEmployee,
-  departmentDialogOpen,
-  onCloseDepartmentDialog,
-  onSaveDepartment,
-  selectedDepartment,
-  deleteDepartmentDialogOpen,
-  onCloseDepartmentDeleteDialog,
-  onConfirmDepartmentDelete,
 }: StaffDialogsProps) => {
   return (
     <>
@@ -53,21 +39,6 @@ export const StaffDialogs = ({
           employee={selectedEmployee}
         />
       )}
-
-      <DepartmentDialog
-        isOpen={departmentDialogOpen}
-        onClose={onCloseDepartmentDialog}
-        onSave={onSaveDepartment}
-        department={selectedDepartment}
-      />
-
-      <DeleteDialog
-        isOpen={deleteDepartmentDialogOpen}
-        onClose={onCloseDepartmentDeleteDialog}
-        onConfirm={onConfirmDepartmentDelete}
-        title="Delete Department"
-        description="Are you sure you want to delete this department? This action cannot be undone."
-      />
     </>
   );
 };
