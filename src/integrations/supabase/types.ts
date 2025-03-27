@@ -384,7 +384,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "shops"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       shops: {
@@ -507,6 +507,20 @@ export type Database = {
             Args: {
               start_date: string
               filter_type: string
+            }
+            Returns: {
+              total_income: number
+              total_expenses: number
+              stock_in: number
+              stock_out: number
+              profit: number
+            }[]
+          }
+        | {
+            Args: {
+              start_date: string
+              filter_type: string
+              shop_id: string
             }
             Returns: {
               total_income: number

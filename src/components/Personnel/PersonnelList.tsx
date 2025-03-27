@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
@@ -86,4 +87,4 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
       </TableBody>
     </Table>
   );
-}; 
+};
