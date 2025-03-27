@@ -30,6 +30,12 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
         // Format the date for filtering
         const startDateStr = startDate.toISOString();
         
+        console.log("Fetching stock summary with params:", {
+          shop_id: shopId,
+          start_date: startDateStr,
+          filter_type: dateFilter
+        });
+        
         // Call the get_stock_summary function using RPC
         const { data, error } = await supabase.rpc(
           'get_stock_summary',
@@ -45,8 +51,11 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
           throw error;
         }
         
+        // Log the result for debugging
+        console.log("Stock summary response:", data);
+        
         // The function returns an array with one object, so take the first item
-        return data && data[0] ? data[0] : {
+        return data && data.length > 0 ? data[0] : {
           total_income: 0,
           total_expenses: 0,
           stock_in: 0,
