@@ -11,7 +11,7 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { DashboardInvoices } from "@/components/Dashboard/DashboardInvoices";
 import { ProductStockStatus } from "@/components/Dashboard/ProductStockStatus";
 import { BestSellingProducts } from "@/components/Dashboard/BestSellingProducts";
-import { StockSummary } from "@/components/Dashboard/StockSummary";
+// Removed StockSummary import
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { useRecentOrders } from "@/hooks/use-recent-orders";
 import { useShopId } from "@/hooks/use-shop-id";
@@ -191,7 +191,7 @@ const Dashboard = () => {
           <BestSellingProducts />
         </div>
 
-        <StockSummary dateFilter={dateFilter} startDate={startDate} />
+        {/* Removed StockSummary component */}
 
         <RecentOrders orders={recentOrders || []} />
       </div>
