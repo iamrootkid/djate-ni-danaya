@@ -30,6 +30,7 @@ type StaffMember = {
   updated_at: string;
 };
 
+// Define Department type with shop_id as nullable to match actual data structure
 type Department = {
   id: string;
   created_at: string;
