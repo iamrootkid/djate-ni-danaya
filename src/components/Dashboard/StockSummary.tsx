@@ -56,56 +56,42 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
         }
       }
       
-      // Get sale items for stock movement calculation
-      const saleItemsQuery = supabase
-        .from("sale_items")
-        .select("quantity, sale_id")
-        .in("sale_id", supabase.from("sales").select("id").eq("shop_id", shopId));
+      // Execute initial queries to get sales IDs
+      const { data: salesData, error: salesError } = await salesQuery;
       
-      if (dateFilter !== "all") {
-        const start = startDate.toISOString();
-        if (dateFilter === "daily") {
-          const nextDay = new Date(startDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          // We don't filter sale_items directly by date since they don't have shop_id
-          // Instead, we filter by sales that are in the date range
-          saleItemsQuery.in(
-            "sale_id",
-            supabase
-              .from("sales")
-              .select("id")
-              .eq("shop_id", shopId)
-              .gte("created_at", start)
-              .lt("created_at", nextDay.toISOString())
-          );
-        } else if (dateFilter === "monthly") {
-          const nextMonth = new Date(startDate);
-          nextMonth.setMonth(nextMonth.getMonth() + 1);
-          saleItemsQuery.in(
-            "sale_id",
-            supabase
-              .from("sales")
-              .select("id")
-              .eq("shop_id", shopId)
-              .gte("created_at", start)
-              .lt("created_at", nextMonth.toISOString())
-          );
-        }
+      if (salesError) {
+        console.error("Error fetching sales data:", salesError);
+        throw new Error("Failed to fetch sales data");
+      }
+      
+      const saleIds = salesData.map(sale => sale.id);
+      
+      // Get sale items for stock movement calculation
+      let saleItemsQuery = supabase
+        .from("sale_items")
+        .select("quantity, sale_id");
+      
+      // Only filter by sale_id if we have sales
+      if (saleIds.length > 0) {
+        saleItemsQuery = saleItemsQuery.in('sale_id', saleIds);
+      } else {
+        // No sales means no sale items, so we can just return empty data
+        return {
+          total_income: 0,
+          total_expenses: 0,
+          stock_in: 0,
+          stock_out: 0,
+          profit: 0
+        };
       }
       
       console.log("Executing stock summary queries with filter:", dateFilter);
       
-      // Execute all queries
-      const [salesResult, expensesResult, saleItemsResult] = await Promise.all([
-        salesQuery,
+      // Execute remaining queries
+      const [expensesResult, saleItemsResult] = await Promise.all([
         expensesQuery,
         saleItemsQuery
       ]);
-      
-      if (salesResult.error) {
-        console.error("Error fetching sales data:", salesResult.error);
-        throw new Error("Failed to fetch sales data");
-      }
       
       if (expensesResult.error) {
         console.error("Error fetching expenses data:", expensesResult.error);
@@ -118,7 +104,7 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
       }
       
       // Calculate total income
-      const totalIncome = salesResult.data?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
+      const totalIncome = salesData.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
       
       // Calculate total expenses
       const totalExpenses = expensesResult.data?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0;
