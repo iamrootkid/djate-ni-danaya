@@ -16,10 +16,27 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Database } from "@/types/supabase";
 
-type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
-type Department = Database["public"]["Tables"]["departments"]["Row"];
+// Explicitly define the types to prevent recursive type instantiation
+type StaffMember = {
+  id: string;
+  created_at: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  shop_id: string | null;
+  updated_at: string;
+};
+
+type Department = {
+  id: string;
+  created_at: string;
+  name: string;
+  description: string | null;
+  shop_id: string;
+};
 
 interface EnhancedStaffListProps {
   onEdit: (item: StaffMember | Department) => void;
