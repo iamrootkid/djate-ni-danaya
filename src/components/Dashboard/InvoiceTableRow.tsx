@@ -1,3 +1,4 @@
+
 import { InvoiceData } from "@/hooks/use-dashboard-invoices";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
@@ -20,6 +21,7 @@ export const InvoiceTableRow = ({ invoice }: InvoiceTableRowProps) => {
   return (
     <TableRow>
       <TableCell>{invoice.invoice_number}</TableCell>
+      <TableCell>{invoice.customer_name || "Client inconnu"}</TableCell>
       <TableCell>{invoice.employee_email || "Email inconnu"}</TableCell>
       <TableCell>{formattedDate}</TableCell>
       <TableCell>{formattedTime}</TableCell>

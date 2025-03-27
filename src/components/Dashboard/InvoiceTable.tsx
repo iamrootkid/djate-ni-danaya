@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InvoiceTableRow } from "./InvoiceTableRow";
 import { InvoiceTableSkeleton } from "./InvoiceTableSkeleton";
@@ -14,6 +15,7 @@ export const InvoiceTable = ({ invoices, isLoading }: InvoiceTableProps) => {
       <TableHeader>
         <TableRow>
           <TableHead>N° Facture</TableHead>
+          <TableHead>Client</TableHead>
           <TableHead>Employé</TableHead>
           <TableHead>Date</TableHead>
           <TableHead>Heure</TableHead>
@@ -30,7 +32,7 @@ export const InvoiceTable = ({ invoices, isLoading }: InvoiceTableProps) => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                 Aucune facture récente trouvée
               </TableCell>
             </TableRow>
