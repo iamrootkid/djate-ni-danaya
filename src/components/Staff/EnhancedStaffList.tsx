@@ -30,9 +30,18 @@ interface StaffMember {
   department?: string;
 }
 
+interface Department {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  shop_id: string;
+}
+
 interface EnhancedStaffListProps {
-  onEdit: (staff: StaffMember) => void;
-  onDelete: (staff: StaffMember) => void;
+  onEdit: (staff: StaffMember | Department) => void;
+  onDelete: (staff: StaffMember | Department) => void;
 }
 
 export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) => {
@@ -68,7 +77,7 @@ export const EnhancedStaffList = ({ onEdit, onDelete }: EnhancedStaffListProps) 
         .order("name", { ascending: true });
 
       if (error) throw error;
-      return data;
+      return data as Department[];
     },
     enabled: !!shopId,
   });

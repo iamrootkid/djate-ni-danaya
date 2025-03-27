@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -180,6 +181,28 @@ const Staff = () => {
     );
   }
 
+  const handleEditAction = (item: StaffMember | Department) => {
+    // Check if it's a staff member or department based on properties
+    if ('first_name' in item) {
+      setSelectedEmployee(item as StaffMember);
+      setEditDialogOpen(true);
+    } else {
+      setSelectedDepartment(item as Department);
+      setDepartmentDialogOpen(true);
+    }
+  };
+  
+  const handleDeleteAction = (item: StaffMember | Department) => {
+    // Check if it's a staff member or department based on properties
+    if ('first_name' in item) {
+      setSelectedEmployee(item as StaffMember);
+      setDeleteDialogOpen(true);
+    } else {
+      setSelectedDepartment(item as Department);
+      setDeleteDepartmentDialogOpen(true);
+    }
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -188,14 +211,8 @@ const Staff = () => {
         <Card>
           <CardContent className="pt-6">
             <EnhancedStaffList 
-              onEdit={(employee) => {
-                setSelectedEmployee(employee);
-                setEditDialogOpen(true);
-              }}
-              onDelete={(employee) => {
-                setSelectedEmployee(employee);
-                setDeleteDialogOpen(true);
-              }}
+              onEdit={handleEditAction}
+              onDelete={handleDeleteAction}
             />
           </CardContent>
         </Card>
