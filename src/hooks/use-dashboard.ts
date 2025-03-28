@@ -6,7 +6,7 @@ import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { useRecentOrders } from "@/hooks/use-recent-orders";
 import { useShopId } from "@/hooks/use-shop-id";
 
-export type DateFilter = "all" | "daily" | "monthly";
+export type DateFilter = "all" | "daily" | "monthly" | "yesterday";
 
 export const useDashboard = () => {
   const [userRole, setUserRole] = useState<"admin" | "employee">("employee");
@@ -63,6 +63,8 @@ export const useDashboard = () => {
     } else if (filter === "monthly") {
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       setStartDate(firstDayOfMonth);
+    } else if (filter === "yesterday") {
+      setStartDate(today); // The yesterday filter will calculate yesterday based on today
     }
 
     queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });

@@ -1,14 +1,17 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
+import { useShopId } from "./use-shop-id";
+import { DateFilter } from "./use-dashboard";
 
 export interface SalesData {
   date: string;
   total: number;
 }
 
-export const useDashboardSales = (dateFilter: "all" | "daily" | "monthly" = "all", startDate: Date = new Date()) => {
-  const shopId = localStorage.getItem("shopId");
+export const useDashboardSales = (dateFilter: DateFilter = "all", startDate: Date = new Date()) => {
+  const { shopId } = useShopId();
 
   return useQuery({
     queryKey: ["dashboard_sales", dateFilter, startDate, shopId],
@@ -23,20 +26,25 @@ export const useDashboardSales = (dateFilter: "all" | "daily" | "monthly" = "all
       
       if (dateFilter === "daily") {
         // For daily, get data for the selected day
-        const dayStart = new Date(startDate);
-        dayStart.setHours(0, 0, 0, 0);
-        
-        const dayEnd = new Date(startDate);
-        dayEnd.setHours(23, 59, 59, 999);
+        const dayStart = startOfDay(startDate);
+        const dayEnd = endOfDay(startDate);
         
         query = query
           .gte("created_at", dayStart.toISOString())
           .lte("created_at", dayEnd.toISOString());
-          
+      } else if (dateFilter === "yesterday") {
+        // For yesterday, get data for the previous day
+        const yesterday = subDays(startDate, 1);
+        const dayStart = startOfDay(yesterday);
+        const dayEnd = endOfDay(yesterday);
+        
+        query = query
+          .gte("created_at", dayStart.toISOString())
+          .lte("created_at", dayEnd.toISOString());
       } else if (dateFilter === "monthly") {
         // For monthly, get data for the selected month
-        const monthStart = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-        const monthEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
+        const monthStart = startOfMonth(startDate);
+        const monthEnd = endOfMonth(startDate);
         
         query = query
           .gte("created_at", monthStart.toISOString())
@@ -57,7 +65,7 @@ export const useDashboardSales = (dateFilter: "all" | "daily" | "monthly" = "all
       }
       
       // Process and format the sales data for display
-      if (dateFilter === "daily") {
+      if (dateFilter === "daily" || dateFilter === "yesterday") {
         // For daily data, show hourly intervals
         const hourlyData: Record<string, number> = {};
         

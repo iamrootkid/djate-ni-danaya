@@ -1,11 +1,13 @@
+
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateFilter } from "@/hooks/use-dashboard";
 
 interface DashboardHeaderProps {
-  dateFilter: "all" | "daily" | "monthly";
+  dateFilter: DateFilter;
   startDate: Date;
-  handleFilterChange: (filter: "all" | "daily" | "monthly") => void;
+  handleFilterChange: (filter: DateFilter) => void;
   setStartDate: (date: Date) => void;
   userRole: "admin" | "employee";
 }
@@ -28,7 +30,7 @@ export const DashboardHeader = ({
       <div className="flex items-center gap-4">
         <Select
           value={dateFilter}
-          onValueChange={(value: "all" | "daily" | "monthly") =>
+          onValueChange={(value: DateFilter) =>
             handleFilterChange(value)
           }
         >
@@ -37,8 +39,9 @@ export const DashboardHeader = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toutes les données</SelectItem>
-            <SelectItem value="daily">Quotidien</SelectItem>
-            <SelectItem value="monthly">Mensuel</SelectItem>
+            <SelectItem value="daily">Aujourd'hui</SelectItem>
+            <SelectItem value="yesterday">Hier</SelectItem>
+            <SelectItem value="monthly">Ce mois</SelectItem>
           </SelectContent>
         </Select>
         {dateFilter !== "all" && (

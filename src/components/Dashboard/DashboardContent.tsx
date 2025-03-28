@@ -46,7 +46,7 @@ export function DashboardContent({
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <ProductStockStatus />
-        <BestSellingProducts />
+        <BestSellingProducts dateFilter={dateFilter} startDate={startDate} />
       </div>
 
       <RecentOrders orders={recentOrders || []} />

@@ -1,10 +1,12 @@
+
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardSales, SalesData } from "@/hooks/use-dashboard-sales";
+import { DateFilter } from "@/hooks/use-dashboard";
 
 interface SalesChartProps {
-  dateFilter?: "all" | "daily" | "monthly";
+  dateFilter?: DateFilter;
   startDate?: Date;
 }
 
@@ -16,12 +18,27 @@ export const SalesChart = ({ dateFilter = "all", startDate = new Date() }: Sales
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " F";
   };
 
+  // Get title description based on date filter
+  const getChartDescription = () => {
+    switch (dateFilter) {
+      case "daily":
+        return "Ventes par heure aujourd'hui";
+      case "yesterday":
+        return "Ventes par heure hier";
+      case "monthly":
+        return "Ventes quotidiennes ce mois";
+      case "all":
+      default:
+        return "Tendance des ventes récentes";
+    }
+  };
+
   if (isLoading) {
     return (
       <Card className="col-span-4">
         <CardHeader>
           <CardTitle>Aperçu des ventes</CardTitle>
-          <CardDescription>Tendances des ventes au fil du temps.</CardDescription>
+          <CardDescription>{getChartDescription()}</CardDescription>
         </CardHeader>
         <CardContent>
           <Skeleton className="w-full h-[300px]" />
@@ -35,7 +52,7 @@ export const SalesChart = ({ dateFilter = "all", startDate = new Date() }: Sales
       <Card className="col-span-4">
         <CardHeader>
           <CardTitle>Aperçu des ventes</CardTitle>
-          <CardDescription>Tendances des ventes au fil du temps.</CardDescription>
+          <CardDescription>{getChartDescription()}</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-destructive">Erreur lors du chargement des données de vente.</p>
@@ -48,13 +65,7 @@ export const SalesChart = ({ dateFilter = "all", startDate = new Date() }: Sales
     <Card className="col-span-4">
       <CardHeader>
         <CardTitle>Aperçu des ventes</CardTitle>
-        <CardDescription>
-          {dateFilter === "daily" 
-            ? "Ventes par heure aujourd'hui"
-            : dateFilter === "monthly"
-            ? "Ventes quotidiennes ce mois"
-            : "Tendance des ventes récentes"}
-        </CardDescription>
+        <CardDescription>{getChartDescription()}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

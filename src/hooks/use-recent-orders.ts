@@ -1,7 +1,9 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { useShopId } from "./use-shop-id";
+import { DateFilter } from "./use-dashboard";
 
 interface RecentOrder {
   id: string;
@@ -16,7 +18,7 @@ interface RecentOrder {
   }>;
 }
 
-export const useRecentOrders = (dateFilter: "all" | "daily" | "monthly" | "yesterday", startDate: Date) => {
+export const useRecentOrders = (dateFilter: DateFilter, startDate: Date) => {
   const { shopId } = useShopId();
 
   return useQuery<RecentOrder[]>({
