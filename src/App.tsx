@@ -36,10 +36,8 @@ const ProtectedRoute = ({ children, allowedRoles = ["employee", "admin"] }: Prot
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for shop ID in localStorage
     const storedShopId = localStorage.getItem('shopId');
     if (!storedShopId) {
-      // Redirect to login if no shop ID is found
       setLoading(false);
       return;
     }
@@ -58,7 +56,6 @@ const ProtectedRoute = ({ children, allowedRoles = ["employee", "admin"] }: Prot
             if (data) {
               setUserRole(data.role || null);
               
-              // Verify shop_id matches what's in the profile
               if (data.shop_id !== storedShopId) {
                 console.error("Shop ID mismatch, clearing session");
                 localStorage.removeItem('shopId');
@@ -88,7 +85,6 @@ const ProtectedRoute = ({ children, allowedRoles = ["employee", "admin"] }: Prot
         if (data) {
           setUserRole(data.role || null);
           
-          // Verify shop_id matches what's in the profile
           if (data.shop_id !== storedShopId) {
             console.error("Shop ID mismatch in auth state change");
             localStorage.removeItem('shopId');
