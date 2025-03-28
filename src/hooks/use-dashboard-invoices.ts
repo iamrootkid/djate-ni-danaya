@@ -231,16 +231,18 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
                 return null;
               }
               
-              return {
+              const result: InvoiceData = {
                 id: invoice.id,
                 invoice_number: invoice.invoice_number,
-                customer_name: invoice.customer_name,
+                customer_name: invoice.customer_name || "Client inconnu",
                 created_at: invoice.created_at,
                 total_amount: sale.total_amount || 0,
                 sale_id: invoice.sale_id,
                 employee_email: sale.employee?.email || "Email inconnu"
               };
-            }).filter(Boolean) as InvoiceData[];
+              
+              return result;
+            }).filter((invoice): invoice is InvoiceData => invoice !== null);
           } else {
             console.error("Error fetching invoices:", error);
             throw error;
@@ -276,17 +278,19 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             return null;
           }
 
-          return {
+          const result: InvoiceData = {
             id: invoice.id,
             invoice_number: invoice.invoice_number,
-            customer_name: invoice.customer_name,
+            customer_name: invoice.customer_name || "Client inconnu",
             customer_phone: 'customer_phone' in invoice ? invoice.customer_phone : undefined,
             created_at: invoice.created_at,
             total_amount: sale.total_amount || 0,
             sale_id: invoice.sale_id,
             employee_email: sale.employee?.email || "Email inconnu"
           };
-        }).filter(Boolean) as InvoiceData[];
+          
+          return result;
+        }).filter((invoice): invoice is InvoiceData => invoice !== null);
       } catch (error) {
         console.error("Error in useDashboardInvoices:", error);
         return [];
