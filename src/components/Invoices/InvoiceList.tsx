@@ -19,9 +19,30 @@ interface InvoiceListProps {
   endDate: Date | null;
 }
 
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  customer_name: string;
+  customer_phone?: string;
+  created_at: string;
+  updated_at: string;
+  shop_id: string;
+  sale_id: string;
+  sales: {
+    total_amount: number;
+    shop_id: string;
+    sale_items: Array<{
+      quantity: number;
+      price_at_sale: number;
+      product_id: string;
+      products: { name: string };
+    }>;
+  };
+}
+
 export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps) => {
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [modifyingInvoice, setModifyingInvoice] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [modifyingInvoice, setModifyingInvoice] = useState<Invoice | null>(null);
   const { toast } = useToast();
   const { shopId } = useShopId();
   const queryClient = useQueryClient();
@@ -77,89 +98,98 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
 
       console.log("Fetching invoices for verified shop:", shopId);
 
-      // Check if customer_phone column exists
-      const { data: columnExists } = await supabase.rpc('check_column_exists', {
-        table_name: 'invoices',
-        column_name: 'customer_phone'
-      });
-      
-      const hasCustomerPhone = !!columnExists;
-      console.log("Does invoices table have customer_phone column?", hasCustomerPhone);
+      try {
+        // Check if customer_phone column exists
+        const { data: columnExists, error: columnCheckError } = await supabase.rpc('check_column_exists', {
+          table_name: 'invoices',
+          column_name: 'customer_phone'
+        });
+        
+        if (columnCheckError) {
+          console.error("Error checking column existence:", columnCheckError);
+          throw columnCheckError;
+        }
+        
+        const hasCustomerPhone = !!columnExists;
+        console.log("Does invoices table have customer_phone column?", hasCustomerPhone);
 
-      let selectQuery = `
-        *,
-        sales!inner (
-          total_amount,
-          shop_id,
-          sale_items (
-            quantity,
-            price_at_sale,
-            product_id,
-            products (
-              name
+        let query = supabase
+          .from("invoices")
+          .select(`
+            *,
+            sales!inner (
+              total_amount,
+              shop_id,
+              sale_items (
+                quantity,
+                price_at_sale,
+                product_id,
+                products (
+                  name
+                )
+              )
             )
-          )
-        )
-      `;
+          `)
+          .eq("shop_id", shopId)
+          .eq("sales.shop_id", shopId)
+          .order("created_at", { ascending: false });
 
-      let query = supabase
-        .from("invoices")
-        .select(selectQuery)
-        .eq("shop_id", shopId)
-        .eq("sales.shop_id", shopId)
-        .order("created_at", { ascending: false });
-
-      if (dateFilter === "daily" && startDate) {
-        query = query.gte("created_at", startOfDay(startDate).toISOString())
-          .lte("created_at", endOfDay(startDate).toISOString());
-      } else if (dateFilter === "monthly" && startDate) {
-        query = query.gte("created_at", startOfMonth(startDate).toISOString())
-          .lte("created_at", endOfMonth(startDate).toISOString());
-      } else if (startDate && endDate) {
-        query = query.gte("created_at", startOfDay(startDate).toISOString())
-          .lte("created_at", endOfDay(endDate).toISOString());
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        console.error("Error fetching invoices:", error);
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        console.log("No invoices found for shop:", shopId);
-        return [];
-      }
-
-      console.log("Raw invoice data for shop:", shopId, data);
-
-      return data.map(invoice => {
-        const sale = invoice.sales as {
-          total_amount: number;
-          shop_id: string;
-          sale_items: Array<{
-            quantity: number;
-            price_at_sale: number;
-            product_id: string;
-            products: { name: string };
-          }>;
-        };
-
-        // Double check shop ID match
-        if (sale.shop_id !== shopId) {
-          console.warn("Shop ID mismatch:", {
-            invoiceShopId: invoice.shop_id,
-            saleShopId: sale.shop_id,
-            expectedShopId: shopId
-          });
-          return null;
+        if (dateFilter === "daily" && startDate) {
+          query = query.gte("created_at", startOfDay(startDate).toISOString())
+            .lte("created_at", endOfDay(startDate).toISOString());
+        } else if (dateFilter === "monthly" && startDate) {
+          query = query.gte("created_at", startOfMonth(startDate).toISOString())
+            .lte("created_at", endOfMonth(startDate).toISOString());
+        } else if (startDate && endDate) {
+          query = query.gte("created_at", startOfDay(startDate).toISOString())
+            .lte("created_at", endOfDay(endDate).toISOString());
         }
 
-        return {
-          ...invoice,
-          sales: sale
-        };
-      }).filter(Boolean);
+        const { data, error } = await query;
+        if (error) {
+          console.error("Error fetching invoices:", error);
+          throw error;
+        }
+
+        if (!data || data.length === 0) {
+          console.log("No invoices found for shop:", shopId);
+          return [];
+        }
+
+        console.log("Raw invoice data for shop:", shopId, data);
+
+        return data.map(invoice => {
+          const sale = invoice.sales as {
+            total_amount: number;
+            shop_id: string;
+            sale_items: Array<{
+              quantity: number;
+              price_at_sale: number;
+              product_id: string;
+              products: { name: string };
+            }>;
+          };
+
+          // Double check shop ID match
+          if (sale.shop_id !== shopId) {
+            console.warn("Shop ID mismatch:", {
+              invoiceShopId: invoice.shop_id,
+              saleShopId: sale.shop_id,
+              expectedShopId: shopId
+            });
+            return null;
+          }
+
+          // Return the invoice with properly typed properties
+          return {
+            ...invoice,
+            sales: sale
+          } as Invoice;
+        }).filter(Boolean) as Invoice[];
+      } catch (error) {
+        console.error("Error processing invoices:", error);
+        return [];
+      }
     },
     enabled: !!shopId
   });

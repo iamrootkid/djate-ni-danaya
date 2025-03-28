@@ -82,141 +82,151 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
 
       console.log("Fetching invoices for verified shop:", shopId, "with filter:", dateFilter);
 
-      // First check if customer_phone column exists
-      const { data: columnExists } = await supabase.rpc('check_column_exists', {
-        table_name: 'invoices',
-        column_name: 'customer_phone'
-      });
-      
-      const hasCustomerPhone = !!columnExists;
-      console.log("Does invoices table have customer_phone column?", hasCustomerPhone);
+      try {
+        // First check if customer_phone column exists
+        const { data: columnExists, error: columnCheckError } = await supabase.rpc('check_column_exists', {
+          table_name: 'invoices',
+          column_name: 'customer_phone'
+        });
+        
+        if (columnCheckError) {
+          console.error("Error checking column existence:", columnCheckError);
+          throw columnCheckError;
+        }
+        
+        const hasCustomerPhone = !!columnExists;
+        console.log("Does invoices table have customer_phone column?", hasCustomerPhone);
 
-      let query;
-      
-      if (hasCustomerPhone) {
-        query = supabase
-          .from("invoices")
-          .select(`
-            id,
-            invoice_number,
-            customer_name,
-            customer_phone,
-            created_at,
-            sale_id,
-            shop_id,
-            sales!inner (
-              total_amount,
+        let query;
+        
+        if (hasCustomerPhone) {
+          query = supabase
+            .from("invoices")
+            .select(`
+              id,
+              invoice_number,
+              customer_name,
+              customer_phone,
+              created_at,
+              sale_id,
               shop_id,
-              employee:profiles!inner (
-                email
+              sales!inner (
+                total_amount,
+                shop_id,
+                employee:profiles!inner (
+                  email
+                )
               )
-            )
-          `)
-          .eq("shop_id", shopId)
-          .eq("sales.shop_id", shopId);
-      } else {
-        query = supabase
-          .from("invoices")
-          .select(`
-            id,
-            invoice_number,
-            customer_name,
-            created_at,
-            sale_id,
-            shop_id,
-            sales!inner (
-              total_amount,
+            `)
+            .eq("shop_id", shopId)
+            .eq("sales.shop_id", shopId);
+        } else {
+          query = supabase
+            .from("invoices")
+            .select(`
+              id,
+              invoice_number,
+              customer_name,
+              created_at,
+              sale_id,
               shop_id,
-              employee:profiles!inner (
-                email
+              sales!inner (
+                total_amount,
+                shop_id,
+                employee:profiles!inner (
+                  email
+                )
               )
-            )
-          `)
-          .eq("shop_id", shopId)
-          .eq("sales.shop_id", shopId);
-      }
-
-      // Apply date filtering
-      if (dateFilter === "daily") {
-        const dayStart = startOfDay(startDate);
-        const dayEnd = endOfDay(startDate);
-        console.log("Daily filter dates:", {
-          start: dayStart.toISOString(),
-          end: dayEnd.toISOString()
-        });
-        query = query
-          .gte("created_at", dayStart.toISOString())
-          .lte("created_at", dayEnd.toISOString());
-      } else if (dateFilter === "yesterday") {
-        const yesterday = subDays(startDate, 1);
-        const dayStart = startOfDay(yesterday);
-        const dayEnd = endOfDay(yesterday);
-        console.log("Yesterday filter dates:", {
-          start: dayStart.toISOString(),
-          end: dayEnd.toISOString()
-        });
-        query = query
-          .gte("created_at", dayStart.toISOString())
-          .lte("created_at", dayEnd.toISOString());
-      } else if (dateFilter === "monthly") {
-        const monthStart = startOfMonth(startDate);
-        const monthEnd = endOfMonth(startDate);
-        console.log("Monthly filter dates:", {
-          start: monthStart.toISOString(),
-          end: monthEnd.toISOString()
-        });
-        query = query
-          .gte("created_at", monthStart.toISOString())
-          .lte("created_at", monthEnd.toISOString());
-      } else {
-        console.log("Fetching all invoices (no date filter)");
-      }
-
-      // Always order by most recent and limit to 5 results
-      query = query.order("created_at", { ascending: false }).limit(5);
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching invoices:", error);
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        console.log("No invoices found for shop:", shopId, "with filter:", dateFilter);
-        return [];
-      }
-
-      console.log(`Found ${data.length} invoices for shop:`, shopId);
-
-      return data.map(invoice => {
-        const sale = invoice.sales as {
-          total_amount: number;
-          shop_id: string;
-          employee: { email: string } | null;
-        };
-
-        // Double check shop ID match
-        if (sale.shop_id !== shopId) {
-          console.warn("Shop ID mismatch:", {
-            invoiceShopId: invoice.shop_id,
-            saleShopId: sale.shop_id,
-            expectedShopId: shopId
-          });
-          return null;
+            `)
+            .eq("shop_id", shopId)
+            .eq("sales.shop_id", shopId);
         }
 
-        return {
-          id: invoice.id,
-          invoice_number: invoice.invoice_number,
-          customer_name: invoice.customer_name,
-          customer_phone: hasCustomerPhone ? invoice.customer_phone : undefined,
-          created_at: invoice.created_at,
-          total_amount: sale.total_amount || 0,
-          sale_id: invoice.sale_id,
-          employee_email: sale.employee?.email || "Email inconnu"
-        };
-      }).filter(Boolean);
+        // Apply date filtering
+        if (dateFilter === "daily") {
+          const dayStart = startOfDay(startDate);
+          const dayEnd = endOfDay(startDate);
+          console.log("Daily filter dates:", {
+            start: dayStart.toISOString(),
+            end: dayEnd.toISOString()
+          });
+          query = query
+            .gte("created_at", dayStart.toISOString())
+            .lte("created_at", dayEnd.toISOString());
+        } else if (dateFilter === "yesterday") {
+          const yesterday = subDays(startDate, 1);
+          const dayStart = startOfDay(yesterday);
+          const dayEnd = endOfDay(yesterday);
+          console.log("Yesterday filter dates:", {
+            start: dayStart.toISOString(),
+            end: dayEnd.toISOString()
+          });
+          query = query
+            .gte("created_at", dayStart.toISOString())
+            .lte("created_at", dayEnd.toISOString());
+        } else if (dateFilter === "monthly") {
+          const monthStart = startOfMonth(startDate);
+          const monthEnd = endOfMonth(startDate);
+          console.log("Monthly filter dates:", {
+            start: monthStart.toISOString(),
+            end: monthEnd.toISOString()
+          });
+          query = query
+            .gte("created_at", monthStart.toISOString())
+            .lte("created_at", monthEnd.toISOString());
+        } else {
+          console.log("Fetching all invoices (no date filter)");
+        }
+
+        // Always order by most recent and limit to 5 results
+        query = query.order("created_at", { ascending: false }).limit(5);
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error("Error fetching invoices:", error);
+          throw error;
+        }
+
+        if (!data || data.length === 0) {
+          console.log("No invoices found for shop:", shopId, "with filter:", dateFilter);
+          return [];
+        }
+
+        console.log(`Found ${data.length} invoices for shop:`, shopId);
+
+        return data.map(invoice => {
+          const sale = invoice.sales as {
+            total_amount: number;
+            shop_id: string;
+            employee: { email: string } | null;
+          };
+
+          // Double check shop ID match
+          if (sale.shop_id !== shopId) {
+            console.warn("Shop ID mismatch:", {
+              invoiceShopId: invoice.shop_id,
+              saleShopId: sale.shop_id,
+              expectedShopId: shopId
+            });
+            return null;
+          }
+
+          return {
+            id: invoice.id,
+            invoice_number: invoice.invoice_number,
+            customer_name: invoice.customer_name,
+            customer_phone: hasCustomerPhone ? invoice.customer_phone : undefined,
+            created_at: invoice.created_at,
+            total_amount: sale.total_amount || 0,
+            sale_id: invoice.sale_id,
+            employee_email: sale.employee?.email || "Email inconnu"
+          };
+        }).filter(Boolean);
+      } catch (error) {
+        console.error("Error in useDashboardInvoices:", error);
+        return [];
+      }
     },
     enabled: !!shopId,
   });
