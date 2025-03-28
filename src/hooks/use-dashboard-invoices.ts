@@ -1,3 +1,4 @@
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -8,6 +9,7 @@ export interface InvoiceData {
   id: string;
   invoice_number: string;
   customer_name: string;
+  customer_phone?: string;
   created_at: string;
   total_amount: number;
   sale_id: string;
@@ -86,6 +88,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
           id,
           invoice_number,
           customer_name,
+          customer_phone,
           created_at,
           sale_id,
           shop_id,
@@ -174,6 +177,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
           id: invoice.id,
           invoice_number: invoice.invoice_number,
           customer_name: invoice.customer_name,
+          customer_phone: invoice.customer_phone,
           created_at: invoice.created_at,
           total_amount: sale.total_amount || 0,
           sale_id: invoice.sale_id,

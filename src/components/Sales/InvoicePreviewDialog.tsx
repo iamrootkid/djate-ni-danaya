@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -82,7 +83,12 @@ export const InvoicePreviewDialog = ({
           {/* Customer Info */}
           <div className="text-xs space-y-1 border-b pb-2">
             <p>Client: {invoiceData.customerName}</p>
-            {invoiceData.customerPhone && <p>Tel: {invoiceData.customerPhone}</p>}
+            {invoiceData.customerPhone && (
+              <div className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                <p>Tel: {invoiceData.customerPhone}</p>
+              </div>
+            )}
           </div>
 
           {/* Items Table */}

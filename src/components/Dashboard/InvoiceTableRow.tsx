@@ -4,6 +4,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { Phone } from "lucide-react";
 
 interface InvoiceTableRowProps {
   invoice: InvoiceData;
@@ -21,7 +22,17 @@ export const InvoiceTableRow = ({ invoice }: InvoiceTableRowProps) => {
   return (
     <TableRow>
       <TableCell>{invoice.invoice_number}</TableCell>
-      <TableCell>{invoice.customer_name || "Client inconnu"}</TableCell>
+      <TableCell>
+        <div>
+          <div>{invoice.customer_name || "Client inconnu"}</div>
+          {invoice.customer_phone && (
+            <div className="flex items-center text-xs text-muted-foreground mt-1 gap-1">
+              <Phone className="h-3 w-3" />
+              <span>{invoice.customer_phone}</span>
+            </div>
+          )}
+        </div>
+      </TableCell>
       <TableCell>{invoice.employee_email || "Email inconnu"}</TableCell>
       <TableCell>{formattedDate}</TableCell>
       <TableCell>{formattedTime}</TableCell>
