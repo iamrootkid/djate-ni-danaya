@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit2 } from "lucide-react";
+import { Eye, Edit2, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { InvoiceViewDialog } from "./InvoiceViewDialog";
 import { InvoiceModifyDialog } from "./InvoiceModifyDialog";
@@ -147,6 +147,8 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
         console.log("Raw invoice data for shop:", shopId, data);
 
         return data.map(invoice => {
+          if (!invoice) return null;
+          
           const sale = invoice.sales as {
             total_amount: number;
             shop_id: string;
@@ -222,7 +224,16 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                     <TableRow key={invoice.id}>
                       <TableCell>{invoice.invoice_number}</TableCell>
                       <TableCell>{invoice.customer_name}</TableCell>
-                      <TableCell>{invoice.customer_phone || "N/A"}</TableCell>
+                      <TableCell>
+                        {invoice.customer_phone ? (
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{invoice.customer_phone}</span>
+                          </div>
+                        ) : (
+                          "N/A"
+                        )}
+                      </TableCell>
                       <TableCell>{format(new Date(invoice.created_at), "PPP")}</TableCell>
                       <TableCell>{invoice.sales?.total_amount.toLocaleString()} F CFA</TableCell>
                       <TableCell>

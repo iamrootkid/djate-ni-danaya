@@ -208,46 +208,48 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             console.log(`Found ${retryData.length} invoices for shop:`, shopId);
             
             // Now process each invoice to return the expected format
-            return retryData.map(invoice => {
-              // Explicit type checking and safe access
-              if (!invoice || typeof invoice !== 'object') {
-                return null;
-              }
-              
-              // We know sales exists because of the inner join
-              const sale = invoice.sales as {
-                total_amount: number;
-                shop_id: string;
-                employee: { email: string } | null;
-              };
-              
-              // Double check shop ID match
-              if (sale.shop_id !== shopId) {
-                console.warn("Shop ID mismatch:", {
-                  invoiceShopId: invoice.shop_id,
-                  saleShopId: sale.shop_id,
-                  expectedShopId: shopId
-                });
-                return null;
-              }
-              
-              if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
-                console.warn("Invoice missing required fields:", invoice);
-                return null;
-              }
-              
-              const result: InvoiceData = {
-                id: invoice.id,
-                invoice_number: invoice.invoice_number,
-                customer_name: invoice.customer_name || "Client inconnu",
-                created_at: invoice.created_at,
-                total_amount: sale.total_amount || 0,
-                sale_id: invoice.sale_id,
-                employee_email: sale.employee?.email || "Email inconnu"
-              };
-              
-              return result;
-            }).filter((invoice): invoice is InvoiceData => invoice !== null);
+            return retryData
+              .filter((invoice): invoice is NonNullable<typeof invoice> => invoice !== null)
+              .map(invoice => {
+                if (!invoice || typeof invoice !== 'object') {
+                  return null;
+                }
+                
+                if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+                  console.warn("Invoice missing required fields:", invoice);
+                  return null;
+                }
+                
+                // We know sales exists because of the inner join
+                const sale = invoice.sales as {
+                  total_amount: number;
+                  shop_id: string;
+                  employee: { email: string } | null;
+                };
+                
+                // Double check shop ID match
+                if (sale.shop_id !== shopId) {
+                  console.warn("Shop ID mismatch:", {
+                    invoiceShopId: invoice.shop_id,
+                    saleShopId: sale.shop_id,
+                    expectedShopId: shopId
+                  });
+                  return null;
+                }
+                
+                const result: InvoiceData = {
+                  id: invoice.id,
+                  invoice_number: invoice.invoice_number,
+                  customer_name: invoice.customer_name || "Client inconnu",
+                  created_at: invoice.created_at,
+                  total_amount: sale.total_amount || 0,
+                  sale_id: invoice.sale_id,
+                  employee_email: sale.employee?.email || "Email inconnu"
+                };
+                
+                return result;
+              })
+              .filter((invoice): invoice is InvoiceData => invoice !== null);
           } else {
             console.error("Error fetching invoices:", error);
             throw error;
@@ -261,47 +263,49 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
 
         console.log(`Found ${data.length} invoices for shop:`, shopId);
 
-        return data.map(invoice => {
-          // Explicit type checking
-          if (!invoice || typeof invoice !== 'object') {
-            return null;
-          }
-          
-          // Additional null checks for invoice properties
-          if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
-            console.warn("Invoice missing required fields:", invoice);
-            return null;
-          }
-          
-          const sale = invoice.sales as {
-            total_amount: number;
-            shop_id: string;
-            employee: { email: string } | null;
-          };
+        return data
+          .filter((invoice): invoice is NonNullable<typeof invoice> => invoice !== null)
+          .map(invoice => {
+            if (!invoice || typeof invoice !== 'object') {
+              return null;
+            }
+            
+            // Additional null checks for invoice properties
+            if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+              console.warn("Invoice missing required fields:", invoice);
+              return null;
+            }
+            
+            const sale = invoice.sales as {
+              total_amount: number;
+              shop_id: string;
+              employee: { email: string } | null;
+            };
 
-          // Double check shop ID match
-          if (sale.shop_id !== shopId) {
-            console.warn("Shop ID mismatch:", {
-              invoiceShopId: invoice.shop_id,
-              saleShopId: sale.shop_id,
-              expectedShopId: shopId
-            });
-            return null;
-          }
+            // Double check shop ID match
+            if (sale.shop_id !== shopId) {
+              console.warn("Shop ID mismatch:", {
+                invoiceShopId: invoice.shop_id,
+                saleShopId: sale.shop_id,
+                expectedShopId: shopId
+              });
+              return null;
+            }
 
-          const result: InvoiceData = {
-            id: invoice.id,
-            invoice_number: invoice.invoice_number,
-            customer_name: invoice.customer_name || "Client inconnu",
-            customer_phone: 'customer_phone' in invoice ? invoice.customer_phone : undefined,
-            created_at: invoice.created_at,
-            total_amount: sale.total_amount || 0,
-            sale_id: invoice.sale_id,
-            employee_email: sale.employee?.email || "Email inconnu"
-          };
-          
-          return result;
-        }).filter((invoice): invoice is InvoiceData => invoice !== null);
+            const result: InvoiceData = {
+              id: invoice.id,
+              invoice_number: invoice.invoice_number,
+              customer_name: invoice.customer_name || "Client inconnu",
+              customer_phone: 'customer_phone' in invoice ? invoice.customer_phone || undefined : undefined,
+              created_at: invoice.created_at,
+              total_amount: sale.total_amount || 0,
+              sale_id: invoice.sale_id,
+              employee_email: sale.employee?.email || "Email inconnu"
+            };
+            
+            return result;
+          })
+          .filter((invoice): invoice is InvoiceData => invoice !== null);
       } catch (error) {
         console.error("Error in useDashboardInvoices:", error);
         return [];
