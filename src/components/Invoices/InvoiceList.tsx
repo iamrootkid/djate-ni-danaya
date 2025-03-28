@@ -99,20 +99,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
       console.log("Fetching invoices for verified shop:", shopId);
 
       try {
-        // Check if customer_phone column exists
-        const { data: columnExists, error: columnCheckError } = await supabase.rpc('check_column_exists', {
-          table_name: 'invoices',
-          column_name: 'customer_phone'
-        });
-        
-        if (columnCheckError) {
-          console.error("Error checking column existence:", columnCheckError);
-          throw columnCheckError;
-        }
-        
-        const hasCustomerPhone = !!columnExists;
-        console.log("Does invoices table have customer_phone column?", hasCustomerPhone);
-
+        // First try with customer_phone column
         let query = supabase
           .from("invoices")
           .select(`
@@ -146,6 +133,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
         }
 
         const { data, error } = await query;
+        
         if (error) {
           console.error("Error fetching invoices:", error);
           throw error;
@@ -224,46 +212,54 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices?.map((invoice) => {
-                // Check if the invoice has been modified by comparing created_at and updated_at timestamps
-                const isModified = new Date(invoice.updated_at).getTime() > 
-                                  new Date(invoice.created_at).getTime() + 60000;
-                
-                return (
-                  <TableRow key={invoice.id}>
-                    <TableCell>{invoice.invoice_number}</TableCell>
-                    <TableCell>{invoice.customer_name}</TableCell>
-                    <TableCell>{invoice.customer_phone || "N/A"}</TableCell>
-                    <TableCell>{format(new Date(invoice.created_at), "PPP")}</TableCell>
-                    <TableCell>{invoice.sales?.total_amount.toLocaleString()} F CFA</TableCell>
-                    <TableCell>
-                      {isModified && (
-                        <Badge variant="outline">Modified</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setSelectedInvoice(invoice)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {isAdmin && (
+              {invoices && invoices.length > 0 ? (
+                invoices.map((invoice) => {
+                  // Check if the invoice has been modified by comparing created_at and updated_at timestamps
+                  const isModified = new Date(invoice.updated_at).getTime() > 
+                                    new Date(invoice.created_at).getTime() + 60000;
+                  
+                  return (
+                    <TableRow key={invoice.id}>
+                      <TableCell>{invoice.invoice_number}</TableCell>
+                      <TableCell>{invoice.customer_name}</TableCell>
+                      <TableCell>{invoice.customer_phone || "N/A"}</TableCell>
+                      <TableCell>{format(new Date(invoice.created_at), "PPP")}</TableCell>
+                      <TableCell>{invoice.sales?.total_amount.toLocaleString()} F CFA</TableCell>
+                      <TableCell>
+                        {isModified && (
+                          <Badge variant="outline">Modified</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setModifyingInvoice(invoice)}
+                            onClick={() => setSelectedInvoice(invoice)}
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                          {isAdmin && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setModifyingInvoice(invoice)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6">
+                    Aucune facture trouvée
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

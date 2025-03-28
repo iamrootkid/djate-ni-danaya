@@ -26,14 +26,14 @@ export const InvoiceTable = ({ invoices, isLoading }: InvoiceTableProps) => {
         {isLoading ? (
           <InvoiceTableSkeleton />
         ) : (
-          invoices?.length ? (
+          invoices && invoices.length > 0 ? (
             invoices.map((invoice) => (
               <InvoiceTableRow key={invoice.id} invoice={invoice} />
             ))
           ) : (
             <TableRow>
               <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                Aucune facture récente trouvée
+                Aucune facture trouvée. Créez une facture pour la voir ici.
               </TableCell>
             </TableRow>
           )
