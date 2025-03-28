@@ -231,6 +231,11 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
                 return null;
               }
               
+              if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+                console.warn("Invoice missing required fields:", invoice);
+                return null;
+              }
+              
               const result: InvoiceData = {
                 id: invoice.id,
                 invoice_number: invoice.invoice_number,
@@ -259,6 +264,12 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
         return data.map(invoice => {
           // Explicit type checking
           if (!invoice || typeof invoice !== 'object') {
+            return null;
+          }
+          
+          // Additional null checks for invoice properties
+          if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+            console.warn("Invoice missing required fields:", invoice);
             return null;
           }
           
