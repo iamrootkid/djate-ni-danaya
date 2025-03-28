@@ -1,3 +1,4 @@
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -191,7 +192,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                   <TableRow key={invoice.id}>
                     <TableCell>{invoice.invoice_number}</TableCell>
                     <TableCell>{invoice.customer_name}</TableCell>
-                    <TableCell>{invoice.customer_phone || "N/A"}</TableCell>
+                    <TableCell>{(invoice as any).customer_phone || "N/A"}</TableCell>
                     <TableCell>{format(new Date(invoice.created_at), "PPP")}</TableCell>
                     <TableCell>{invoice.sales?.total_amount.toLocaleString()} F CFA</TableCell>
                     <TableCell>

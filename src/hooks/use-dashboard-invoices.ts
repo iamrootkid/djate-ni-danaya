@@ -82,9 +82,18 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
 
       console.log("Fetching invoices for verified shop:", shopId, "with filter:", dateFilter);
 
-      let query = supabase
-        .from("invoices")
-        .select(`
+      // First check if customer_phone column exists
+      const { data: columnExists } = await supabase.rpc('check_column_exists', {
+        table_name: 'invoices',
+        column_name: 'customer_phone'
+      });
+      
+      const hasCustomerPhone = !!columnExists;
+      console.log("Does invoices table have customer_phone column?", hasCustomerPhone);
+
+      // Construct the select query based on whether customer_phone exists
+      const selectQuery = hasCustomerPhone 
+        ? `
           id,
           invoice_number,
           customer_name,
@@ -99,7 +108,26 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
               email
             )
           )
-        `)
+        `
+        : `
+          id,
+          invoice_number,
+          customer_name,
+          created_at,
+          sale_id,
+          shop_id,
+          sales!inner (
+            total_amount,
+            shop_id,
+            employee:profiles!inner (
+              email
+            )
+          )
+        `;
+
+      let query = supabase
+        .from("invoices")
+        .select(selectQuery)
         .eq("shop_id", shopId)
         .eq("sales.shop_id", shopId);
 
@@ -177,7 +205,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
           id: invoice.id,
           invoice_number: invoice.invoice_number,
           customer_name: invoice.customer_name,
-          customer_phone: invoice.customer_phone,
+          customer_phone: (invoice as any).customer_phone || undefined,
           created_at: invoice.created_at,
           total_amount: sale.total_amount || 0,
           sale_id: invoice.sale_id,
