@@ -77,23 +77,34 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
 
       console.log("Fetching invoices for verified shop:", shopId);
 
-      let query = supabase
-        .from("invoices")
-        .select(`
-          *,
-          sales!inner (
-            total_amount,
-            shop_id,
-            sale_items (
-              quantity,
-              price_at_sale,
-              product_id,
-              products (
-                name
-              )
+      // Check if customer_phone column exists
+      const { data: columnExists } = await supabase.rpc('check_column_exists', {
+        table_name: 'invoices',
+        column_name: 'customer_phone'
+      });
+      
+      const hasCustomerPhone = !!columnExists;
+      console.log("Does invoices table have customer_phone column?", hasCustomerPhone);
+
+      let selectQuery = `
+        *,
+        sales!inner (
+          total_amount,
+          shop_id,
+          sale_items (
+            quantity,
+            price_at_sale,
+            product_id,
+            products (
+              name
             )
           )
-        `)
+        )
+      `;
+
+      let query = supabase
+        .from("invoices")
+        .select(selectQuery)
         .eq("shop_id", shopId)
         .eq("sales.shop_id", shopId)
         .order("created_at", { ascending: false });
@@ -192,7 +203,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                   <TableRow key={invoice.id}>
                     <TableCell>{invoice.invoice_number}</TableCell>
                     <TableCell>{invoice.customer_name}</TableCell>
-                    <TableCell>{(invoice as any).customer_phone || "N/A"}</TableCell>
+                    <TableCell>{invoice.customer_phone || "N/A"}</TableCell>
                     <TableCell>{format(new Date(invoice.created_at), "PPP")}</TableCell>
                     <TableCell>{invoice.sales?.total_amount.toLocaleString()} F CFA</TableCell>
                     <TableCell>
