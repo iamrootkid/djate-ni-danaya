@@ -299,7 +299,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
               id: invoice.id,
               invoice_number: invoice.invoice_number,
               customer_name: invoice.customer_name || "Client inconnu",
-              customer_phone: 'customer_phone' in invoice ? invoice.customer_phone || undefined : undefined,
+              customer_phone: invoice.customer_phone || undefined,
               created_at: invoice.created_at,
               total_amount: sale.total_amount || 0,
               sale_id: invoice.sale_id,
