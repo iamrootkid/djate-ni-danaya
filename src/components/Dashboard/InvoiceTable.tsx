@@ -33,7 +33,7 @@ export const InvoiceTable = ({ invoices, isLoading }: InvoiceTableProps) => {
           ) : (
             <TableRow>
               <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                Aucune facture trouvée. Créez une facture pour la voir ici.
+                Aucune facture trouvée pour la période sélectionnée.
               </TableCell>
             </TableRow>
           )

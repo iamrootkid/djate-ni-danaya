@@ -3,7 +3,6 @@ import { InvoiceData } from "@/hooks/use-dashboard-invoices";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
 import { Phone } from "lucide-react";
 
 interface InvoiceTableRowProps {

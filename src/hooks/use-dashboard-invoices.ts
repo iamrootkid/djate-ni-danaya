@@ -83,7 +83,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
       console.log("Fetching invoices for verified shop:", shopId, "with filter:", dateFilter);
 
       try {
-        // First try querying with customer_phone to see if it exists
+        // We'll try querying with customer_phone first
         let query = supabase
           .from("invoices")
           .select(`
@@ -147,7 +147,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
         const { data, error } = await query;
 
         if (error) {
-          // If the error is about the customer_phone column, retry without it
+          // Check if the error is about the customer_phone column
           if (error.message && error.message.includes("customer_phone")) {
             console.log("customer_phone column does not exist, retrying without it");
             
@@ -207,7 +207,14 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             
             console.log(`Found ${retryData.length} invoices for shop:`, shopId);
             
+            // Now process each invoice to return the expected format
             return retryData.map(invoice => {
+              // Explicit type checking and safe access
+              if (!invoice || typeof invoice !== 'object') {
+                return null;
+              }
+              
+              // We know sales exists because of the inner join
               const sale = invoice.sales as {
                 total_amount: number;
                 shop_id: string;
@@ -248,6 +255,11 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
         console.log(`Found ${data.length} invoices for shop:`, shopId);
 
         return data.map(invoice => {
+          // Explicit type checking
+          if (!invoice || typeof invoice !== 'object') {
+            return null;
+          }
+          
           const sale = invoice.sales as {
             total_amount: number;
             shop_id: string;
@@ -268,7 +280,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             id: invoice.id,
             invoice_number: invoice.invoice_number,
             customer_name: invoice.customer_name,
-            customer_phone: invoice.customer_phone,
+            customer_phone: 'customer_phone' in invoice ? invoice.customer_phone : undefined,
             created_at: invoice.created_at,
             total_amount: sale.total_amount || 0,
             sale_id: invoice.sale_id,
