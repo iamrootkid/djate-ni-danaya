@@ -28,7 +28,6 @@ export const StoreSettingsForm = () => {
   // System Settings
   const [receiptFooter, setReceiptFooter] = useState("");
   const [invoicePrefix, setInvoicePrefix] = useState("");
-  const [returnPolicy, setReturnPolicy] = useState("");
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [autoBackup, setAutoBackup] = useState(false);
 
@@ -82,9 +81,6 @@ export const StoreSettingsForm = () => {
           case "invoice_prefix":
             setInvoicePrefix(setting.value || "");
             break;
-          case "return_policy":
-            setReturnPolicy(setting.value || "");
-            break;
           case "email_notifications":
             setEmailNotifications(setting.value === "true");
             break;
@@ -128,7 +124,6 @@ export const StoreSettingsForm = () => {
         { key: "timezone", value: timezone, shop_id: shopId },
         { key: "receipt_footer", value: receiptFooter, shop_id: shopId },
         { key: "invoice_prefix", value: invoicePrefix, shop_id: shopId },
-        { key: "return_policy", value: returnPolicy, shop_id: shopId },
         { key: "email_notifications", value: emailNotifications.toString(), shop_id: shopId },
         { key: "auto_backup", value: autoBackup.toString(), shop_id: shopId },
       ];
@@ -212,8 +207,6 @@ export const StoreSettingsForm = () => {
               setInvoicePrefix={setInvoicePrefix}
               receiptFooter={receiptFooter}
               setReceiptFooter={setReceiptFooter}
-              returnPolicy={returnPolicy}
-              setReturnPolicy={setReturnPolicy}
               emailNotifications={emailNotifications}
               setEmailNotifications={setEmailNotifications}
               autoBackup={autoBackup}

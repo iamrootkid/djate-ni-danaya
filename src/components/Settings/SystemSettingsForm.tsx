@@ -13,8 +13,6 @@ interface SystemSettingsFormProps {
   setInvoicePrefix: (value: string) => void;
   receiptFooter: string;
   setReceiptFooter: (value: string) => void;
-  returnPolicy: string;
-  setReturnPolicy: (value: string) => void;
   emailNotifications: boolean;
   setEmailNotifications: (value: boolean) => void;
   autoBackup: boolean;
@@ -26,8 +24,6 @@ export const SystemSettingsForm = ({
   setInvoicePrefix,
   receiptFooter,
   setReceiptFooter,
-  returnPolicy,
-  setReturnPolicy,
   emailNotifications,
   setEmailNotifications,
   autoBackup,
@@ -102,20 +98,6 @@ export const SystemSettingsForm = ({
         />
         <p className="text-sm text-muted-foreground">
           This message will appear at the bottom of all receipts.
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="return-policy">Return Policy</Label>
-        <Textarea
-          id="return-policy"
-          value={returnPolicy}
-          onChange={(e) => setReturnPolicy(e.target.value)}
-          placeholder="e.g. Les articles vendus ne sont ni repris ni échangés"
-          rows={3}
-        />
-        <p className="text-sm text-muted-foreground">
-          This message will appear on all receipts regarding your return policy.
         </p>
       </div>
 
