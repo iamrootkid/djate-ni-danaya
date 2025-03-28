@@ -210,7 +210,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             // Now process each invoice to return the expected format
             return retryData
               .filter((invoice): invoice is NonNullable<typeof invoice> => Boolean(invoice))
-              .map(invoice => {
+              .map((invoice) => {
                 // Skip this invoice if it's null or not an object
                 if (!invoice || typeof invoice !== 'object') {
                   return null;
@@ -267,7 +267,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
 
         return data
           .filter((invoice): invoice is NonNullable<typeof invoice> => Boolean(invoice))
-          .map(invoice => {
+          .map((invoice) => {
             // Skip this invoice if it's null or not an object
             if (!invoice || typeof invoice !== 'object') {
               return null;

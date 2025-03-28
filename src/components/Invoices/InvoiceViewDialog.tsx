@@ -71,7 +71,7 @@ export const InvoiceViewDialog = ({
             <p>Client: {invoice.customer_name || "Client inconnu"}</p>
             <div className="flex items-center gap-1">
               <Phone className="h-3 w-3" />
-              <p>Tel: {invoice.customer_phone || "N/A"}</p>
+              <p>Tel: {invoice.customer_phone || "Numéro inconnu"}</p>
             </div>
           </div>
 
