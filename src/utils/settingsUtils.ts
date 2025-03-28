@@ -16,6 +16,29 @@ interface DatabaseSetting {
   updated_at: string;
 }
 
+export interface ReceiptSettings {
+  shopName: string;
+  shopAddress: string;
+  shopPhone: string;
+  shopEmail: string;
+  receiptHeader: string;
+  receiptFooter: string;
+  taxRate: number;
+  currency: string;
+  logoUrl?: string;
+}
+
+export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
+  shopName: "",
+  shopAddress: "",
+  shopPhone: "",
+  shopEmail: "",
+  receiptHeader: "Thank you for your purchase!",
+  receiptFooter: "Please come again!",
+  taxRate: 0,
+  currency: "USD"
+};
+
 export const saveSettings = async (settings: Setting[], shopId: string) => {
   try {
     if (!shopId) {
@@ -95,4 +118,39 @@ export const loadSettings = async (shopId: string): Promise<Setting[]> => {
     console.error("Error loading settings:", error);
     throw error;
   }
+};
+
+export const saveReceiptSettings = async (settings: ReceiptSettings, shopId: string) => {
+  const settingsArray = Object.entries(settings).map(([key, value]) => ({
+    key: `receipt_${key}`,
+    value: value.toString(),
+    shop_id: shopId
+  }));
+
+  return saveSettings(settingsArray, shopId);
+};
+
+export const loadReceiptSettings = async (shopId: string): Promise<ReceiptSettings> => {
+  const settings = await loadSettings(shopId);
+  const receiptSettings: Partial<ReceiptSettings> = {};
+
+  settings.forEach(setting => {
+    if (setting.key.startsWith('receipt_')) {
+      const key = setting.key.replace('receipt_', '') as keyof ReceiptSettings;
+      // Handle type conversion based on the key
+      if (key === 'taxRate') {
+        receiptSettings[key] = Number(setting.value);
+      } else if (key === 'shopName' || key === 'shopAddress' || key === 'shopPhone' || 
+                 key === 'shopEmail' || key === 'receiptHeader' || key === 'receiptFooter' || 
+                 key === 'currency') {
+        receiptSettings[key] = setting.value;
+      }
+    }
+  });
+
+  return {
+    ...DEFAULT_RECEIPT_SETTINGS,
+    ...receiptSettings,
+    taxRate: Number(receiptSettings.taxRate) || 0
+  };
 };
