@@ -24,10 +24,14 @@ export const InvoiceTableRow = ({ invoice }: InvoiceTableRowProps) => {
       <TableCell>
         <div>
           <div>{invoice.customer_name || "Client inconnu"}</div>
-          {invoice.customer_phone && (
+          {invoice.customer_phone ? (
             <div className="flex items-center text-xs text-muted-foreground mt-1 gap-1">
               <Phone className="h-3 w-3" />
               <span>{invoice.customer_phone}</span>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground mt-1">
+              Numéro inconnu
             </div>
           )}
         </div>

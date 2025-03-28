@@ -231,7 +231,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                             <span>{invoice.customer_phone}</span>
                           </div>
                         ) : (
-                          "N/A"
+                          <span className="text-muted-foreground">Numéro inconnu</span>
                         )}
                       </TableCell>
                       <TableCell>{format(new Date(invoice.created_at), "PPP")}</TableCell>

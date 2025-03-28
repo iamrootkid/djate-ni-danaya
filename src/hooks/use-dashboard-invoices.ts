@@ -209,13 +209,15 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             
             // Now process each invoice to return the expected format
             return retryData
-              .filter((invoice): invoice is NonNullable<typeof invoice> => invoice !== null)
+              .filter((invoice): invoice is NonNullable<typeof invoice> => Boolean(invoice))
               .map(invoice => {
+                // Skip this invoice if it's null or not an object
                 if (!invoice || typeof invoice !== 'object') {
                   return null;
                 }
                 
-                if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+                // Skip this invoice if it's missing required fields
+                if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id || !invoice.sales) {
                   console.warn("Invoice missing required fields:", invoice);
                   return null;
                 }
@@ -228,10 +230,10 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
                 };
                 
                 // Double check shop ID match
-                if (sale.shop_id !== shopId) {
+                if (!sale || sale.shop_id !== shopId) {
                   console.warn("Shop ID mismatch:", {
                     invoiceShopId: invoice.shop_id,
-                    saleShopId: sale.shop_id,
+                    saleShopId: sale?.shop_id,
                     expectedShopId: shopId
                   });
                   return null;
@@ -264,14 +266,15 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
         console.log(`Found ${data.length} invoices for shop:`, shopId);
 
         return data
-          .filter((invoice): invoice is NonNullable<typeof invoice> => invoice !== null)
+          .filter((invoice): invoice is NonNullable<typeof invoice> => Boolean(invoice))
           .map(invoice => {
+            // Skip this invoice if it's null or not an object
             if (!invoice || typeof invoice !== 'object') {
               return null;
             }
             
-            // Additional null checks for invoice properties
-            if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+            // Skip this invoice if it's missing required fields
+            if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id || !invoice.sales) {
               console.warn("Invoice missing required fields:", invoice);
               return null;
             }
@@ -283,10 +286,10 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             };
 
             // Double check shop ID match
-            if (sale.shop_id !== shopId) {
+            if (!sale || sale.shop_id !== shopId) {
               console.warn("Shop ID mismatch:", {
                 invoiceShopId: invoice.shop_id,
-                saleShopId: sale.shop_id,
+                saleShopId: sale?.shop_id,
                 expectedShopId: shopId
               });
               return null;
