@@ -16,6 +16,37 @@ export interface InvoiceData {
   employee_email?: string;
 }
 
+// Helper function to create an InvoiceData object with null-safety
+const createInvoiceData = (
+  invoice: any, 
+  sale: { total_amount: number; shop_id: string; employee?: { email: string } | null }
+): InvoiceData | null => {
+  // Skip this invoice if it's null or not an object
+  if (!invoice || typeof invoice !== 'object') {
+    console.warn("Invoice is null or not an object");
+    return null;
+  }
+  
+  // Skip this invoice if it's missing required fields
+  if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+    console.warn("Invoice missing required fields:", invoice);
+    return null;
+  }
+
+  const result: InvoiceData = {
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    customer_name: invoice.customer_name || "Client inconnu",
+    customer_phone: invoice.customer_phone || undefined,
+    created_at: invoice.created_at,
+    total_amount: sale.total_amount || 0,
+    sale_id: invoice.sale_id,
+    employee_email: sale.employee?.email || "Email inconnu"
+  };
+  
+  return result;
+};
+
 export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "yesterday" = "daily", startDate: Date = new Date()) => {
   const queryClient = useQueryClient();
   const { shopId } = useShopId();
@@ -207,22 +238,18 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             
             console.log(`Found ${retryData.length} invoices for shop:`, shopId);
             
-            // Now process each invoice to return the expected format
+            // Now process each invoice using our helper function
             return retryData
-              .filter((invoice): invoice is NonNullable<typeof invoice> => Boolean(invoice))
               .map((invoice) => {
-                // Skip this invoice if it's null or not an object
                 if (!invoice || typeof invoice !== 'object') {
                   return null;
                 }
                 
-                // Skip this invoice if it's missing required fields
-                if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id || !invoice.sales) {
-                  console.warn("Invoice missing required fields:", invoice);
+                if (!invoice.sales) {
+                  console.warn("Invoice has no sales data:", invoice);
                   return null;
                 }
                 
-                // We know sales exists because of the inner join
                 const sale = invoice.sales as {
                   total_amount: number;
                   shop_id: string;
@@ -239,17 +266,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
                   return null;
                 }
                 
-                const result: InvoiceData = {
-                  id: invoice.id,
-                  invoice_number: invoice.invoice_number,
-                  customer_name: invoice.customer_name || "Client inconnu",
-                  created_at: invoice.created_at,
-                  total_amount: sale.total_amount || 0,
-                  sale_id: invoice.sale_id,
-                  employee_email: sale.employee?.email || "Email inconnu"
-                };
-                
-                return result;
+                return createInvoiceData(invoice, sale);
               })
               .filter((invoice): invoice is InvoiceData => invoice !== null);
           } else {
@@ -266,16 +283,13 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
         console.log(`Found ${data.length} invoices for shop:`, shopId);
 
         return data
-          .filter((invoice): invoice is NonNullable<typeof invoice> => Boolean(invoice))
           .map((invoice) => {
-            // Skip this invoice if it's null or not an object
             if (!invoice || typeof invoice !== 'object') {
               return null;
             }
             
-            // Skip this invoice if it's missing required fields
-            if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id || !invoice.sales) {
-              console.warn("Invoice missing required fields:", invoice);
+            if (!invoice.sales) {
+              console.warn("Invoice has no sales data:", invoice);
               return null;
             }
             
@@ -295,18 +309,7 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
               return null;
             }
 
-            const result: InvoiceData = {
-              id: invoice.id,
-              invoice_number: invoice.invoice_number,
-              customer_name: invoice.customer_name || "Client inconnu",
-              customer_phone: invoice.customer_phone || undefined,
-              created_at: invoice.created_at,
-              total_amount: sale.total_amount || 0,
-              sale_id: invoice.sale_id,
-              employee_email: sale.employee?.email || "Email inconnu"
-            };
-            
-            return result;
+            return createInvoiceData(invoice, sale);
           })
           .filter((invoice): invoice is InvoiceData => invoice !== null);
       } catch (error) {
