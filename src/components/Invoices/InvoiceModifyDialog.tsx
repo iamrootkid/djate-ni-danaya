@@ -14,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState as useHookState } from "react";
+import { ReturnedItem } from "@/types/invoice";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
@@ -28,6 +29,7 @@ const modificationSchema = z.object({
       quantity: z.number().int().min(0),
       originalQuantity: z.number().int(),
       selected: z.boolean().default(false),
+      price: z.number().optional(), // Add price field
     })
   ).optional(),
 });
@@ -45,7 +47,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const { toast } = useToast();
   const { shopId } = useShopId();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [originalItems, setOriginalItems] = useHookState<any[]>([]);
+  const [originalItems, setOriginalItems] = useHookState<ReturnedItem[]>([]);
 
   // Create form with default values
   const form = useForm<ModificationFormValues>({
@@ -74,6 +76,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         .select(`
           id,
           quantity,
+          returned_quantity,
           price_at_sale,
           product_id,
           products (
@@ -130,7 +133,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       }
 
       // Create modification record
-      const modificationData = {
+      const modificationData: any = {
         invoice_id: invoice.id,
         modification_type: values.modType,
         new_amount: values.newAmount,

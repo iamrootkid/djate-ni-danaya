@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { InvoiceModification } from "@/types/invoice";
 
 interface InvoiceViewDialogProps {
   open: boolean;
@@ -16,7 +17,7 @@ interface InvoiceViewDialogProps {
 
 export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogProps) => {
   // Query to fetch modification history
-  const { data: modifications } = useQuery({
+  const { data: modifications } = useQuery<InvoiceModification[]>({
     queryKey: ["invoice-modifications", invoice?.id],
     queryFn: async () => {
       if (!invoice?.id) return [];

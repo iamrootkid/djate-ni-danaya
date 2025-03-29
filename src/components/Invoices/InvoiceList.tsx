@@ -125,7 +125,18 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
       console.log("Fetching invoices for verified shop:", shopId);
 
       try {
-        // Updated query to include modification fields
+        // Check if returned_quantity column exists
+        const { data: columnExists, error: columnError } = await supabase.rpc(
+          'check_column_exists',
+          { table_name: 'sale_items', column_name: 'returned_quantity' }
+        );
+
+        if (columnError) {
+          console.error("Error checking column:", columnError);
+          // Continue but we'll handle missing column later
+        }
+
+        // Create base query
         let query = supabase
           .from("invoices")
           .select(`
@@ -136,7 +147,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
               sale_items (
                 id,
                 quantity,
-                returned_quantity,
+                ${columnExists ? 'returned_quantity,' : ''}
                 price_at_sale,
                 product_id,
                 products (
@@ -149,6 +160,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
           .eq("sales.shop_id", shopId)
           .order("created_at", { ascending: false });
 
+        // Apply date filters
         if (dateFilter === "daily" && startDate) {
           query = query.gte("created_at", startOfDay(startDate).toISOString())
             .lte("created_at", endOfDay(startDate).toISOString());
