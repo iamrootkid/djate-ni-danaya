@@ -241,10 +241,13 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
             // Now process each invoice using our helper function
             return retryData
               .map((invoice) => {
+                // Skip null or invalid invoices
                 if (!invoice || typeof invoice !== 'object') {
+                  console.warn("Invoice is null or not an object");
                   return null;
                 }
                 
+                // Check if sales data is available
                 if (!invoice.sales) {
                   console.warn("Invoice has no sales data:", invoice);
                   return null;
@@ -284,10 +287,13 @@ export const useDashboardInvoices = (dateFilter: "all" | "daily" | "monthly" | "
 
         return data
           .map((invoice) => {
+            // Skip null or invalid invoices
             if (!invoice || typeof invoice !== 'object') {
+              console.warn("Invoice is null or not an object");
               return null;
             }
             
+            // Check if sales data is available
             if (!invoice.sales) {
               console.warn("Invoice has no sales data:", invoice);
               return null;
