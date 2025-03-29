@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ReturnedItem } from "@/types/invoice";
 import { Checkbox } from "@/components/ui/checkbox";
+import { QueryClient } from "@tanstack/react-query";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
@@ -117,7 +117,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     }
   }, [open, invoice]);
 
-  // Watch for changes to returnedItems and recalculate new amount
   useEffect(() => {
     if (modType === "return") {
       calculateNewTotal();
@@ -158,7 +157,8 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         returned_items: values.modType === "return" ? values.returnedItems?.filter(item => item.selected) : null
       };
 
-      // Cast the function name to any to bypass TypeScript's type checking for RPC function names
+      console.log("Submitting modification:", modificationData);
+
       const { error: modificationError } = await supabase.rpc(
         'create_invoice_modification' as any,
         modificationData
@@ -183,27 +183,15 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
       if (error) throw error;
 
-      if (values.modType === "return" && values.returnedItems) {
-        const returnedItems = values.returnedItems.filter(item => item.selected && item.quantity < item.originalQuantity);
-        
-        for (const item of returnedItems) {
-          const returnedQuantity = item.originalQuantity - item.quantity;
-          console.log(`Updating item ${item.id}: returning ${returnedQuantity} units`);
-          
-          const { error: updateError } = await supabase
-            .from('sale_items')
-            .update({ 
-              returned_quantity: returnedQuantity,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', item.id);
-            
-          if (updateError) {
-            console.error("Error updating returned item:", updateError);
-          }
-        }
-      }
-
+      const queryClient = new QueryClient();
+      
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
+      queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
+      queryClient.invalidateQueries({ queryKey: ['best-selling-products', shopId] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-report', shopId] });
+      
       toast({
         title: "Success",
         description: `Invoice has been ${values.modType === "return" ? "processed as a return" : "modified"}`,
@@ -228,7 +216,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       currentItems[index].selected = selected;
       form.setValue("returnedItems", currentItems);
       
-      // Force recalculation
       calculateNewTotal();
     }
   };
@@ -240,7 +227,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       currentItems[index].quantity = newQuantity;
       form.setValue("returnedItems", currentItems);
       
-      // Force recalculation
       calculateNewTotal();
     }
   };

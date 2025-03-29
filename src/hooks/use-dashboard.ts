@@ -1,11 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { useRecentOrders } from "@/hooks/use-recent-orders";
 import { useShopId } from "@/hooks/use-shop-id";
-
-export type DateFilter = "all" | "daily" | "monthly" | "yesterday";
+import { DateFilter } from "@/types/invoice";
 
 export const useDashboard = () => {
   const [userRole, setUserRole] = useState<"admin" | "employee">("employee");
@@ -41,6 +41,16 @@ export const useDashboard = () => {
     const today = new Date();
     setStartDate(today);
 
+    // Invalidate all dashboard-related queries when shop ID changes
+    invalidateAllDashboardQueries();
+  }, [shopId, queryClient]);
+
+  // Function to invalidate all dashboard-related queries
+  const invalidateAllDashboardQueries = () => {
+    if (!shopId) return;
+    
+    console.log("Invalidating all dashboard queries for shop:", shopId);
+    
     queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
     queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
     queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
@@ -48,7 +58,7 @@ export const useDashboard = () => {
     queryClient.invalidateQueries({ queryKey: ['inventory-report', shopId] });
     queryClient.invalidateQueries({ queryKey: ['best-selling-products', shopId] });
     queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
-  }, [shopId, queryClient]);
+  };
   
   const handleFilterChange = (filter: DateFilter) => {
     setDateFilter(filter);
@@ -65,10 +75,8 @@ export const useDashboard = () => {
       setStartDate(today); // The yesterday filter will calculate yesterday based on today
     }
 
-    queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
+    // Invalidate relevant queries when filter changes
+    invalidateAllDashboardQueries();
   };
   
   useEffect(() => {
@@ -81,9 +89,8 @@ export const useDashboard = () => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'sales', filter: `shop_id=eq.${shopId}` },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
+            console.log("Sales change detected, updating dashboard");
+            invalidateAllDashboardQueries();
           }
         )
         .subscribe(),
@@ -94,10 +101,8 @@ export const useDashboard = () => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'products', filter: `shop_id=eq.${shopId}` },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['inventory-report', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['best-selling-products', shopId] });
+            console.log("Products change detected, updating dashboard");
+            invalidateAllDashboardQueries();
           }
         )
         .subscribe(),
@@ -108,6 +113,7 @@ export const useDashboard = () => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'staff', filter: `shop_id=eq.${shopId}` },
           () => {
+            console.log("Staff change detected, updating dashboard");
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
           }
         )
@@ -119,6 +125,7 @@ export const useDashboard = () => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'expenses', filter: `shop_id=eq.${shopId}` },
           () => {
+            console.log("Expenses change detected, updating dashboard");
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
           }
         )
@@ -129,10 +136,9 @@ export const useDashboard = () => {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'sale_items' },
-          () => {
-            queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['best-selling-products', shopId] });
+          (payload) => {
+            console.log("Sale items change detected, updating dashboard", payload);
+            invalidateAllDashboardQueries();
           }
         )
         .subscribe(),
@@ -143,6 +149,7 @@ export const useDashboard = () => {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'profiles' },
           () => {
+            console.log("Profiles change detected, updating dashboard");
             queryClient.invalidateQueries({ queryKey: ['dashboard-invoices', shopId] });
           }
         )
@@ -153,13 +160,21 @@ export const useDashboard = () => {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'invoice_modifications', filter: `shop_id=eq.${shopId}` },
-          () => {
-            console.log("Invoice modification detected, updating dashboard");
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['best-selling-products', shopId] });
-            queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
+          (payload) => {
+            console.log("Invoice modification detected, updating dashboard", payload);
+            invalidateAllDashboardQueries();
+          }
+        )
+        .subscribe(),
+        
+      supabase
+        .channel('dashboard-invoices-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'invoices', filter: `shop_id=eq.${shopId}` },
+          (payload) => {
+            console.log("Invoice change detected, updating dashboard", payload);
+            invalidateAllDashboardQueries();
           }
         )
         .subscribe()
@@ -181,6 +196,7 @@ export const useDashboard = () => {
     stats,
     recentOrders,
     handleFilterChange,
-    setStartDate
+    setStartDate,
+    invalidateAllDashboardQueries
   };
 };

@@ -81,7 +81,7 @@ BEGIN
           -- Update sale_items to record returned quantity
           UPDATE sale_items
           SET
-            returned_quantity = return_quantity,
+            returned_quantity = COALESCE(returned_quantity, 0) + return_quantity,
             updated_at = NOW()
           WHERE id = sale_item_id;
           
