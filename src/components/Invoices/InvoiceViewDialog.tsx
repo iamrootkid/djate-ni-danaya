@@ -33,7 +33,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
         return [];
       }
 
-      return (data as InvoiceModification[]) || [];
+      return (data || []) as InvoiceModification[];
     },
     enabled: !!invoice?.id && open
   });

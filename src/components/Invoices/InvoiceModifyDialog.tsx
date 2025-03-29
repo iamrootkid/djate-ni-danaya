@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalItems, setOriginalItems] = useState<ReturnedItem[]>([]);
 
-  // Define fetchSaleItems function before using it in hooks
   const fetchSaleItems = async (saleId: string) => {
     try {
       const { data, error } = await supabase
@@ -67,7 +65,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
       if (error) throw error;
 
-      // Handle possible column not found error
       if (data && Array.isArray(data)) {
         const formattedItems = data.map((item: any) => ({
           id: item.id || "",
@@ -98,7 +95,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     }
   };
 
-  // Create form with default values
   const form = useForm<ModificationFormValues>({
     resolver: zodResolver(modificationSchema),
     defaultValues: {
@@ -112,14 +108,12 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const modType = form.watch("modType");
   const returnedItems = form.watch("returnedItems") || [];
 
-  // Fetch sale items when dialog opens
   useEffect(() => {
     if (open && invoice?.sale_id) {
       fetchSaleItems(invoice.sale_id);
     }
   }, [open, invoice]);
 
-  // Auto calculate new amount when items change or selection changes
   useEffect(() => {
     if (modType === "return") {
       calculateNewTotal();
@@ -138,7 +132,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     setIsSubmitting(true);
 
     try {
-      // Verify the invoice belongs to the current shop
       const { data: invoiceData, error: verifyError } = await supabase
         .from('invoices')
         .select('shop_id')
@@ -150,7 +143,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         throw new Error("Unauthorized: Invoice does not belong to your shop");
       }
 
-      // Create modification record using RPC function
       const modificationData = {
         invoice_id: invoice.id,
         modification_type: values.modType,
@@ -162,8 +154,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         returned_items: values.modType === "return" ? values.returnedItems?.filter(item => item.selected) : null
       };
 
-      // Use RPC call to create the modification and update stock if necessary
-      const { data: modificationResult, error: modificationError } = await supabase.rpc(
+      const { error: modificationError } = await supabase.rpc(
         'create_invoice_modification',
         modificationData
       );
@@ -173,22 +164,20 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         throw modificationError;
       }
 
-      // Update the invoice
       const { error } = await supabase
         .from('invoices')
         .update({ 
           updated_at: new Date().toISOString(),
-          shop_id: shopId, // Ensure shop_id is maintained
+          shop_id: shopId,
           modification_reason: values.reason,
           is_modified: true,
           new_total_amount: values.newAmount
         })
         .eq('id', invoice.id)
-        .eq('shop_id', shopId); // Additional security check
+        .eq('shop_id', shopId);
 
       if (error) throw error;
 
-      // If this is a return, update the sale_items quantities (stock is updated by the RPC function)
       if (values.modType === "return" && values.returnedItems) {
         const returnedItems = values.returnedItems.filter(item => item.selected && item.quantity < item.originalQuantity);
         
@@ -206,7 +195,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
             
           if (updateError) {
             console.error("Error updating returned item:", updateError);
-            // Continue with other items even if one fails
           }
         }
       }
@@ -233,17 +221,16 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     const currentItems = form.getValues("returnedItems") || [];
     if (currentItems[index]) {
       currentItems[index].selected = selected;
-      form.setValue("returnedItems", [...currentItems]); // Use spread operator to trigger re-render
+      form.setValue("returnedItems", [...currentItems]);
     }
   };
 
   const handleQuantityChange = (index: number, quantity: number) => {
     const currentItems = form.getValues("returnedItems") || [];
     if (currentItems[index]) {
-      // Ensure quantity doesn't exceed original quantity
       const newQuantity = Math.min(Math.max(0, quantity), currentItems[index].originalQuantity);
       currentItems[index].quantity = newQuantity;
-      form.setValue("returnedItems", [...currentItems]); // Use spread operator to trigger re-render
+      form.setValue("returnedItems", [...currentItems]);
     }
   };
 
@@ -251,17 +238,14 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     const items = form.getValues("returnedItems") || [];
     const originalTotal = invoice?.sales?.total_amount || 0;
     
-    // Calculate returned amount
     let returnedAmount = 0;
     items.forEach(item => {
       if (item.selected) {
-        // Calculate the value of returned items
         const returnedQuantity = item.originalQuantity - item.quantity;
         returnedAmount += returnedQuantity * item.price;
       }
     });
     
-    // Update new amount field with the calculated value
     const newAmount = Math.max(0, originalTotal - returnedAmount);
     console.log(`Calculated new amount: ${newAmount} (original: ${originalTotal}, returned: ${returnedAmount})`);
     form.setValue("newAmount", newAmount);
