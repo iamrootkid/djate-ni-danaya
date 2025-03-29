@@ -2,7 +2,7 @@
 import { Json } from './auth';
 import type { ProfilesTable } from './auth';
 import type { CategoriesTable, ProductsTable } from './inventory';
-import type { SalesTable, SaleItemsTable, InvoicesTable, InvoiceModificationsTable } from './sales';
+import type { SalesTable, SaleItemsTable, InvoicesTable } from './sales';
 import type { DatabaseFunctions } from './functions';
 
 export type Database = {
@@ -14,7 +14,6 @@ export type Database = {
       sales: SalesTable;
       sale_items: SaleItemsTable;
       invoices: InvoicesTable;
-      invoice_modifications: InvoiceModificationsTable;
       shops: ShopsTable;
     };
     Functions: DatabaseFunctions;

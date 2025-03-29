@@ -31,7 +31,7 @@ export interface ReturnedItem {
   quantity: number;
   originalQuantity: number;
   selected: boolean;
-  price: number; // Added price property to fix the error
+  price?: number;
 }
 
 export type DateFilter = "all" | "daily" | "monthly" | "yesterday";
