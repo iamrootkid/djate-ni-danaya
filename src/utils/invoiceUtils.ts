@@ -1,6 +1,7 @@
 
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { InvoiceData } from "@/types/invoice";
+import { supabase } from "@/integrations/supabase/client";
 
 // Helper function to create an InvoiceData object with null-safety
 export const createInvoiceData = (
@@ -112,3 +113,47 @@ export const processInvoiceData = (invoiceData: any[] | null, shopId: string): I
     })
     .filter((invoice): invoice is InvoiceData => invoice !== null);
 };
+
+// Function to generate invoice number
+export const generateInvoiceNumber = async (shopId: string): Promise<string> => {
+  try {
+    console.log("Generating invoice number for shop:", shopId);
+    
+    // Get the current date
+    const today = new Date();
+    const year = today.getFullYear().toString().slice(-2);
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    
+    // Get the count of invoices for this shop today
+    const startOfToday = startOfDay(today).toISOString();
+    const endOfToday = endOfDay(today).toISOString();
+    
+    const { count, error } = await supabase
+      .from('invoices')
+      .select('id', { count: 'exact', head: true })
+      .eq('shop_id', shopId)
+      .gte('created_at', startOfToday)
+      .lte('created_at', endOfToday);
+    
+    if (error) {
+      console.error("Error counting invoices:", error);
+      throw new Error("Impossible de générer un numéro de facture");
+    }
+    
+    // Format: YYMMDD-SHOP-XXX where XXX is the sequential number for the day
+    const sequentialNumber = ((count || 0) + 1).toString().padStart(3, '0');
+    const shopPrefix = shopId.slice(0, 4).toUpperCase();
+    
+    const invoiceNumber = `${year}${month}${day}-${shopPrefix}-${sequentialNumber}`;
+    console.log("Generated invoice number:", invoiceNumber);
+    
+    return invoiceNumber;
+  } catch (error) {
+    console.error("Error generating invoice number:", error);
+    // Fallback to a timestamp-based number if there's an error
+    const timestamp = Date.now().toString().slice(-6);
+    return `INV-${timestamp}`;
+  }
+};
+

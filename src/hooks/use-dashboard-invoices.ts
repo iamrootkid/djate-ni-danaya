@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useShopId } from "./use-shop-id";
-import { InvoiceData, DateFilter } from "@/types/invoice";
+import { DateFilter } from "@/types/invoice";
 import { fetchInvoices } from "@/services/invoiceService";
 
-export { InvoiceData };
+// Use export type to fix the isolatedModules error
+export type { InvoiceData } from "@/types/invoice";
 
 export const useDashboardInvoices = (dateFilter: DateFilter = "daily", startDate: Date = new Date()) => {
   const queryClient = useQueryClient();
