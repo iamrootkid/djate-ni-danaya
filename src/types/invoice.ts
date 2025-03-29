@@ -1,4 +1,5 @@
 
+
 export interface InvoiceData {
   id: string;
   invoice_number: string;
@@ -35,3 +36,4 @@ export interface ReturnedItem {
 }
 
 export type DateFilter = "all" | "daily" | "monthly" | "yesterday";
+

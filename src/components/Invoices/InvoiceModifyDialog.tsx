@@ -158,8 +158,9 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         returned_items: values.modType === "return" ? values.returnedItems?.filter(item => item.selected) : null
       };
 
+      // Cast the function name to any to bypass TypeScript's type checking for RPC function names
       const { error: modificationError } = await supabase.rpc(
-        'create_invoice_modification',
+        'create_invoice_modification' as any,
         modificationData
       );
 

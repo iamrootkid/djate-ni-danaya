@@ -33,7 +33,8 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
         return [];
       }
 
-      return data as InvoiceModification[];
+      // Cast data to the correct type
+      return (data as unknown) as InvoiceModification[];
     },
     enabled: !!invoice?.id && open
   });
