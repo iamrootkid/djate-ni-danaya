@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { InvoiceModification, DatabaseFunctions } from "@/integrations/supabase/types/functions";
+import { InvoiceModification } from "@/integrations/supabase/types/functions";
 
 interface InvoiceViewDialogProps {
   open: boolean;
