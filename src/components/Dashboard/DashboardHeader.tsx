@@ -2,7 +2,7 @@
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DateFilter } from "@/hooks/use-dashboard";
+import { DateFilter } from "@/types/invoice";
 
 interface DashboardHeaderProps {
   dateFilter: DateFilter;

@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -5,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { InvoiceModification } from "@/integrations/supabase/types/functions";
+import { InvoiceModification, DatabaseFunctions } from "@/integrations/supabase/types/functions";
 
 interface InvoiceViewDialogProps {
   open: boolean;
@@ -23,7 +24,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
       if (!invoice?.id) return [];
 
       const { data, error } = await supabase.rpc(
-        'get_invoice_modifications' as keyof DatabaseFunctions,
+        'get_invoice_modifications',
         { invoice_id: invoice.id }
       );
 

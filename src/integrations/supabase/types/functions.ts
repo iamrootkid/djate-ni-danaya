@@ -6,18 +6,20 @@ export interface BestSellingProduct {
   total_revenue: number;
 }
 
+export interface StockSummary {
+  total_income: number;
+  total_expenses: number;
+  stock_in: number;
+  stock_out: number;
+  profit: number;
+}
+
 // Define all database functions in this interface
 export interface DatabaseFunctions {
   check_column_exists: (args: { table_name: string; column_name: string }) => boolean;
   generate_invoice_number: () => string;
   get_best_selling_products: () => BestSellingProduct[];
-  get_stock_summary: () => {
-    total_income: number;
-    total_expenses: number;
-    stock_in: number;
-    stock_out: number;
-    profit: number;
-  }[];
+  get_stock_summary: () => StockSummary[];
   is_admin: () => boolean;
   create_invoice_modification: (args: {
     invoice_id: string;

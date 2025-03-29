@@ -3,7 +3,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardSales, SalesData } from "@/hooks/use-dashboard-sales";
-import { DateFilter } from "@/hooks/use-dashboard";
+import { DateFilter } from "@/types/invoice";
 
 interface SalesChartProps {
   dateFilter?: DateFilter;

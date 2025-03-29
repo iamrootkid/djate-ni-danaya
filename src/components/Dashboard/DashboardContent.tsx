@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { DashboardInvoices } from "@/components/Dashboard/DashboardInvoices";
 import { ProductStockStatus } from "@/components/Dashboard/ProductStockStatus";
 import { BestSellingProducts } from "@/components/Dashboard/BestSellingProducts";
-import { DateFilter } from "@/hooks/use-dashboard";
+import { DateFilter } from "@/types/invoice";
 
 interface DashboardContentProps {
   dateFilter: DateFilter;

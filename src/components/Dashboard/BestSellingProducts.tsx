@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useBestSellingProducts } from "@/hooks/use-best-selling-products";
 import { BestSellingProduct } from "@/integrations/supabase/types/functions";
-import { DateFilter } from "@/hooks/use-dashboard";
+import { DateFilter } from "@/types/invoice";
 
 interface BestSellingProductsProps {
   dateFilter: DateFilter;

@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { StockSummary } from "@/integrations/supabase/types/functions";
+import { DateFilter } from "@/types/invoice";
 
-export const useStockSummary = (startDate: Date, dateFilter: "all" | "daily" | "monthly") => {
+export const useStockSummary = (startDate: Date, dateFilter: DateFilter) => {
   const { shopId } = useShopId();
 
   return useQuery<StockSummary>({

@@ -5,10 +5,11 @@ import { ArrowUp, ArrowDown, DollarSign, Banknote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useStockSummary } from "@/hooks/use-stock-summary";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DateFilter } from "@/types/invoice";
 
 interface StockSummaryProps {
   startDate: Date;
-  dateFilter: "all" | "daily" | "monthly";
+  dateFilter: DateFilter;
 }
 
 export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
