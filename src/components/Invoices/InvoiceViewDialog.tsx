@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -24,7 +23,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
       if (!invoice?.id) return [];
 
       const { data, error } = await supabase.rpc(
-        'get_invoice_modifications',
+        'get_invoice_modifications' as keyof DatabaseFunctions,
         { invoice_id: invoice.id }
       );
 
@@ -33,8 +32,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
         return [];
       }
 
-      // Cast data to the correct type
-      return (data as unknown) as InvoiceModification[];
+      return data as InvoiceModification[];
     },
     enabled: !!invoice?.id && open
   });

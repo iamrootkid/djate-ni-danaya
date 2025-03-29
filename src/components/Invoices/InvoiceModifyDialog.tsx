@@ -15,6 +15,7 @@ import * as z from "zod";
 import { ReturnedItem } from "@/types/invoice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { QueryClient } from "@tanstack/react-query";
+import { DatabaseFunctions } from "@/integrations/supabase/types/functions";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
@@ -160,7 +161,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       console.log("Submitting modification:", modificationData);
 
       const { error: modificationError } = await supabase.rpc(
-        'create_invoice_modification' as any,
+        'create_invoice_modification' as keyof DatabaseFunctions,
         modificationData
       );
 

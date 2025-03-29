@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { useShopId } from "./use-shop-id";
-import { DateFilter } from "./use-dashboard";
+import { DateFilter } from "@/types/invoice";
 
 interface RecentOrder {
   id: string;
