@@ -48,21 +48,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalItems, setOriginalItems] = useState<ReturnedItem[]>([]);
 
-  // Create form with default values
-  const form = useForm<ModificationFormValues>({
-    resolver: zodResolver(modificationSchema),
-    defaultValues: {
-      modType: "price",
-      newAmount: invoice?.sales?.total_amount || 0,
-      reason: "",
-      returnedItems: [],
-    },
-  });
-
-  const modType = form.watch("modType");
-  const returnedItems = form.watch("returnedItems") || [];
-
-  // Define fetchSaleItems function
+  // Define fetchSaleItems function before using it in hooks
   const fetchSaleItems = async (saleId: string) => {
     try {
       const { data, error } = await supabase
@@ -112,6 +98,20 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     }
   };
 
+  // Create form with default values
+  const form = useForm<ModificationFormValues>({
+    resolver: zodResolver(modificationSchema),
+    defaultValues: {
+      modType: "price",
+      newAmount: invoice?.sales?.total_amount || 0,
+      reason: "",
+      returnedItems: [],
+    },
+  });
+
+  const modType = form.watch("modType");
+  const returnedItems = form.watch("returnedItems") || [];
+
   // Fetch sale items when dialog opens
   useEffect(() => {
     if (open && invoice?.sale_id) {
@@ -119,12 +119,12 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     }
   }, [open, invoice]);
 
-  // Auto calculate new amount when items change
+  // Auto calculate new amount when items change or selection changes
   useEffect(() => {
-    if (modType === "return" && returnedItems.length > 0) {
+    if (modType === "return") {
       calculateNewTotal();
     }
-  }, [returnedItems, modType]);
+  }, [modType, returnedItems]);
 
   const handleSubmit = async (values: ModificationFormValues) => {
     if (!shopId) {
@@ -193,10 +193,13 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         const returnedItems = values.returnedItems.filter(item => item.selected && item.quantity < item.originalQuantity);
         
         for (const item of returnedItems) {
+          const returnedQuantity = item.originalQuantity - item.quantity;
+          console.log(`Updating item ${item.id}: returning ${returnedQuantity} units`);
+          
           const { error: updateError } = await supabase
             .from('sale_items')
             .update({ 
-              returned_quantity: item.originalQuantity - item.quantity,
+              returned_quantity: returnedQuantity,
               updated_at: new Date().toISOString()
             })
             .eq('id', item.id);
@@ -230,12 +233,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     const currentItems = form.getValues("returnedItems") || [];
     if (currentItems[index]) {
       currentItems[index].selected = selected;
-      form.setValue("returnedItems", currentItems);
-      
-      // Calculate new total automatically when selection changes
-      if (modType === "return") {
-        calculateNewTotal();
-      }
+      form.setValue("returnedItems", [...currentItems]); // Use spread operator to trigger re-render
     }
   };
 
@@ -243,14 +241,9 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     const currentItems = form.getValues("returnedItems") || [];
     if (currentItems[index]) {
       // Ensure quantity doesn't exceed original quantity
-      const newQuantity = Math.min(quantity, currentItems[index].originalQuantity);
+      const newQuantity = Math.min(Math.max(0, quantity), currentItems[index].originalQuantity);
       currentItems[index].quantity = newQuantity;
-      form.setValue("returnedItems", currentItems);
-      
-      // Recalculate total if in return mode (will trigger useEffect)
-      if (modType === "return") {
-        calculateNewTotal();
-      }
+      form.setValue("returnedItems", [...currentItems]); // Use spread operator to trigger re-render
     }
   };
 
@@ -261,14 +254,16 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     // Calculate returned amount
     let returnedAmount = 0;
     items.forEach(item => {
-      if (item.selected && item.quantity < item.originalQuantity) {
+      if (item.selected) {
+        // Calculate the value of returned items
         const returnedQuantity = item.originalQuantity - item.quantity;
         returnedAmount += returnedQuantity * item.price;
       }
     });
     
-    // Update new amount field
+    // Update new amount field with the calculated value
     const newAmount = Math.max(0, originalTotal - returnedAmount);
+    console.log(`Calculated new amount: ${newAmount} (original: ${originalTotal}, returned: ${returnedAmount})`);
     form.setValue("newAmount", newAmount);
   };
 
@@ -327,33 +322,34 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
               <div className="space-y-4">
                 <Label>Items to Return</Label>
                 <div className="border rounded-md p-3 space-y-2 max-h-60 overflow-y-auto">
-                  {originalItems.map((item, index) => (
-                    <div key={item.id} className="flex items-center space-x-2 py-2 border-b last:border-0">
-                      <input
-                        type="checkbox"
-                        checked={item.selected}
-                        onChange={e => handleItemSelection(index, e.target.checked)}
-                        className="h-4 w-4"
-                      />
-                      <div className="flex-1">{item.name}</div>
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor={`qty-${item.id}`}>Qty:</Label>
-                        <Input
-                          id={`qty-${item.id}`}
-                          type="number"
-                          disabled={!item.selected}
-                          min={0}
-                          max={item.originalQuantity}
-                          value={item.quantity}
-                          onChange={e => handleQuantityChange(index, parseInt(e.target.value) || 0)}
-                          className="w-16"
-                        />
-                        <span className="text-sm text-muted-foreground">/ {item.originalQuantity}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {originalItems.length === 0 && (
+                  {originalItems.length === 0 ? (
                     <div className="text-center py-2 text-muted-foreground">No items found</div>
+                  ) : (
+                    originalItems.map((item, index) => (
+                      <div key={item.id} className="flex items-center space-x-2 py-2 border-b last:border-0">
+                        <input
+                          type="checkbox"
+                          checked={item.selected}
+                          onChange={e => handleItemSelection(index, e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <div className="flex-1">{item.name}</div>
+                        <div className="flex items-center space-x-2">
+                          <Label htmlFor={`qty-${item.id}`}>Qty:</Label>
+                          <Input
+                            id={`qty-${item.id}`}
+                            type="number"
+                            disabled={!item.selected}
+                            min={0}
+                            max={item.originalQuantity}
+                            value={item.quantity}
+                            onChange={e => handleQuantityChange(index, parseInt(e.target.value) || 0)}
+                            className="w-16"
+                          />
+                          <span className="text-sm text-muted-foreground">/ {item.originalQuantity}</span>
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
               </div>

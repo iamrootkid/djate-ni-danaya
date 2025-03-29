@@ -18,7 +18,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
   const [activeTab, setActiveTab] = useState<"details" | "modifications">("details");
 
   // Fetch invoice modifications
-  const { data: modifications, isLoading } = useQuery({
+  const { data: modifications, isLoading } = useQuery<InvoiceModification[]>({
     queryKey: ["invoice-modifications", invoice?.id],
     queryFn: async () => {
       if (!invoice?.id) return [];
@@ -33,7 +33,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
         return [];
       }
 
-      return data as InvoiceModification[];
+      return (data as InvoiceModification[]) || [];
     },
     enabled: !!invoice?.id && open
   });
