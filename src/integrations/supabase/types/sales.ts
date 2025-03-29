@@ -1,4 +1,3 @@
-
 import { Json } from './auth';
 
 export interface Sale {
@@ -141,7 +140,6 @@ export interface InvoicesTable {
   };
 }
 
-// Add the InvoiceModificationsTable type
 export interface InvoiceModificationsTable {
   Row: {
     id: string;
@@ -150,9 +148,9 @@ export interface InvoiceModificationsTable {
     new_amount?: number;
     reason: string;
     modified_by: string;
-    shop_id: string;
     created_at: string;
-    returned_items?: any | null;
+    shop_id: string;
+    returned_items?: Json;
   };
   Insert: {
     id?: string;
@@ -161,9 +159,9 @@ export interface InvoiceModificationsTable {
     new_amount?: number;
     reason: string;
     modified_by: string;
-    shop_id: string;
     created_at?: string;
-    returned_items?: any | null;
+    shop_id: string;
+    returned_items?: Json;
   };
   Update: {
     id?: string;
@@ -172,8 +170,28 @@ export interface InvoiceModificationsTable {
     new_amount?: number;
     reason?: string;
     modified_by?: string;
-    shop_id?: string;
     created_at?: string;
-    returned_items?: any | null;
+    shop_id?: string;
+    returned_items?: Json;
   };
+  Relationships: [
+    {
+      foreignKeyName: "invoice_modifications_invoice_id_fkey";
+      columns: ["invoice_id"];
+      referencedRelation: "invoices";
+      referencedColumns: ["id"];
+    },
+    {
+      foreignKeyName: "invoice_modifications_modified_by_fkey";
+      columns: ["modified_by"];
+      referencedRelation: "users";
+      referencedColumns: ["id"];
+    },
+    {
+      foreignKeyName: "invoice_modifications_shop_id_fkey";
+      columns: ["shop_id"];
+      referencedRelation: "shops";
+      referencedColumns: ["id"];
+    }
+  ];
 }

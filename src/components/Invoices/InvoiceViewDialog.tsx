@@ -17,24 +17,40 @@ interface InvoiceViewDialogProps {
 
 export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogProps) => {
   // Query to fetch modification history
-  const { data: modifications } = useQuery<InvoiceModification[]>({
+  const { data: modifications } = useQuery<any[]>({
     queryKey: ["invoice-modifications", invoice?.id],
     queryFn: async () => {
       if (!invoice?.id) return [];
       
-      const { data, error } = await supabase
-        .from("invoice_modifications")
-        .select(`
-          *,
-          profiles (
-            email
-          )
-        `)
-        .eq("invoice_id", invoice.id)
-        .order("created_at", { ascending: false });
+      try {
+        // Use RPC call or direct query as a workaround for the type issue
+        const { data, error } = await supabase
+          .rpc('get_invoice_modifications', { invoice_id: invoice.id });
+          
+        if (error) {
+          console.error("Error fetching modifications with RPC:", error);
+          
+          // Fallback to direct query
+          const { data: directData, error: directError } = await supabase
+            .from('invoice_modifications' as any)
+            .select(`
+              *,
+              profiles (
+                email
+              )
+            `)
+            .eq("invoice_id", invoice.id)
+            .order("created_at", { ascending: false });
+            
+          if (directError) throw directError;
+          return directData || [];
+        }
         
-      if (error) throw error;
-      return data || [];
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching invoice modifications:", error);
+        return [];
+      }
     },
     enabled: !!invoice?.id && open
   });

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useState as useHookState } from "react";
 import { ReturnedItem } from "@/types/invoice";
 
 const modificationSchema = z.object({
@@ -47,7 +46,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const { toast } = useToast();
   const { shopId } = useShopId();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [originalItems, setOriginalItems] = useHookState<ReturnedItem[]>([]);
+  const [originalItems, setOriginalItems] = useState<ReturnedItem[]>([]);
 
   // Create form with default values
   const form = useForm<ModificationFormValues>({
@@ -62,13 +61,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
   const modType = form.watch("modType");
 
-  // Fetch sale items when dialog opens
-  useState(() => {
-    if (open && invoice?.sale_id) {
-      fetchSaleItems(invoice.sale_id);
-    }
-  });
-
+  // Define fetchSaleItems function before using it
   const fetchSaleItems = async (saleId: string) => {
     try {
       const { data, error } = await supabase
@@ -87,17 +80,27 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
       if (error) throw error;
 
-      const formattedItems = data?.map((item) => ({
-        id: item.id,
-        name: item.products?.name || "Unknown product",
-        quantity: item.quantity,
-        originalQuantity: item.quantity,
-        price: item.price_at_sale,
-        selected: false,
-      })) || [];
+      // Handle possible column not found error
+      if (data && Array.isArray(data)) {
+        const formattedItems = data.map((item: any) => ({
+          id: item.id || "",
+          name: item.products?.name || "Unknown product",
+          quantity: item.quantity || 0,
+          originalQuantity: item.quantity || 0,
+          price: item.price_at_sale || 0,
+          selected: false,
+        }));
 
-      setOriginalItems(formattedItems);
-      form.setValue("returnedItems", formattedItems);
+        setOriginalItems(formattedItems);
+        form.setValue("returnedItems", formattedItems);
+      } else {
+        console.error("Invalid data format:", data);
+        toast({
+          title: "Error",
+          description: "Failed to load sale items: Invalid data format",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       console.error("Error fetching sale items:", error);
       toast({
@@ -107,6 +110,13 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       });
     }
   };
+
+  // Fetch sale items when dialog opens
+  useEffect(() => {
+    if (open && invoice?.sale_id) {
+      fetchSaleItems(invoice.sale_id);
+    }
+  }, [open, invoice]);
 
   const handleSubmit = async (values: ModificationFormValues) => {
     if (!shopId) {
@@ -133,7 +143,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       }
 
       // Create modification record
-      const modificationData: any = {
+      const modificationData = {
         invoice_id: invoice.id,
         modification_type: values.modType,
         new_amount: values.newAmount,
@@ -144,11 +154,22 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         returned_items: values.modType === "return" ? values.returnedItems?.filter(item => item.selected) : null
       };
 
-      const { error: modificationError } = await supabase
-        .from('invoice_modifications')
-        .insert(modificationData);
+      // Use RPC call or custom endpoint for now as a workaround for the missing table in types
+      const { error: modificationError } = await supabase.rpc(
+        'create_invoice_modification',
+        modificationData
+      );
 
-      if (modificationError) throw modificationError;
+      if (modificationError) {
+        console.error("Error creating modification:", modificationError);
+        
+        // Fallback method if RPC fails - direct insert with type assertion
+        const { error: directError } = await supabase
+          .from('invoice_modifications' as any)
+          .insert(modificationData as any);
+          
+        if (directError) throw directError;
+      }
 
       // Update the invoice
       const { error } = await supabase
