@@ -60,6 +60,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   });
 
   const modType = form.watch("modType");
+  const returnedItems = form.watch("returnedItems") || [];
 
   // Define fetchSaleItems function
   const fetchSaleItems = async (saleId: string) => {
@@ -118,6 +119,13 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     }
   }, [open, invoice]);
 
+  // Auto calculate new amount when items change
+  useEffect(() => {
+    if (modType === "return" && returnedItems.length > 0) {
+      calculateNewTotal();
+    }
+  }, [returnedItems, modType]);
+
   const handleSubmit = async (values: ModificationFormValues) => {
     if (!shopId) {
       toast({
@@ -142,7 +150,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         throw new Error("Unauthorized: Invoice does not belong to your shop");
       }
 
-      // Create modification record
+      // Create modification record using RPC function
       const modificationData = {
         invoice_id: invoice.id,
         modification_type: values.modType,
@@ -180,7 +188,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
       if (error) throw error;
 
-      // If this is a return, update the sale_items quantities
+      // If this is a return, update the sale_items quantities (stock is updated by the RPC function)
       if (values.modType === "return" && values.returnedItems) {
         const returnedItems = values.returnedItems.filter(item => item.selected && item.quantity < item.originalQuantity);
         
@@ -223,6 +231,11 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     if (currentItems[index]) {
       currentItems[index].selected = selected;
       form.setValue("returnedItems", currentItems);
+      
+      // Calculate new total automatically when selection changes
+      if (modType === "return") {
+        calculateNewTotal();
+      }
     }
   };
 
@@ -234,7 +247,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       currentItems[index].quantity = newQuantity;
       form.setValue("returnedItems", currentItems);
       
-      // Recalculate total if in return mode
+      // Recalculate total if in return mode (will trigger useEffect)
       if (modType === "return") {
         calculateNewTotal();
       }
@@ -250,12 +263,13 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     items.forEach(item => {
       if (item.selected && item.quantity < item.originalQuantity) {
         const returnedQuantity = item.originalQuantity - item.quantity;
-        returnedAmount += returnedQuantity * (item.price || 0);
+        returnedAmount += returnedQuantity * item.price;
       }
     });
     
     // Update new amount field
-    form.setValue("newAmount", Math.max(0, originalTotal - returnedAmount));
+    const newAmount = Math.max(0, originalTotal - returnedAmount);
+    form.setValue("newAmount", newAmount);
   };
 
   return (
@@ -357,6 +371,8 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
                       min={0}
                       {...field}
                       onChange={e => field.onChange(Number(e.target.value))}
+                      className={modType === "return" ? "bg-gray-100" : ""}
+                      readOnly={modType === "return"}
                     />
                   </FormControl>
                   <FormMessage />

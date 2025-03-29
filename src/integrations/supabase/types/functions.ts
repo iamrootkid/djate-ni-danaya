@@ -13,22 +13,11 @@ export interface DatabaseFunctions {
   };
   get_best_selling_products: {
     Args: {};
-    Returns: {
-      product_id: string;
-      product_name: string;
-      total_quantity: number;
-      total_revenue: number;
-    }[];
+    Returns: BestSellingProduct[];
   };
   get_stock_summary: {
     Args: {};
-    Returns: {
-      total_income: number;
-      total_expenses: number;
-      stock_in: number;
-      stock_out: number;
-      profit: number;
-    }[];
+    Returns: StockSummary[];
   };
   is_admin: {
     Args: {};
@@ -51,6 +40,36 @@ export interface DatabaseFunctions {
     Args: {
       invoice_id: string;
     };
-    Returns: any[];
+    Returns: InvoiceModification[];
+  };
+}
+
+export interface BestSellingProduct {
+  product_id: string;
+  product_name: string;
+  total_quantity: number;
+  total_revenue: number;
+}
+
+export interface StockSummary {
+  total_income: number;
+  total_expenses: number;
+  stock_in: number;
+  stock_out: number;
+  profit: number;
+}
+
+export interface InvoiceModification {
+  id: string;
+  invoice_id: string;
+  modification_type: string;
+  new_amount: number;
+  reason: string;
+  modified_by: string;
+  created_at: string;
+  shop_id: string;
+  returned_items: any;
+  profiles?: {
+    email: string;
   };
 }

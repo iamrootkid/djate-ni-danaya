@@ -7,20 +7,24 @@ import { StockSummary } from "@/integrations/supabase/types/functions";
 export const useStockSummary = (startDate: Date, dateFilter: "all" | "daily" | "monthly") => {
   const { shopId } = useShopId();
 
-  return useQuery<StockSummary>({
+  return useQuery<StockSummary[]>({
     queryKey: ["stock-summary", shopId, dateFilter, startDate],
     queryFn: async () => {
-      if (!shopId) return null;
+      if (!shopId) return [];
 
-      // This is a stub implementation to make the component work
-      // Since we're not actually using the component, this just returns empty data
-      return {
-        total_income: 0,
-        total_expenses: 0,
-        stock_in: 0,
-        stock_out: 0,
-        profit: 0
-      };
+      try {
+        const { data, error } = await supabase.rpc('get_stock_summary');
+        
+        if (error) {
+          console.error("Error fetching stock summary:", error);
+          return [];
+        }
+        
+        return data as StockSummary[];
+      } catch (error) {
+        console.error("Error in stock summary query:", error);
+        return [];
+      }
     },
     enabled: !!shopId,
   });
