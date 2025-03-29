@@ -1,16 +1,18 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useShopData } from "@/hooks/use-shop-data";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 
 export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { useShopMutation } = useShopData();
 
@@ -25,28 +27,63 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
       setIsOpen(false);
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Erreur lors de l'ajout de la catégorie:", error);
-      toast({
-        title: "Erreur",
-        description: "Échec de l'ajout de la catégorie",
-        variant: "destructive",
-      });
+      
+      // Specific error message for duplicate category name
+      if (error.code === "23505" && error.message.includes("categories_name_key")) {
+        toast({
+          title: "Erreur",
+          description: "Une catégorie avec ce nom existe déjà",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Échec de l'ajout de la catégorie",
+          variant: "destructive",
+        });
+      }
+      
+      setIsSubmitting(false);
     }
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!name.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Le nom de la catégorie est requis",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
-      await mutate({ name, description });
+      await mutate({ 
+        name: name.trim(), 
+        description: description.trim() || null 
+      });
     } catch (error) {
       console.error("Erreur lors de l'ajout de la catégorie:", error);
+      // Error is handled in the onError callback
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!isSubmitting) {
+        setIsOpen(open);
+        if (!open) {
+          setName("");
+          setDescription("");
+        }
+      }
+    }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" /> Ajouter une catégorie
@@ -55,6 +92,9 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Ajouter une nouvelle catégorie</DialogTitle>
+          <DialogDescription>
+            Créez une nouvelle catégorie pour organiser vos produits
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -65,7 +105,9 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Nom de la catégorie"
               required
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -76,10 +118,12 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description de la catégorie (optionnel)"
+              disabled={isSubmitting}
             />
           </div>
-          <Button type="submit" className="w-full">
-            Ajouter la catégorie
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Ajout en cours..." : "Ajouter la catégorie"}
           </Button>
         </form>
       </DialogContent>

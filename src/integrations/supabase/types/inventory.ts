@@ -29,7 +29,7 @@ export interface CategoriesTable {
     id?: string;
     name: string;
     description?: string | null;
-    shop_id?: string | null;
+    shop_id: string;  // Make shop_id required for inserts
     created_at?: string;
     updated_at?: string;
   };
@@ -37,7 +37,7 @@ export interface CategoriesTable {
     id?: string;
     name?: string;
     description?: string | null;
-    shop_id?: string | null;
+    shop_id?: string;
     created_at?: string;
     updated_at?: string;
   };
