@@ -5,13 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit2, Phone } from "lucide-react";
+import { Eye, Edit2, Phone, RotateCcw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { InvoiceViewDialog } from "./InvoiceViewDialog";
 import { InvoiceModifyDialog } from "./InvoiceModifyDialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useShopId } from "@/hooks/use-shop-id";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface InvoiceListProps {
   dateFilter: "all" | "daily" | "monthly";
@@ -28,11 +29,16 @@ interface Invoice {
   updated_at: string;
   shop_id: string;
   sale_id: string;
+  is_modified?: boolean;
+  modification_reason?: string;
+  new_total_amount?: number;
   sales: {
     total_amount: number;
     shop_id: string;
     sale_items: Array<{
+      id: string;
       quantity: number;
+      returned_quantity?: number;
       price_at_sale: number;
       product_id: string;
       products: { name: string };
@@ -55,6 +61,26 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'invoices', filter: `shop_id=eq.${shopId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, shopId]);
+
+  // Add subscription for invoice_modifications table
+  useEffect(() => {
+    if (!shopId) return;
+
+    const channel = supabase
+      .channel('invoice-modification-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'invoice_modifications', filter: `shop_id=eq.${shopId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: ['invoices'] });
         }
@@ -99,7 +125,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
       console.log("Fetching invoices for verified shop:", shopId);
 
       try {
-        // First try with customer_phone column
+        // Updated query to include modification fields
         let query = supabase
           .from("invoices")
           .select(`
@@ -108,7 +134,9 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
               total_amount,
               shop_id,
               sale_items (
+                id,
                 quantity,
+                returned_quantity,
                 price_at_sale,
                 product_id,
                 products (
@@ -153,7 +181,9 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
             total_amount: number;
             shop_id: string;
             sale_items: Array<{
+              id: string;
               quantity: number;
+              returned_quantity?: number;
               price_at_sale: number;
               product_id: string;
               products: { name: string };
@@ -208,17 +238,22 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                 <TableHead>Customer Name</TableHead>
                 <TableHead>Customer Phone</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Total Amount</TableHead>
-                <TableHead>Modified</TableHead>
+                <TableHead>Original Amount</TableHead>
+                <TableHead>Current Amount</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {invoices && invoices.length > 0 ? (
                 invoices.map((invoice) => {
-                  // Check if the invoice has been modified by comparing created_at and updated_at timestamps
-                  const isModified = new Date(invoice.updated_at).getTime() > 
-                                    new Date(invoice.created_at).getTime() + 60000;
+                  const isModified = invoice.is_modified || 
+                                    (new Date(invoice.updated_at).getTime() > 
+                                    new Date(invoice.created_at).getTime() + 60000);
+                  
+                  const hasReturns = invoice.sales?.sale_items?.some(
+                    item => item.returned_quantity && item.returned_quantity > 0
+                  );
                   
                   return (
                     <TableRow key={invoice.id}>
@@ -235,10 +270,37 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                         )}
                       </TableCell>
                       <TableCell>{format(new Date(invoice.created_at), "PPP")}</TableCell>
-                      <TableCell>{invoice.sales?.total_amount.toLocaleString()} F CFA</TableCell>
+                      <TableCell className={isModified ? "line-through text-muted-foreground" : ""}>
+                        {invoice.sales?.total_amount.toLocaleString()} F CFA
+                      </TableCell>
+                      <TableCell>
+                        {isModified ? 
+                          <span className="font-medium">
+                            {(invoice.new_total_amount || invoice.sales?.total_amount).toLocaleString()} F CFA
+                          </span> 
+                          : 
+                          invoice.sales?.total_amount.toLocaleString() + " F CFA"
+                        }
+                      </TableCell>
                       <TableCell>
                         {isModified && (
-                          <Badge variant="outline">Modified</Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                {hasReturns ? (
+                                  <Badge variant="destructive" className="flex items-center gap-1">
+                                    <RotateCcw className="h-3 w-3" />
+                                    <span>Returns</span>
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline">Modified</Badge>
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">{invoice.modification_reason || "Modified invoice"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </TableCell>
                       <TableCell>
@@ -266,7 +328,7 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6">
+                  <TableCell colSpan={8} className="text-center py-6">
                     Aucune facture trouvée
                   </TableCell>
                 </TableRow>
