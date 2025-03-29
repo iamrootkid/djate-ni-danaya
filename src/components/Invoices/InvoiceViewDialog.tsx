@@ -23,27 +23,15 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
       if (!invoice?.id) return [];
       
       try {
-        // Use RPC call or direct query as a workaround for the type issue
-        const { data, error } = await supabase
-          .rpc('get_invoice_modifications', { invoice_id: invoice.id });
+        // Use RPC call
+        const { data, error } = await supabase.rpc(
+          'get_invoice_modifications', 
+          { invoice_id: invoice.id }
+        );
           
         if (error) {
           console.error("Error fetching modifications with RPC:", error);
-          
-          // Fallback to direct query
-          const { data: directData, error: directError } = await supabase
-            .from('invoice_modifications' as any)
-            .select(`
-              *,
-              profiles (
-                email
-              )
-            `)
-            .eq("invoice_id", invoice.id)
-            .order("created_at", { ascending: false });
-            
-          if (directError) throw directError;
-          return directData || [];
+          return [];
         }
         
         return data || [];

@@ -28,7 +28,7 @@ const modificationSchema = z.object({
       quantity: z.number().int().min(0),
       originalQuantity: z.number().int(),
       selected: z.boolean().default(false),
-      price: z.number().optional(), // Add price field
+      price: z.number(),
     })
   ).optional(),
 });
@@ -61,7 +61,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
   const modType = form.watch("modType");
 
-  // Define fetchSaleItems function before using it
+  // Define fetchSaleItems function
   const fetchSaleItems = async (saleId: string) => {
     try {
       const { data, error } = await supabase
@@ -85,8 +85,8 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         const formattedItems = data.map((item: any) => ({
           id: item.id || "",
           name: item.products?.name || "Unknown product",
-          quantity: item.quantity || 0,
-          originalQuantity: item.quantity || 0,
+          quantity: (item.quantity || 0) - (item.returned_quantity || 0),
+          originalQuantity: (item.quantity || 0) - (item.returned_quantity || 0),
           price: item.price_at_sale || 0,
           selected: false,
         }));
@@ -154,21 +154,15 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         returned_items: values.modType === "return" ? values.returnedItems?.filter(item => item.selected) : null
       };
 
-      // Use RPC call or custom endpoint for now as a workaround for the missing table in types
-      const { error: modificationError } = await supabase.rpc(
+      // Use RPC call to create the modification and update stock if necessary
+      const { data: modificationResult, error: modificationError } = await supabase.rpc(
         'create_invoice_modification',
         modificationData
       );
 
       if (modificationError) {
         console.error("Error creating modification:", modificationError);
-        
-        // Fallback method if RPC fails - direct insert with type assertion
-        const { error: directError } = await supabase
-          .from('invoice_modifications' as any)
-          .insert(modificationData as any);
-          
-        if (directError) throw directError;
+        throw modificationError;
       }
 
       // Update the invoice

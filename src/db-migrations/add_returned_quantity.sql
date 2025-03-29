@@ -35,3 +35,14 @@ BEGIN
   RETURN column_exists;
 END;
 $$;
+
+-- Make sure returned_quantity can't be greater than quantity
+ALTER TABLE sale_items 
+  DROP CONSTRAINT IF EXISTS check_returned_quantity,
+  ADD CONSTRAINT check_returned_quantity 
+  CHECK (returned_quantity IS NULL OR returned_quantity <= quantity);
+
+-- Create index for better query performance
+CREATE INDEX IF NOT EXISTS idx_sale_items_returned 
+  ON sale_items(returned_quantity) 
+  WHERE returned_quantity > 0;

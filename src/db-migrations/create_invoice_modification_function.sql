@@ -16,6 +16,11 @@ SECURITY DEFINER
 AS $$
 DECLARE
   result JSONB;
+  item_record JSONB;
+  sale_item_id UUID;
+  product_id UUID;
+  return_quantity INTEGER;
+  current_stock INTEGER;
 BEGIN
   -- Insert the modification
   INSERT INTO invoice_modifications (
@@ -38,6 +43,39 @@ BEGIN
     create_invoice_modification.returned_items
   )
   RETURNING to_jsonb(invoice_modifications.*) INTO result;
+
+  -- If this is a return, update product stock
+  IF modification_type = 'return' AND returned_items IS NOT NULL AND jsonb_array_length(returned_items) > 0 THEN
+    -- Loop through each returned item
+    FOR item_record IN SELECT * FROM jsonb_array_elements(returned_items)
+    LOOP
+      -- Only process selected items with reduced quantity
+      IF (item_record->>'selected')::boolean = true AND (item_record->>'quantity')::integer < (item_record->>'originalQuantity')::integer THEN
+        sale_item_id := (item_record->>'id')::UUID;
+        
+        -- Get product_id from sale_items
+        SELECT product_id INTO product_id 
+        FROM sale_items 
+        WHERE id = sale_item_id;
+        
+        IF product_id IS NOT NULL THEN
+          -- Calculate return quantity
+          return_quantity := (item_record->>'originalQuantity')::integer - (item_record->>'quantity')::integer;
+          
+          -- Update stock in products table
+          UPDATE products 
+          SET 
+            stock = stock + return_quantity,
+            updated_at = NOW()
+          WHERE id = product_id AND shop_id = create_invoice_modification.shop_id
+          RETURNING stock INTO current_stock;
+          
+          -- Log the update
+          RAISE NOTICE 'Product % stock updated to %', product_id, current_stock;
+        END IF;
+      END IF;
+    END LOOP;
+  END IF;
 
   RETURN result;
 END;
