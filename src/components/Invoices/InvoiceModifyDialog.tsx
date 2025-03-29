@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ReturnedItem } from "@/types/invoice";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
@@ -111,14 +113,16 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   useEffect(() => {
     if (open && invoice?.sale_id) {
       fetchSaleItems(invoice.sale_id);
+      form.setValue("newAmount", invoice?.sales?.total_amount || 0);
     }
   }, [open, invoice]);
 
+  // Watch for changes to returnedItems and recalculate new amount
   useEffect(() => {
     if (modType === "return") {
       calculateNewTotal();
     }
-  }, [modType, returnedItems]);
+  }, [returnedItems, modType]);
 
   const handleSubmit = async (values: ModificationFormValues) => {
     if (!shopId) {
@@ -218,19 +222,25 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   };
 
   const handleItemSelection = (index: number, selected: boolean) => {
-    const currentItems = form.getValues("returnedItems") || [];
+    const currentItems = [...form.getValues("returnedItems") || []];
     if (currentItems[index]) {
       currentItems[index].selected = selected;
-      form.setValue("returnedItems", [...currentItems]);
+      form.setValue("returnedItems", currentItems);
+      
+      // Force recalculation
+      calculateNewTotal();
     }
   };
 
   const handleQuantityChange = (index: number, quantity: number) => {
-    const currentItems = form.getValues("returnedItems") || [];
+    const currentItems = [...form.getValues("returnedItems") || []];
     if (currentItems[index]) {
       const newQuantity = Math.min(Math.max(0, quantity), currentItems[index].originalQuantity);
       currentItems[index].quantity = newQuantity;
-      form.setValue("returnedItems", [...currentItems]);
+      form.setValue("returnedItems", currentItems);
+      
+      // Force recalculation
+      calculateNewTotal();
     }
   };
 
@@ -311,22 +321,27 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
                   ) : (
                     originalItems.map((item, index) => (
                       <div key={item.id} className="flex items-center space-x-2 py-2 border-b last:border-0">
-                        <input
-                          type="checkbox"
-                          checked={item.selected}
-                          onChange={e => handleItemSelection(index, e.target.checked)}
+                        <Checkbox
+                          id={`item-${item.id}`}
+                          checked={returnedItems[index]?.selected || false}
+                          onCheckedChange={(checked) => handleItemSelection(index, checked === true)}
                           className="h-4 w-4"
                         />
-                        <div className="flex-1">{item.name}</div>
+                        <Label 
+                          htmlFor={`item-${item.id}`}
+                          className="flex-1 cursor-pointer"
+                        >
+                          {item.name}
+                        </Label>
                         <div className="flex items-center space-x-2">
                           <Label htmlFor={`qty-${item.id}`}>Qty:</Label>
                           <Input
                             id={`qty-${item.id}`}
                             type="number"
-                            disabled={!item.selected}
+                            disabled={!returnedItems[index]?.selected}
                             min={0}
                             max={item.originalQuantity}
-                            value={item.quantity}
+                            value={returnedItems[index]?.quantity || 0}
                             onChange={e => handleQuantityChange(index, parseInt(e.target.value) || 0)}
                             className="w-16"
                           />
