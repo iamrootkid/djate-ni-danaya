@@ -21,7 +21,14 @@ DECLARE
   product_id UUID;
   return_quantity INTEGER;
   current_stock INTEGER;
+  sale_id UUID;
 BEGIN
+  -- Get the sale_id from invoice
+  SELECT sales.id INTO sale_id
+  FROM invoices
+  JOIN sales ON invoices.sale_id = sales.id
+  WHERE invoices.id = create_invoice_modification.invoice_id;
+
   -- Insert the modification
   INSERT INTO invoice_modifications (
     invoice_id,
@@ -44,6 +51,15 @@ BEGIN
   )
   RETURNING to_jsonb(invoice_modifications.*) INTO result;
 
+  -- Update the invoice record to mark it as modified
+  UPDATE invoices
+  SET 
+    is_modified = TRUE,
+    modification_reason = create_invoice_modification.reason,
+    new_total_amount = create_invoice_modification.new_amount,
+    updated_at = NOW()
+  WHERE id = create_invoice_modification.invoice_id;
+
   -- If this is a return, update product stock
   IF modification_type = 'return' AND returned_items IS NOT NULL AND jsonb_array_length(returned_items) > 0 THEN
     -- Loop through each returned item
@@ -62,6 +78,13 @@ BEGIN
           -- Calculate return quantity
           return_quantity := (item_record->>'originalQuantity')::integer - (item_record->>'quantity')::integer;
           
+          -- Update sale_items to record returned quantity
+          UPDATE sale_items
+          SET
+            returned_quantity = return_quantity,
+            updated_at = NOW()
+          WHERE id = sale_item_id;
+          
           -- Update stock in products table
           UPDATE products 
           SET 
@@ -75,6 +98,12 @@ BEGIN
         END IF;
       END IF;
     END LOOP;
+    
+    -- Update sale total amount to reflect the return
+    UPDATE sales
+    SET total_amount = create_invoice_modification.new_amount,
+        updated_at = NOW()
+    WHERE id = sale_id;
   END IF;
 
   RETURN result;

@@ -161,7 +161,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
                             {Array.isArray(mod.returned_items) && mod.returned_items.map((item: any, idx: number) => (
                               <li key={idx} className="flex justify-between">
                                 <span>{item.name}</span>
-                                <span>{item.originalQuantity - item.quantity} units</span>
+                                <span>{item.originalQuantity - item.quantity} units returned</span>
                               </li>
                             ))}
                           </ul>

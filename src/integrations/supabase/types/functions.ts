@@ -68,8 +68,17 @@ export interface InvoiceModification {
   modified_by: string;
   created_at: string;
   shop_id: string;
-  returned_items: any;
+  returned_items: ReturnedItem[] | null;
   profiles?: {
     email: string;
   };
+}
+
+export interface ReturnedItem {
+  id: string;
+  name: string;
+  quantity: number;
+  originalQuantity: number;
+  selected: boolean;
+  price: number;
 }
