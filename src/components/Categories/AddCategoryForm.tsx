@@ -36,7 +36,13 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
       if (error.code === "23505" && error.message.includes("categories_name_key")) {
         toast({
           title: "Erreur",
-          description: "Une catégorie avec ce nom existe déjà",
+          description: "Une catégorie avec ce nom existe déjà dans ce magasin",
+          variant: "destructive",
+        });
+      } else if (error.code === "23505" && error.message.includes("categories_name_shop_id_key")) {
+        toast({
+          title: "Erreur",
+          description: "Une catégorie avec ce nom existe déjà dans ce magasin",
           variant: "destructive",
         });
       } else {

@@ -83,7 +83,12 @@ export const CategoryFilter = ({ selectedCategory, onSelectCategory }: CategoryF
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505" && (error.message.includes("categories_name_key") || error.message.includes("categories_name_shop_id_key"))) {
+          throw new Error("Une catégorie avec ce nom existe déjà dans ce magasin");
+        }
+        throw error;
+      }
 
       toast({
         title: "Succès",
@@ -103,11 +108,11 @@ export const CategoryFilter = ({ selectedCategory, onSelectCategory }: CategoryF
       if (data) {
         onSelectCategory(data.id);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding category:", error);
       toast({
         title: "Erreur",
-        description: "Erreur lors de l'ajout de la catégorie",
+        description: error.message || "Erreur lors de l'ajout de la catégorie",
         variant: "destructive"
       });
     } finally {

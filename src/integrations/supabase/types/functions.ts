@@ -11,6 +11,13 @@ export interface InvoiceModification {
   returned_items?: any[] | null;
 }
 
+export interface BestSellingProduct {
+  product_id: string;
+  product_name: string;
+  total_quantity: number;
+  total_revenue: number;
+}
+
 export interface DatabaseFunctions {
   check_column_exists: {
     Args: { table_name: string; column_name: string };
@@ -22,7 +29,7 @@ export interface DatabaseFunctions {
   };
   get_best_selling_products: {
     Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
-    Returns: { product_id: string; product_name: string; total_quantity: number; total_revenue: number }[];
+    Returns: BestSellingProduct[];
   };
   get_stock_summary: {
     Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
