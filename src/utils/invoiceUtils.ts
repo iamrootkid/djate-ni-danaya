@@ -1,88 +1,114 @@
-import { supabase } from "@/integrations/supabase/client";
 
-const MAX_RETRIES = 5;
-const INITIAL_SEQUENCE = 1;
+import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
+import { InvoiceData } from "@/types/invoice";
 
-export const generateInvoiceNumber = async (shopId: string): Promise<string> => {
-  let retryCount = 0;
+// Helper function to create an InvoiceData object with null-safety
+export const createInvoiceData = (
+  invoice: any, 
+  sale: { total_amount: number; shop_id: string; employee?: { email: string } | null }
+): InvoiceData | null => {
+  // Skip this invoice if it's null or not an object
+  if (!invoice || typeof invoice !== 'object') {
+    console.warn("Invoice is null or not an object");
+    return null;
+  }
   
-  while (retryCount < MAX_RETRIES) {
-    try {
-      console.log(`Attempt ${retryCount + 1} to generate invoice number for shop:`, shopId);
-      
-      // Get the current date
-      const now = new Date();
-      const year = now.getFullYear().toString().slice(-2);
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      const day = now.getDate().toString().padStart(2, '0');
-      const datePrefix = `${year}${month}${day}`;
-      
-      console.log("Current date components:", { year, month, day });
-
-      // Get all invoice numbers for today for this specific shop
-      const { data: todayInvoices, error: fetchError } = await supabase
-        .from('invoices')
-        .select('invoice_number')
-        .eq('shop_id', shopId)
-        .ilike('invoice_number', `INV-${shopId.slice(0, 4)}-${datePrefix}-%`)
-        .order('invoice_number', { ascending: false });
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      // Find the highest sequence number
-      let maxSequence = 0;
-      if (todayInvoices && todayInvoices.length > 0) {
-        for (const invoice of todayInvoices) {
-          const match = invoice.invoice_number.match(/\d+$/);
-          if (match) {
-            const sequence = parseInt(match[0]);
-            if (sequence > maxSequence) {
-              maxSequence = sequence;
-            }
-          }
-        }
-      }
-
-      // Generate new sequence number
-      const sequence = maxSequence + 1;
-      console.log("Generated sequence number:", sequence);
-
-      // Format: INV-SHOP-YYMMDD-XXXX where:
-      // SHOP is first 4 chars of shop_id
-      // YYMMDD is the date
-      // XXXX is a 4-digit sequence number
-      const invoiceNumber = `INV-${shopId.slice(0, 4)}-${datePrefix}-${sequence.toString().padStart(4, '0')}`;
-      console.log("Generated invoice number:", invoiceNumber);
-
-      // Double-check the invoice number doesn't exist
-      const { data: existingInvoice, error: checkError } = await supabase
-        .from('invoices')
-        .select('id')
-        .eq('invoice_number', invoiceNumber)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      if (existingInvoice) {
-        console.log("Invoice number already exists, retrying...");
-        retryCount++;
-        continue;
-      }
-
-      return invoiceNumber;
-    } catch (error) {
-      console.error(`Error on attempt ${retryCount + 1}:`, error);
-      retryCount++;
-      
-      if (retryCount === MAX_RETRIES) {
-        throw new Error('Erreur lors de la génération du numéro de facture après plusieurs tentatives');
-      }
-    }
+  // Skip this invoice if it's missing required fields
+  if (!invoice.id || !invoice.invoice_number || !invoice.created_at || !invoice.sale_id) {
+    console.warn("Invoice missing required fields:", invoice);
+    return null;
   }
 
-  throw new Error('Erreur lors de la génération du numéro de facture');
-}; 
+  const result: InvoiceData = {
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    customer_name: invoice.customer_name || "Client inconnu",
+    customer_phone: invoice.customer_phone || undefined,
+    created_at: invoice.created_at,
+    total_amount: sale.total_amount || 0,
+    sale_id: invoice.sale_id,
+    employee_email: sale.employee?.email || "Email inconnu"
+  };
+  
+  return result;
+};
+
+// Helper to apply date filters to a query
+export const applyDateFilter = (query: any, dateFilter: string, startDate: Date) => {
+  if (dateFilter === "daily") {
+    const dayStart = startOfDay(startDate);
+    const dayEnd = endOfDay(startDate);
+    console.log("Daily filter dates:", {
+      start: dayStart.toISOString(),
+      end: dayEnd.toISOString()
+    });
+    return query
+      .gte("created_at", dayStart.toISOString())
+      .lte("created_at", dayEnd.toISOString());
+  } else if (dateFilter === "yesterday") {
+    const yesterday = subDays(startDate, 1);
+    const dayStart = startOfDay(yesterday);
+    const dayEnd = endOfDay(yesterday);
+    console.log("Yesterday filter dates:", {
+      start: dayStart.toISOString(),
+      end: dayEnd.toISOString()
+    });
+    return query
+      .gte("created_at", dayStart.toISOString())
+      .lte("created_at", dayEnd.toISOString());
+  } else if (dateFilter === "monthly") {
+    const monthStart = startOfMonth(startDate);
+    const monthEnd = endOfMonth(startDate);
+    console.log("Monthly filter dates:", {
+      start: monthStart.toISOString(),
+      end: monthEnd.toISOString()
+    });
+    return query
+      .gte("created_at", monthStart.toISOString())
+      .lte("created_at", monthEnd.toISOString());
+  } else {
+    console.log("Fetching all invoices (no date filter)");
+    return query;
+  }
+};
+
+// Helper to process invoice data
+export const processInvoiceData = (invoiceData: any[] | null, shopId: string): InvoiceData[] => {
+  if (!invoiceData || !Array.isArray(invoiceData)) {
+    return [];
+  }
+  
+  return invoiceData
+    .map((invoice) => {
+      // Skip null or invalid invoices
+      if (!invoice || typeof invoice !== 'object') {
+        console.warn("Invoice is null or not an object");
+        return null;
+      }
+      
+      // Check if sales data is available
+      if (!invoice.sales) {
+        console.warn("Invoice has no sales data:", invoice);
+        return null;
+      }
+      
+      const sale = invoice.sales as {
+        total_amount: number;
+        shop_id: string;
+        employee: { email: string } | null;
+      };
+      
+      // Double check shop ID match
+      if (!sale || sale.shop_id !== shopId) {
+        console.warn("Shop ID mismatch:", {
+          invoiceShopId: invoice.shop_id,
+          saleShopId: sale?.shop_id,
+          expectedShopId: shopId
+        });
+        return null;
+      }
+      
+      return createInvoiceData(invoice, sale);
+    })
+    .filter((invoice): invoice is InvoiceData => invoice !== null);
+};

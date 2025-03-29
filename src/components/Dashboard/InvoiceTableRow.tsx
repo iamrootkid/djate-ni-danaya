@@ -1,5 +1,5 @@
 
-import { InvoiceData } from "@/hooks/use-dashboard-invoices";
+import { InvoiceData } from "@/types/invoice";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";

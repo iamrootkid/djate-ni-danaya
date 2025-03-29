@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InvoiceTable } from "./InvoiceTable";
 import { useDashboardInvoices } from "@/hooks/use-dashboard-invoices";
-import { DateFilter } from "@/hooks/use-dashboard";
+import { DateFilter } from "@/types/invoice";
 
 interface DashboardInvoicesProps {
   dateFilter: DateFilter;

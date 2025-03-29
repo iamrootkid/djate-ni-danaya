@@ -2,7 +2,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InvoiceTableRow } from "./InvoiceTableRow";
 import { InvoiceTableSkeleton } from "./InvoiceTableSkeleton";
-import { InvoiceData } from "@/hooks/use-dashboard-invoices";
+import { InvoiceData } from "@/types/invoice";
 
 interface InvoiceTableProps {
   invoices: InvoiceData[] | undefined;
