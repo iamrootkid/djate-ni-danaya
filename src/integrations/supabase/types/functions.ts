@@ -1,9 +1,54 @@
 
-export interface BestSellingProduct {
-  product_id: string;
-  product_name: string;
-  total_quantity: number;
-  total_revenue: number;
+export interface InvoiceModification {
+  id: string;
+  invoice_id: string;
+  modification_type: string;
+  new_amount: number;
+  reason: string;
+  created_at: string;
+  modified_by: string;
+  shop_id: string;
+  returned_items?: any[] | null;
+}
+
+export interface DatabaseFunctions {
+  check_column_exists: {
+    Args: { table_name: string; column_name: string };
+    Returns: boolean;
+  };
+  generate_invoice_number: {
+    Args: { shop_id_param: string };
+    Returns: string;
+  };
+  get_best_selling_products: {
+    Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
+    Returns: { product_id: string; product_name: string; total_quantity: number; total_revenue: number }[];
+  };
+  get_stock_summary: {
+    Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
+    Returns: { total_income: number; total_expenses: number; stock_in: number; stock_out: number; profit: number }[];
+  };
+  is_admin: {
+    Args: Record<string, never>;
+    Returns: boolean;
+  };
+  create_invoice_modification: {
+    Args: {
+      invoice_id: string;
+      modification_type: string;
+      new_amount: number;
+      reason: string;
+      modified_by: string;
+      shop_id: string;
+      created_at: string;
+      returned_items: any[] | null;
+    };
+    Returns: undefined;
+  };
+  get_invoice_modifications: {
+    Args: { invoice_id_param: string };
+    Returns: InvoiceModification[];
+  };
 }
 
 export interface StockSummary {
@@ -12,39 +57,4 @@ export interface StockSummary {
   stock_in: number;
   stock_out: number;
   profit: number;
-}
-
-// Define all database functions in this interface
-export interface DatabaseFunctions {
-  check_column_exists: (args: { table_name: string; column_name: string }) => boolean;
-  generate_invoice_number: () => string;
-  get_best_selling_products: () => BestSellingProduct[];
-  get_stock_summary: () => StockSummary[];
-  is_admin: () => boolean;
-  create_invoice_modification: (args: {
-    invoice_id: string;
-    modification_type: string;
-    new_amount: number;
-    reason: string;
-    modified_by: string;
-    shop_id: string;
-    created_at: string;
-    returned_items: any;
-  }) => any;
-  get_invoice_modifications: (args: { invoice_id: string }) => InvoiceModification[];
-}
-
-export interface InvoiceModification {
-  id: string;
-  invoice_id: string;
-  modification_type: string;
-  new_amount: number;
-  reason: string;
-  modified_by: string;
-  created_at: string;
-  shop_id: string;
-  returned_items?: any;
-  profiles?: {
-    email: string;
-  };
 }

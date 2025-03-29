@@ -162,7 +162,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       const { error: modificationError } = await supabase.rpc(
         'create_invoice_modification',
         modificationData
-      );
+      ) as { error: any };
 
       if (modificationError) {
         console.error("Error creating modification:", modificationError);

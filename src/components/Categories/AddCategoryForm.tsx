@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useShopData } from "@/hooks/use-shop-data";
+import { useShopId } from "@/hooks/use-shop-id";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 
@@ -15,6 +16,7 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { useShopMutation } = useShopData();
+  const { shopId } = useShopId();
 
   const { mutate } = useShopMutation("categories", {
     onSuccess: () => {
@@ -40,7 +42,7 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
       } else {
         toast({
           title: "Erreur",
-          description: "Échec de l'ajout de la catégorie",
+          description: "Échec de l'ajout de la catégorie. " + (error.message || ""),
           variant: "destructive",
         });
       }
@@ -60,17 +62,28 @@ export const AddCategoryForm = ({ onSuccess }: { onSuccess: () => void }) => {
       });
       return;
     }
+
+    if (!shopId) {
+      toast({
+        title: "Erreur",
+        description: "ID du magasin manquant. Veuillez vous reconnecter.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     
     try {
       await mutate({ 
         name: name.trim(), 
-        description: description.trim() || null 
+        description: description.trim() || null,
+        shop_id: shopId  // Add the shop_id explicitly
       });
     } catch (error) {
       console.error("Erreur lors de l'ajout de la catégorie:", error);
       // Error is handled in the onError callback
+      setIsSubmitting(false);
     }
   };
 

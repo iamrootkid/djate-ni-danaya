@@ -5,7 +5,7 @@ export interface Category {
   id: string;
   name: string;
   description: string | null;
-  shop_id: string | null;
+  shop_id: string;  // Make shop_id required in the type
   created_at: string;
   updated_at: string;
 }

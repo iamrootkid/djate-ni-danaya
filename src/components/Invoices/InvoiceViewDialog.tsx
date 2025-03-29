@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -17,28 +16,26 @@ interface InvoiceViewDialogProps {
 export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogProps) => {
   const [activeTab, setActiveTab] = useState<"details" | "modifications">("details");
 
-  // Fetch invoice modifications
-  const { data: modifications, isLoading } = useQuery<InvoiceModification[]>({
-    queryKey: ["invoice-modifications", invoice?.id],
+  const { data: modifications, isLoading: isLoadingModifications } = useQuery({
+    queryKey: ['invoice-modifications', invoice?.id],
     queryFn: async () => {
       if (!invoice?.id) return [];
-
+      
       const { data, error } = await supabase.rpc(
         'get_invoice_modifications',
-        { invoice_id: invoice.id }
-      );
-
+        { invoice_id_param: invoice.id }
+      ) as { data: InvoiceModification[] | null, error: any };
+      
       if (error) {
         console.error("Error fetching modifications:", error);
-        return [];
+        throw error;
       }
-
+      
       return data as InvoiceModification[];
     },
-    enabled: !!invoice?.id && open
+    enabled: !!invoice?.id && open,
   });
 
-  // Function to format date
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "PPP p");
@@ -47,7 +44,6 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
     }
   };
 
-  // Get modification type badge
   const getModificationBadge = (type: string) => {
     switch (type) {
       case "price":
@@ -132,7 +128,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
         
         {activeTab === "modifications" && (
           <div className="space-y-4">
-            {isLoading ? (
+            {isLoadingModifications ? (
               <p className="text-center py-4 text-muted-foreground">Loading modifications...</p>
             ) : !modifications || modifications.length === 0 ? (
               <p className="text-center py-4 text-muted-foreground">No modifications found for this invoice</p>

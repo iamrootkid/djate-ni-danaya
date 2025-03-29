@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tag, TagsIcon, Plus } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useShopId } from "@/hooks/use-shop-id";
 import { 
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ export const CategoryFilter = ({ selectedCategory, onSelectCategory }: CategoryF
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const shopId = localStorage.getItem("shopId");
+  const { shopId } = useShopId();
   
   const { data: categories, isLoading, refetch } = useQuery({
     queryKey: ["categories", shopId],
