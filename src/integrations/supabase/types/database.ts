@@ -1,6 +1,6 @@
 
 import { ReturnedItem } from "@/types/invoice";
-import { InvoiceModification } from "./functions";
+import { InvoiceModification, StockSummary } from "./functions";
 
 export interface Database {
   public: {
@@ -62,8 +62,8 @@ export interface Database {
         Returns: Array<{ product_id: string; product_name: string; total_quantity: number; total_revenue: number }>;
       };
       get_stock_summary: {
-        Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
-        Returns: Array<{ total_income: number; total_expenses: number; stock_in: number; stock_out: number; profit: number }>;
+        Args: { start_date: string; filter_type: string; shop_id: string; };
+        Returns: StockSummary;
       };
       is_admin: {
         Args: Record<string, never>;

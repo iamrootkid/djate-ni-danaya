@@ -19,7 +19,7 @@ const Dashboard = () => {
     invalidateAllDashboardQueries
   } = useDashboard();
 
-  // Force refresh dashboard data when component mounts
+  // Force refresh dashboard data when component mounts and set to today's data
   useEffect(() => {
     if (shopId) {
       // Make sure we're looking at today's data

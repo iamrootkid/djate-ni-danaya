@@ -37,8 +37,12 @@ export interface DatabaseFunctions {
     Returns: BestSellingProduct[];
   };
   get_stock_summary: {
-    Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
-    Returns: StockSummary[];
+    Args: { 
+      start_date: string; 
+      filter_type: string; 
+      shop_id: string;
+    };
+    Returns: StockSummary;
   };
   is_admin: {
     Args: Record<string, never>;

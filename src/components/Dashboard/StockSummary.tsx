@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StockSummary as StockSummaryType } from "@/integrations/supabase/types/functions";
+import { StockSummaryType } from "@/integrations/supabase/types/functions";
 import { ArrowUp, ArrowDown, DollarSign, Banknote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useStockSummary } from "@/hooks/use-stock-summary";
