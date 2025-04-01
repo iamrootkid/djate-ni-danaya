@@ -1,3 +1,4 @@
+
 import { ReturnedItem } from "@/types/invoice";
 import { InvoiceModification } from "./functions";
 
@@ -57,12 +58,12 @@ export interface Database {
         Returns: string;
       };
       get_best_selling_products: {
-        Args: { shop_id_param: string; start_date: string; end_date: string };
-        Returns: Array<{ product_id: string; product_name: string; total_quantity: number }>;
+        Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
+        Returns: Array<{ product_id: string; product_name: string; total_quantity: number; total_revenue: number }>;
       };
       get_stock_summary: {
-        Args: { shop_id_param: string };
-        Returns: Array<{ product_id: string; product_name: string; current_stock: number }>;
+        Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
+        Returns: Array<{ total_income: number; total_expenses: number; stock_in: number; stock_out: number; profit: number }>;
       };
       is_admin: {
         Args: Record<string, never>;
@@ -79,7 +80,7 @@ export interface Database {
           created_at: string;
           returned_items?: ReturnedItem[] | null;
         };
-        Returns: { success: boolean };
+        Returns: InvoiceModification;
       };
       get_invoice_modifications: {
         Args: { invoice_id_param: string };
