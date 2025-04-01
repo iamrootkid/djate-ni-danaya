@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceModification } from "@/integrations/supabase/types/functions";
-import { DatabaseFunctions } from "@/integrations/supabase/types/functions";
 
 interface InvoiceViewDialogProps {
   open: boolean;
@@ -27,16 +26,25 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
     setIsLoading(true);
     try {
       const { data, error } = await supabase.rpc(
-        'get_invoice_modifications' as keyof DatabaseFunctions,
+        'get_invoice_modifications',
         { invoice_id_param: invoice.id }
       );
 
       if (error) throw error;
       
-      // Cast data to the correct type
-      setModifications(data as InvoiceModification[]);
+      // Cast data to the correct type after validating it's an array
+      if (Array.isArray(data)) {
+        setModifications(data as InvoiceModification[]);
+      } else if (typeof data === 'object' && data !== null) {
+        // Handle case where response might be a JSON object instead of array
+        const modArray = Array.isArray(data) ? data : [];
+        setModifications(modArray as InvoiceModification[]);
+      } else {
+        setModifications([]);
+      }
     } catch (error) {
       console.error("Error fetching invoice modifications:", error);
+      setModifications([]);
     } finally {
       setIsLoading(false);
     }
