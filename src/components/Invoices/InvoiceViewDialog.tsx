@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,11 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
   const fetchModifications = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.rpc(
+      // Use type assertion to tell TypeScript this is a valid RPC function
+      const { data, error } = await (supabase.rpc(
         'get_invoice_modifications',
         { invoice_id_param: invoice.id }
-      );
+      ) as any);
 
       if (error) throw error;
       

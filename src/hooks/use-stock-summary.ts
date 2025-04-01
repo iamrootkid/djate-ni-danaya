@@ -1,85 +1,49 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useShopId } from "@/hooks/use-shop-id";
-import { StockSummary } from "@/integrations/supabase/types/functions";
-import { DateFilter } from "@/types/invoice";
-import { format, subDays, startOfMonth, endOfMonth, endOfDay } from "date-fns";
+import { useShopId } from "./use-shop-id";
+import { addDays, format, startOfDay, subDays } from "date-fns";
 
-export const useStockSummary = (startDate: Date, dateFilter: DateFilter) => {
+export const useStockSummary = (dateRange?: { start: Date; end: Date }) => {
   const { shopId } = useShopId();
-
-  return useQuery<StockSummary>({
-    queryKey: ["stock-summary", shopId, dateFilter, startDate],
+  
+  // Use default range of last 30 days if no range provided
+  const today = new Date();
+  const defaultStartDate = subDays(today, 30);
+  
+  const start = dateRange?.start || defaultStartDate;
+  const end = dateRange?.end || today;
+  
+  const formattedStartDate = format(startOfDay(start), "yyyy-MM-dd");
+  const formattedEndDate = format(addDays(end, 1), "yyyy-MM-dd"); // Add 1 day to include the end date
+  
+  return useQuery({
+    queryKey: ["stock-summary", shopId, formattedStartDate, formattedEndDate],
     queryFn: async () => {
-      if (!shopId) return {
-        total_income: 0,
-        total_expenses: 0,
-        stock_in: 0,
-        stock_out: 0,
-        profit: 0
-      };
-
-      try {
-        // Determine date range based on dateFilter
-        let start_date = format(startDate, 'yyyy-MM-dd');
-        let end_date = format(endOfDay(new Date()), 'yyyy-MM-dd');
-        
-        if (dateFilter === 'daily') {
-          // Use today's date
-          start_date = format(startDate, 'yyyy-MM-dd');
-          end_date = format(startDate, 'yyyy-MM-dd');
-        } else if (dateFilter === 'yesterday') {
-          const yesterday = subDays(new Date(), 1);
-          start_date = format(yesterday, 'yyyy-MM-dd');
-          end_date = format(yesterday, 'yyyy-MM-dd');
-        } else if (dateFilter === 'monthly') {
-          // Use first and last day of current month
-          start_date = format(startOfMonth(startDate), 'yyyy-MM-dd');
-          end_date = format(endOfMonth(startDate), 'yyyy-MM-dd');
-        }
-
-        const { data, error } = await supabase.rpc('get_stock_summary', { 
-          shop_id_param: shopId,
-          start_date_param: start_date,
-          end_date_param: end_date
-        });
-        
-        if (error) {
-          console.error("Error fetching stock summary:", error);
-          return {
-            total_income: 0,
-            total_expenses: 0,
-            stock_in: 0,
-            stock_out: 0,
-            profit: 0
-          };
-        }
-        
-        // The function returns an array but we expect a single object
-        // Extract the first item if it's an array, otherwise use a default object
-        const summaryData = Array.isArray(data) && data.length > 0 
-          ? data[0] 
-          : {
-              total_income: 0,
-              total_expenses: 0,
-              stock_in: 0,
-              stock_out: 0,
-              profit: 0
-            };
-        
-        return summaryData as StockSummary;
-      } catch (error) {
-        console.error("Error in stock summary query:", error);
-        return {
-          total_income: 0,
-          total_expenses: 0,
-          stock_in: 0,
-          stock_out: 0,
-          profit: 0
-        };
+      if (!shopId) {
+        throw new Error("Shop ID is required");
       }
+      
+      console.log("Fetching stock summary for:", {
+        shopId,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate
+      });
+      
+      // Use type assertion to make TypeScript happy with the parameter names
+      const { data, error } = await (supabase.rpc("get_stock_summary", {
+        shop_id_param: shopId,
+        start_date_param: formattedStartDate,
+        end_date_param: formattedEndDate
+      }) as any);
+      
+      if (error) {
+        console.error("Error fetching stock summary:", error);
+        throw error;
+      }
+      
+      return data || [];
     },
-    enabled: !!shopId,
+    enabled: !!shopId
   });
 };

@@ -9,6 +9,7 @@ import { DateFilter } from "@/types/invoice";
 
 export const useDashboard = () => {
   const [userRole, setUserRole] = useState<"admin" | "employee">("employee");
+  // Set default filter to "daily" to show today's data
   const [dateFilter, setDateFilter] = useState<DateFilter>("daily");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const queryClient = useQueryClient();
@@ -38,6 +39,7 @@ export const useDashboard = () => {
       return;
     }
 
+    // Always set to today's date on initial load
     const today = new Date();
     setStartDate(today);
 

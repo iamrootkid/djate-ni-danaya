@@ -103,7 +103,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     resolver: zodResolver(modificationSchema),
     defaultValues: {
       modType: "price",
-      newAmount: invoice?.sales?.total_amount || 0,
+      newAmount: 0,
       reason: "",
       returnedItems: [],
     },
@@ -115,7 +115,13 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   useEffect(() => {
     if (open && invoice?.sale_id) {
       fetchSaleItems(invoice.sale_id);
-      form.setValue("newAmount", invoice?.sales?.total_amount || 0);
+      
+      // Set the correct initial amount based on current invoice status
+      const currentAmount = invoice.is_modified && invoice.new_total_amount !== undefined
+        ? invoice.new_total_amount
+        : invoice.sales?.total_amount || 0;
+        
+      form.setValue("newAmount", currentAmount);
     }
   }, [open, invoice]);
 
@@ -170,12 +176,11 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
           : null
       };
 
-      console.log("Submitting modification:", modificationData);
-
-      const { data: modificationResult, error: modificationError } = await supabase.rpc(
+      // Type assertion to make TypeScript happy with the RPC call
+      const { data: modificationResult, error: modificationError } = await (supabase.rpc(
         'create_invoice_modification',
         modificationData
-      );
+      ) as any);
 
       if (modificationError) {
         console.error("Error creating modification:", modificationError);
