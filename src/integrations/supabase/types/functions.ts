@@ -65,7 +65,7 @@ export interface DatabaseFunctions {
 
 export interface StockSummary {
   total_income: number;
-  total_expenses: number;
+  total_expenses: 0;
   stock_in: number;
   stock_out: number;
   profit: number;
