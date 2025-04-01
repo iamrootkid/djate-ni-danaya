@@ -1,11 +1,11 @@
+
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import { InvoiceModification } from "@/integrations/supabase/types/functions";
+import { DatabaseFunctions } from "@/integrations/supabase/types/functions";
 
 interface InvoiceViewDialogProps {
   open: boolean;
@@ -14,166 +14,174 @@ interface InvoiceViewDialogProps {
 }
 
 export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogProps) => {
-  const [activeTab, setActiveTab] = useState<"details" | "modifications">("details");
+  const [modifications, setModifications] = useState<InvoiceModification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data: modifications, isLoading: isLoadingModifications } = useQuery({
-    queryKey: ['invoice-modifications', invoice?.id],
-    queryFn: async () => {
-      if (!invoice?.id) return [];
-      
-      const { data, error } = await supabase.rpc(
-        'get_invoice_modifications',
-        { invoice_id_param: invoice.id }
-      ) as { data: InvoiceModification[] | null, error: any };
-      
-      if (error) {
-        console.error("Error fetching modifications:", error);
-        throw error;
-      }
-      
-      return data as InvoiceModification[];
-    },
-    enabled: !!invoice?.id && open,
-  });
+  useEffect(() => {
+    if (open && invoice?.id) {
+      fetchModifications();
+    }
+  }, [open, invoice]);
 
-  const formatDate = (dateString: string) => {
+  const fetchModifications = async () => {
+    setIsLoading(true);
     try {
-      return format(new Date(dateString), "PPP p");
+      const { data, error } = await supabase.rpc(
+        'get_invoice_modifications' as keyof DatabaseFunctions,
+        { invoice_id_param: invoice.id }
+      );
+
+      if (error) throw error;
+      
+      // Cast data to the correct type
+      setModifications(data as InvoiceModification[]);
     } catch (error) {
-      return dateString;
+      console.error("Error fetching invoice modifications:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getModificationBadge = (type: string) => {
-    switch (type) {
-      case "price":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Price Adjustment</Badge>;
-      case "return":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">Return</Badge>;
-      default:
-        return <Badge variant="outline" className="bg-gray-50">Other</Badge>;
-    }
-  };
+  // Handle the case where invoice might be null
+  if (!invoice) return null;
+
+  // Calculate display amount
+  const displayAmount = invoice.is_modified && invoice.new_total_amount !== undefined
+    ? invoice.new_total_amount
+    : invoice.sales?.total_amount || 0;
+
+  // Extract sale items for display
+  const saleItems = invoice.sales?.sale_items || [];
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>Invoice {invoice?.invoice_number}</DialogTitle>
-          <div className="flex space-x-4 text-sm border-b pb-2 mt-2">
-            <button
-              className={`pb-2 px-1 ${activeTab === "details" ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}
-              onClick={() => setActiveTab("details")}
-            >
-              Details
-            </button>
-            <button
-              className={`pb-2 px-1 flex items-center space-x-1 ${activeTab === "modifications" ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}
-              onClick={() => setActiveTab("modifications")}
-            >
-              <span>Modifications</span>
-              {modifications && modifications.length > 0 && (
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium rounded-full bg-primary/10 text-primary">
-                  {modifications.length}
-                </span>
-              )}
-            </button>
-          </div>
+          <DialogTitle>Invoice {invoice.invoice_number}</DialogTitle>
         </DialogHeader>
 
-        {activeTab === "details" && (
-          <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Invoice Details */}
+          <div className="border rounded-md p-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Invoice Information</h3>
+              <span className="text-sm text-muted-foreground">
+                {format(new Date(invoice.created_at), "PPP")}
+              </span>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Customer</h3>
-                <p className="mt-1">{invoice?.customer_name || "N/A"}</p>
-                {invoice?.customer_phone && (
-                  <p className="text-sm text-muted-foreground">{invoice.customer_phone}</p>
-                )}
+                <p className="text-sm text-muted-foreground">Customer</p>
+                <p className="font-medium">{invoice.customer_name}</p>
               </div>
-              
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Date</h3>
-                <p className="mt-1">{formatDate(invoice?.created_at)}</p>
+                <p className="text-sm text-muted-foreground">Phone</p>
+                <p className="font-medium">{invoice.customer_phone || "N/A"}</p>
               </div>
-              
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Total Amount</h3>
-                <p className="mt-1 font-semibold">{invoice?.sales?.total_amount?.toLocaleString()} F CFA</p>
-                {invoice?.is_modified && invoice?.new_total_amount && (
-                  <p className="text-sm text-muted-foreground">
-                    Modified: {invoice.new_total_amount.toLocaleString()} F CFA
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground">Original Amount</p>
+                <p className={`font-medium ${invoice.is_modified ? "line-through text-muted-foreground" : ""}`}>
+                  {invoice.sales?.total_amount?.toLocaleString()} F CFA
+                </p>
               </div>
-              
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Employee</h3>
-                <p className="mt-1">{invoice?.sales?.employee?.email || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">Current Amount</p>
+                <p className="font-medium">{displayAmount.toLocaleString()} F CFA</p>
               </div>
-            </div>
-            
-            {invoice?.is_modified && (
-              <div className="mt-4 p-3 bg-amber-50 rounded-md border border-amber-100">
-                <h3 className="text-sm font-medium text-amber-800">This invoice has been modified</h3>
-                <p className="mt-1 text-sm text-amber-700">{invoice?.modification_reason}</p>
-              </div>
-            )}
-            
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={onClose}>Close</Button>
             </div>
           </div>
-        )}
-        
-        {activeTab === "modifications" && (
-          <div className="space-y-4">
-            {isLoadingModifications ? (
-              <p className="text-center py-4 text-muted-foreground">Loading modifications...</p>
-            ) : !modifications || modifications.length === 0 ? (
-              <p className="text-center py-4 text-muted-foreground">No modifications found for this invoice</p>
-            ) : (
-              <div className="space-y-4">
-                {modifications.map((mod) => (
-                  <div key={mod.id} className="border rounded-md p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        {getModificationBadge(mod.modification_type)}
-                        <p className="mt-2 text-sm">{mod.reason}</p>
+
+          {/* Sale Items */}
+          <div className="border rounded-md p-4 space-y-2">
+            <h3 className="text-lg font-semibold">Items</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b">
+                  <tr>
+                    <th className="text-left py-2">Item</th>
+                    <th className="text-right py-2">Unit Price</th>
+                    <th className="text-right py-2">Quantity</th>
+                    <th className="text-right py-2">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {saleItems.map((item: any) => (
+                    <tr key={item.id} className="border-b last:border-0">
+                      <td className="py-2">{item.products?.name}</td>
+                      <td className="text-right py-2">{item.price_at_sale?.toLocaleString()} F CFA</td>
+                      <td className="text-right py-2">
+                        {item.quantity}
+                        {item.returned_quantity > 0 && (
+                          <span className="text-red-500 ml-1">(-{item.returned_quantity})</span>
+                        )}
+                      </td>
+                      <td className="text-right py-2">
+                        {(item.price_at_sale * (item.quantity - (item.returned_quantity || 0)))?.toLocaleString()} F CFA
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={3} className="text-right py-2 font-semibold">Total:</td>
+                    <td className="text-right py-2 font-semibold">{displayAmount.toLocaleString()} F CFA</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* Modification History */}
+          {invoice.is_modified && (
+            <div className="border rounded-md p-4 space-y-2">
+              <h3 className="text-lg font-semibold">Modification History</h3>
+              {isLoading ? (
+                <p className="text-center py-2 text-muted-foreground">Loading modifications...</p>
+              ) : modifications.length > 0 ? (
+                <div className="space-y-4">
+                  {modifications.map((mod) => (
+                    <div key={mod.id} className="border-b pb-2 last:border-0">
+                      <div className="flex justify-between">
+                        <span className="font-medium capitalize">{mod.modification_type} Modification</span>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(mod.created_at), "PPP p")}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">{formatDate(mod.created_at)}</p>
-                        <p className="text-sm">{mod.profiles?.email || "Unknown"}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-2 border-t">
-                      <p className="text-sm font-medium">New amount: {mod.new_amount.toLocaleString()} F CFA</p>
+                      <p className="text-sm mt-1">New Amount: {mod.new_amount?.toLocaleString()} F CFA</p>
+                      <p className="text-sm mt-1">Reason: {mod.reason}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Modified by: {mod.profiles?.email || "Unknown"}
+                      </p>
                       
-                      {mod.modification_type === "return" && mod.returned_items && (
+                      {/* Display returned items if any */}
+                      {mod.modification_type === "return" && mod.returned_items && mod.returned_items.length > 0 && (
                         <div className="mt-2">
-                          <p className="text-sm font-medium">Returned items:</p>
-                          <ul className="mt-1 text-sm space-y-1">
-                            {Array.isArray(mod.returned_items) && mod.returned_items.map((item: any, idx: number) => (
-                              <li key={idx} className="flex justify-between">
-                                <span>{item.name}</span>
-                                <span>{item.originalQuantity - item.quantity} units returned</span>
-                              </li>
-                            ))}
+                          <p className="text-sm font-medium">Returned Items:</p>
+                          <ul className="text-sm ml-4 list-disc">
+                            {mod.returned_items.map((item, index) => {
+                              const returnedQty = item.originalQuantity - item.quantity;
+                              return (
+                                <li key={index}>
+                                  {item.name}: {returnedQty} units returned
+                                </li>
+                              );
+                            })}
                           </ul>
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={onClose}>Close</Button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-2 text-muted-foreground">No modification history found</p>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button onClick={onClose}>Close</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

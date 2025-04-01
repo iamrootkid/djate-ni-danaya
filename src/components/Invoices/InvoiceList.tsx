@@ -66,6 +66,10 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
           queryClient.invalidateQueries({ queryKey: ['invoices'] });
           queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
           queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['products-stock'] });
+          queryClient.invalidateQueries({ queryKey: ['inventory-report'] });
+          queryClient.invalidateQueries({ queryKey: ['best-selling-products'] });
+          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
         }
       )
       .on(
@@ -76,6 +80,26 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
           queryClient.invalidateQueries({ queryKey: ['invoices'] });
           queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
           queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['products-stock'] });
+          queryClient.invalidateQueries({ queryKey: ['inventory-report'] });
+          queryClient.invalidateQueries({ queryKey: ['best-selling-products'] });
+          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['products-stock'] });
+          queryClient.invalidateQueries({ queryKey: ['inventory-report'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sale_items' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['best-selling-products'] });
         }
       )
       .subscribe();

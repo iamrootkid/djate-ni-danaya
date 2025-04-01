@@ -1,3 +1,4 @@
+
 import { ReturnedItem } from "@/types/invoice";
 
 export interface InvoiceModification {
@@ -10,6 +11,9 @@ export interface InvoiceModification {
   modified_by: string;
   shop_id: string;
   returned_items?: ReturnedItem[] | null;
+  profiles?: {
+    email: string;
+  };
 }
 
 export interface BestSellingProduct {
@@ -51,7 +55,7 @@ export interface DatabaseFunctions {
       created_at: string;
       returned_items?: ReturnedItem[] | null;
     };
-    Returns: { success: boolean };
+    Returns: InvoiceModification;
   };
   get_invoice_modifications: {
     Args: { invoice_id_param: string };

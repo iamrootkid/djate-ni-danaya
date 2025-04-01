@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ReturnedItem } from "@/types/invoice";
 import { Checkbox } from "@/components/ui/checkbox";
-import { QueryClient } from "@tanstack/react-query";
-import { Database } from "@/integrations/supabase/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { DatabaseFunctions } from "@/integrations/supabase/types/functions";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
@@ -49,6 +50,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const { shopId } = useShopId();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalItems, setOriginalItems] = useState<ReturnedItem[]>([]);
+  const queryClient = useQueryClient();
 
   const fetchSaleItems = async (saleId: string) => {
     try {
@@ -171,9 +173,8 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
       console.log("Submitting modification:", modificationData);
 
-      type DbFunctions = keyof Database["public"]["Functions"];
       const { data: modificationResult, error: modificationError } = await supabase.rpc(
-        'create_invoice_modification' as DbFunctions,
+        'create_invoice_modification' as keyof DatabaseFunctions,
         modificationData
       );
 
@@ -195,19 +196,22 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
       if (updateError) throw updateError;
 
-      // Invalidate all relevant queries
-      const queryClient = new QueryClient();
+      // Invalidate all relevant queries to update UI
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['invoices'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard_sales'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] }),
-        queryClient.invalidateQueries({ queryKey: ['invoice-modifications', invoice.id] })
+        queryClient.invalidateQueries({ queryKey: ['invoice-modifications', invoice.id] }),
+        queryClient.invalidateQueries({ queryKey: ['products-stock'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory-report'] }),
+        queryClient.invalidateQueries({ queryKey: ['best-selling-products'] }),
+        queryClient.invalidateQueries({ queryKey: ['stock-summary'] })
       ]);
       
       toast({
         title: "Success",
-        description: `Invoice has been ${values.modType === "return" ? "processed as a return" : "modified"}`,
+        description: `Invoice has been ${values.modType === "return" ? "processed as a return" : "modified"}. Stock and dashboard have been updated.`,
       });
       
       onModified();
