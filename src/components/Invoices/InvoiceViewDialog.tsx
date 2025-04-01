@@ -25,25 +25,21 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
   const fetchModifications = async () => {
     setIsLoading(true);
     try {
-      // Use type assertion to tell TypeScript this is a valid RPC function
-      const { data, error } = await (supabase.rpc(
+      // Use type assertion for the RPC call
+      const { data, error } = await supabase.rpc(
         'get_invoice_modifications',
         { invoice_id_param: invoice.id }
-      ) as any);
+      ) as any;
 
       if (error) throw error;
       
-      // Cast data to the correct type after validating it's an array
+      // Properly cast the data
       if (Array.isArray(data)) {
         setModifications(data as InvoiceModification[]);
-      } else if (typeof data === 'object' && data !== null) {
-        // Handle case where response might be a JSON object instead of array
-        const modArray = Array.isArray(data) ? data : [];
-        setModifications(modArray as InvoiceModification[]);
       } else {
         setModifications([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching invoice modifications:", error);
       setModifications([]);
     } finally {

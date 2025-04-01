@@ -39,13 +39,14 @@ export const useDashboard = () => {
       return;
     }
 
-    // Always set to today's date on initial load
+    // Always ensure we're showing today's data on initial load
     const today = new Date();
     setStartDate(today);
+    setDateFilter("daily"); // Ensure initial view is today's data
 
     // Invalidate all dashboard-related queries when shop ID changes
     invalidateAllDashboardQueries();
-  }, [shopId, queryClient]);
+  }, [shopId]);
 
   // Function to invalidate all dashboard-related queries
   const invalidateAllDashboardQueries = () => {

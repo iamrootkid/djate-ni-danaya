@@ -30,12 +30,12 @@ export const useStockSummary = (dateRange?: { start: Date; end: Date }) => {
         endDate: formattedEndDate
       });
       
-      // Use type assertion to make TypeScript happy with the parameter names
-      const { data, error } = await (supabase.rpc("get_stock_summary", {
+      // Use explicit type casting to make TypeScript happy
+      const { data, error } = await supabase.rpc("get_stock_summary", {
         shop_id_param: shopId,
         start_date_param: formattedStartDate,
         end_date_param: formattedEndDate
-      }) as any);
+      } as any);
       
       if (error) {
         console.error("Error fetching stock summary:", error);

@@ -50,6 +50,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalItems, setOriginalItems] = useState<ReturnedItem[]>([]);
   const queryClient = useQueryClient();
+  const [currentAmount, setCurrentAmount] = useState(0);
 
   const fetchSaleItems = async (saleId: string) => {
     try {
@@ -116,12 +117,13 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     if (open && invoice?.sale_id) {
       fetchSaleItems(invoice.sale_id);
       
-      // Set the correct initial amount based on current invoice status
-      const currentAmount = invoice.is_modified && invoice.new_total_amount !== undefined
-        ? invoice.new_total_amount
+      // Calculate the actual current amount based on the invoice status
+      const actualAmount = invoice.is_modified && invoice.new_total_amount !== undefined 
+        ? invoice.new_total_amount 
         : invoice.sales?.total_amount || 0;
-        
-      form.setValue("newAmount", currentAmount);
+      
+      setCurrentAmount(actualAmount);
+      form.setValue("newAmount", actualAmount);
     }
   }, [open, invoice]);
 
@@ -176,11 +178,11 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
           : null
       };
 
-      // Type assertion to make TypeScript happy with the RPC call
-      const { data: modificationResult, error: modificationError } = await (supabase.rpc(
+      // Use type assertion for the RPC call
+      const { data: modificationResult, error: modificationError } = await supabase.rpc(
         'create_invoice_modification',
         modificationData
-      ) as any);
+      ) as any;
 
       if (modificationError) {
         console.error("Error creating modification:", modificationError);
@@ -210,7 +212,8 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         queryClient.invalidateQueries({ queryKey: ['products-stock'] }),
         queryClient.invalidateQueries({ queryKey: ['inventory-report'] }),
         queryClient.invalidateQueries({ queryKey: ['best-selling-products'] }),
-        queryClient.invalidateQueries({ queryKey: ['stock-summary'] })
+        queryClient.invalidateQueries({ queryKey: ['stock-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['recent-orders'] })
       ]);
       
       toast({
@@ -255,7 +258,9 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
   const calculateNewTotal = () => {
     const items = form.getValues("returnedItems") || [];
-    const originalTotal = invoice?.sales?.total_amount || 0;
+    
+    // Use the current amount from state instead of the invoice object
+    const originalTotal = currentAmount;
     
     let returnedAmount = 0;
     items.forEach(item => {
@@ -320,6 +325,11 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
                 </FormItem>
               )}
             />
+
+            {/* Show the current amount information */}
+            <div className="text-sm">
+              <p className="font-medium">Current Amount: {currentAmount.toLocaleString()} F CFA</p>
+            </div>
 
             {modType === "return" && (
               <div className="space-y-4">
