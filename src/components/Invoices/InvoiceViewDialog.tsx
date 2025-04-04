@@ -25,17 +25,16 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
   const fetchModifications = async () => {
     setIsLoading(true);
     try {
-      // Use type assertion for the RPC call
-      const { data, error } = await supabase.rpc(
+      // Use proper typing for the RPC call
+      const { data, error } = await supabase.rpc<InvoiceModification[]>(
         'get_invoice_modifications',
         { invoice_id_param: invoice.id }
-      ) as any;
+      );
 
       if (error) throw error;
       
-      // Properly cast the data
       if (Array.isArray(data)) {
-        setModifications(data as InvoiceModification[]);
+        setModifications(data);
       } else {
         setModifications([]);
       }

@@ -88,4 +88,4 @@ export interface Database {
       };
     };
   };
-}; 
+};

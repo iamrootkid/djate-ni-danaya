@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -179,9 +178,9 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       };
 
       // Use proper typing for the RPC call
-      const { data: modificationResult, error: modificationError } = await supabase.rpc(
+      const { data: modificationResult, error: modificationError } = await supabase.rpc<InvoiceModification>(
         'create_invoice_modification',
-        modificationData as any
+        modificationData
       );
 
       if (modificationError) {
