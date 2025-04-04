@@ -178,11 +178,11 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
           : null
       };
 
-      // Use type assertion for the RPC call
+      // Use proper typing for the RPC call
       const { data: modificationResult, error: modificationError } = await supabase.rpc(
         'create_invoice_modification',
-        modificationData
-      ) as any;
+        modificationData as any
+      );
 
       if (modificationError) {
         console.error("Error creating modification:", modificationError);
@@ -202,18 +202,25 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
       if (updateError) throw updateError;
 
-      // Invalidate all relevant queries to update UI
+      // Comprehensive invalidation of all dashboard-related queries
       await Promise.all([
+        // Invoice data
         queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoice-modifications', invoice.id] }),
+        
+        // Dashboard stats and components
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard_sales'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] }),
-        queryClient.invalidateQueries({ queryKey: ['invoice-modifications', invoice.id] }),
+        queryClient.invalidateQueries({ queryKey: ['recent-orders'] }),
+        
+        // Stock-related data
         queryClient.invalidateQueries({ queryKey: ['products-stock'] }),
         queryClient.invalidateQueries({ queryKey: ['inventory-report'] }),
-        queryClient.invalidateQueries({ queryKey: ['best-selling-products'] }),
         queryClient.invalidateQueries({ queryKey: ['stock-summary'] }),
-        queryClient.invalidateQueries({ queryKey: ['recent-orders'] })
+        
+        // Sales analytics
+        queryClient.invalidateQueries({ queryKey: ['best-selling-products'] }),
       ]);
       
       toast({

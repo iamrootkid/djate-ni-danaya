@@ -1,11 +1,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockSummary as StockSummaryType } from "@/integrations/supabase/types/functions";
-import { ArrowUp, ArrowDown, DollarSign, Banknote } from "lucide-react";
+import { ArrowUp, ArrowDown, DollarSign, Banknote, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useStockSummary } from "@/hooks/use-stock-summary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DateFilter } from "@/types/invoice";
+import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 interface StockSummaryProps {
   startDate: Date;
@@ -13,11 +16,38 @@ interface StockSummaryProps {
 }
 
 export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
-  const { data: summary, isLoading } = useStockSummary(startDate, dateFilter);
+  const { data: summary, isLoading, refetch } = useStockSummary(startDate, dateFilter);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
   // Calculate net stock change
   const netStockChange = (summary?.stock_in || 0) - (summary?.stock_out || 0);
   const isStockIncreasing = netStockChange >= 0;
+
+  // Add auto-refresh functionality
+  useEffect(() => {
+    // Refresh data when component mounts or when dateFilter/startDate changes
+    refetch();
+  }, [dateFilter, startDate, refetch]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Invalidate all related queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['stock-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['products-stock'] }),
+        queryClient.invalidateQueries({ queryKey: ['best-selling-products'] }),
+      ]);
+      await refetch();
+    } catch (error) {
+      console.error("Failed to refresh stock summary:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -38,9 +68,21 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
     <Card className="col-span-4">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Résumé des stocks</CardTitle>
-        <Badge variant={summary?.profit && summary.profit > 0 ? "success" : "destructive"}>
-          {summary?.profit ? (summary.profit > 0 ? "+" : "") + summary.profit.toLocaleString() + " F CFA" : "0 F CFA"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="text-xs">Actualiser</span>
+          </Button>
+          <Badge variant={summary?.profit && summary.profit > 0 ? "success" : "destructive"}>
+            {summary?.profit ? (summary.profit > 0 ? "+" : "") + summary.profit.toLocaleString() + " F CFA" : "0 F CFA"}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

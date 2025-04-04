@@ -41,12 +41,12 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
         filterType
       });
       
-      // Use explicit type casting to make TypeScript happy
+      // Explicitly cast the function call parameters
       const { data, error } = await supabase.rpc("get_stock_summary", {
         start_date: formattedStartDate,
         filter_type: filterType,
         shop_id: shopId
-      } as any);
+      });
       
       if (error) {
         console.error("Error fetching stock summary:", error);
@@ -62,6 +62,9 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
         profit: 0
       };
     },
-    enabled: !!shopId
+    enabled: !!shopId,
+    staleTime: 60000, // Data becomes stale after 1 minute
+    refetchOnWindowFocus: true, // Refresh data when focus returns to window
+    refetchOnMount: true, // Refresh when component mounts
   });
 };
