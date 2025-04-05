@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import * as z from "zod";
 import { ReturnedItem } from "@/types/invoice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
+import { InvoiceModification } from "@/integrations/supabase/types/functions";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
