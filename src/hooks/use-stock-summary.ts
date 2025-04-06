@@ -62,8 +62,8 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
             stock_in: data[0].stock_in || 0,
             stock_out: data[0].stock_out || 0,
             profit: data[0].profit || 0,
-            // Explicitly include recent_returns, defaulting to undefined if missing
-            recent_returns: data[0].recent_returns
+            // Only include recent_returns if it exists in the data
+            recent_returns: 'recent_returns' in data[0] ? data[0].recent_returns : undefined
           }
         : {
             total_income: 0,
