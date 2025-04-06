@@ -1,6 +1,26 @@
-
 import { ReturnedItem } from "@/types/invoice";
-import { InvoiceModification, BestSellingProduct, StockSummary } from "@/integrations/supabase/types/functions";
+
+export interface InvoiceModification {
+  id: string;
+  invoice_id: string;
+  modification_type: string;
+  new_amount: number;
+  reason: string;
+  created_at: string;
+  modified_by: string;
+  shop_id: string;
+  returned_items?: ReturnedItem[] | null;
+  profiles?: {
+    email: string;
+  };
+}
+
+export interface BestSellingProduct {
+  product_id: string;
+  product_name: string;
+  total_quantity: number;
+  total_revenue: number;
+}
 
 export interface DatabaseFunctions {
   check_column_exists: {
@@ -46,19 +66,11 @@ export interface DatabaseFunctions {
   };
 }
 
-// Function required by invoiceService
-export const applyDateFilter = (query: any, startDate: Date, endDate: Date) => {
-  return query
-    .gte("created_at", startDate.toISOString())
-    .lte("created_at", endDate.toISOString());
-};
-
-// Function required by invoiceService
-export const processInvoiceData = (invoices: any[]) => {
-  return invoices;
-};
-
-// Function required by checkout
-export const generateInvoiceNumber = () => {
-  return `INV-${Date.now()}`;
-};
+export interface StockSummary {
+  total_income: number;
+  total_expenses: number;
+  stock_in: number;
+  stock_out: number;
+  profit: number;
+  recent_returns?: number;
+}

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, format } from "date-fns";
+import { startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { useShopId } from "@/hooks/use-shop-id";
 
 interface ExpensesStatsProps {
@@ -19,51 +19,21 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
     queryFn: async () => {
       if (!shopId) return null;
       
-      console.log("Fetching expenses with filter:", filterType, "and dateRange:", dateRange);
-      
       let query = supabase
         .from("expenses")
         .select("type, amount")
         .eq('shop_id', shopId);
 
-      // Apply date filtering logic
-      if (dateRange?.from) {
+      if (filterType !== "all" && dateRange?.from) {
         if (filterType === "daily") {
-          const fromDate = startOfDay(dateRange.from);
-          const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
-          
-          // For expenses, we need to use the date field which is a date type (not timestamp)
-          const fromDateStr = format(fromDate, "yyyy-MM-dd");
-          const toDateStr = format(toDate, "yyyy-MM-dd");
-          
-          console.log("Filtering expenses for date range:", fromDateStr, "to", toDateStr);
-          
           query = query
-            .gte("date", fromDateStr)
-            .lte("date", toDateStr);
+            .gte("date", startOfDay(dateRange.from).toISOString())
+            .lte("date", endOfDay(dateRange.to || dateRange.from).toISOString());
         } else if (filterType === "monthly") {
-          const fromMonth = startOfMonth(dateRange.from);
-          const toMonth = dateRange.to ? endOfMonth(dateRange.to) : endOfMonth(dateRange.from);
-          
-          // For expenses, we need to use the date field which is a date type (not timestamp)
-          const fromDateStr = format(fromMonth, "yyyy-MM-dd");
-          const toDateStr = format(toMonth, "yyyy-MM-dd");
-          
-          console.log("Filtering expenses for month range:", fromDateStr, "to", toDateStr);
-          
           query = query
-            .gte("date", fromDateStr)
-            .lte("date", toDateStr);
+            .gte("date", startOfMonth(dateRange.from).toISOString())
+            .lte("date", endOfMonth(dateRange.to || dateRange.from).toISOString());
         }
-      } else if (filterType === "daily") {
-        // If no dateRange but filter is daily, default to today
-        const today = new Date();
-        const todayStr = format(today, "yyyy-MM-dd");
-        
-        console.log("No date range provided, defaulting to today:", todayStr);
-        
-        query = query
-          .eq("date", todayStr);
       }
 
       const { data: expenses, error } = await query;
@@ -75,15 +45,14 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
 
       if (!expenses || !Array.isArray(expenses)) return { total: 0, byType: {} };
 
-      const total = expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
+      const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
       const byType = expenses.reduce((acc, curr) => {
         if (curr.type) {
-          acc[curr.type] = (acc[curr.type] || 0) + Number(curr.amount);
+          acc[curr.type] = (acc[curr.type] || 0) + curr.amount;
         }
         return acc;
       }, {} as Record<string, number>);
 
-      console.log("Calculated expense stats:", { total, byType });
       return { total, byType };
     },
     enabled: !!shopId,
@@ -109,11 +78,6 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
           <div className="text-2xl font-bold">
             {stats?.total?.toLocaleString() || "0"} F CFA
           </div>
-          {filterType === "daily" && dateRange?.from && (
-            <p className="text-xs text-muted-foreground">
-              {format(dateRange.from, "dd MMMM yyyy")}
-            </p>
-          )}
         </CardContent>
       </Card>
       {stats?.byType && Object.entries(stats.byType).map(([type, amount]) => (

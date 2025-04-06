@@ -13,9 +13,7 @@ export interface InvoiceModification {
   returned_items?: ReturnedItem[] | null;
   profiles?: {
     email: string;
-    first_name?: string | null;
-    last_name?: string | null;
-  } | null;
+  };
 }
 
 export interface BestSellingProduct {
@@ -23,15 +21,6 @@ export interface BestSellingProduct {
   product_name: string;
   total_quantity: number;
   total_revenue: number;
-}
-
-export interface StockSummary {
-  total_income: number;
-  total_expenses: number;
-  stock_in: number;
-  stock_out: number;
-  profit: number;
-  recent_returns?: number;
 }
 
 export interface DatabaseFunctions {
@@ -44,7 +33,7 @@ export interface DatabaseFunctions {
     Returns: string;
   };
   get_best_selling_products: {
-    Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
+    Args: { shop_id_param: string; start_date_param?: string; end_date_param?: string };
     Returns: BestSellingProduct[];
   };
   get_stock_summary: {
@@ -76,4 +65,13 @@ export interface DatabaseFunctions {
     Args: { invoice_id_param: string };
     Returns: InvoiceModification[];
   };
+}
+
+export interface StockSummary {
+  total_income: number;
+  total_expenses: number;
+  stock_in: number;
+  stock_out: number;
+  profit: number;
+  recent_returns?: number;
 }
