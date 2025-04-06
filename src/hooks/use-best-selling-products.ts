@@ -45,6 +45,7 @@ export const useBestSellingProducts = (dateFilter?: DateFilter, startDate?: Date
         endDate: endDateParam
       });
 
+      // Fix the parameter order to match the function definition
       const { data, error } = await supabase.rpc("get_best_selling_products", {
         shop_id_param: shopId,
         start_date_param: startDateParam,
