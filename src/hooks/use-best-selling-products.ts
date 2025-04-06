@@ -11,8 +11,8 @@ export const useBestSellingProducts = (dateFilter?: DateFilter, startDate?: Date
   
   // Calculate date ranges based on filter
   const today = new Date();
-  let startDateParam: string | undefined;
-  let endDateParam: string | undefined;
+  let startDateParam = "";
+  let endDateParam = "";
   
   if (dateFilter === "daily") {
     const date = startDate || today;

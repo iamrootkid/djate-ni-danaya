@@ -1,5 +1,8 @@
 
 import { ReturnedItem } from "@/types/invoice";
+import { supabase } from "@/integrations/supabase/client";
+import { format, subDays, startOfMonth, endOfMonth, startOfToday, endOfToday, startOfYesterday, endOfYesterday } from "date-fns";
+import { DateFilter } from "@/types/invoice";
 
 export interface InvoiceModification {
   id: string;
@@ -79,3 +82,62 @@ export interface StockSummary {
   profit: number;
   recent_returns?: number;
 }
+
+// Add the missing functions
+export const generateInvoiceNumber = async (shopId: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase.rpc('generate_invoice_number');
+    
+    if (error) {
+      console.error("Error generating invoice number:", error);
+      // Fallback to timestamp-based invoice number
+      return `INV-${Date.now()}-${shopId.substring(0, 4)}`;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in generateInvoiceNumber:", error);
+    // Fallback to timestamp-based invoice number
+    return `INV-${Date.now()}-${shopId.substring(0, 4)}`;
+  }
+};
+
+// Helper function to apply date filters to queries
+export const applyDateFilter = (query: any, dateFilter: DateFilter, startDate: Date) => {
+  const today = new Date();
+  
+  switch (dateFilter) {
+    case "daily":
+      const date = startDate || today;
+      const dateString = format(date, "yyyy-MM-dd");
+      return query.gte("created_at", `${dateString}T00:00:00`).lte("created_at", `${dateString}T23:59:59`);
+    
+    case "monthly":
+      const monthStartDate = startOfMonth(startDate || today);
+      const monthEndDate = endOfMonth(startDate || today);
+      return query.gte("created_at", format(monthStartDate, "yyyy-MM-dd")).lte("created_at", format(monthEndDate, "yyyy-MM-dd"));
+    
+    case "yesterday":
+      const yesterdayStart = startOfYesterday();
+      const yesterdayEnd = endOfYesterday();
+      return query.gte("created_at", format(yesterdayStart, "yyyy-MM-dd")).lte("created_at", format(yesterdayEnd, "yyyy-MM-dd"));
+    
+    default: // "all"
+      return query;
+  }
+};
+
+// Helper function to process invoice data
+export const processInvoiceData = (data: any[], shopId: string): any[] => {
+  return data.map(invoice => ({
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    customer_name: invoice.customer_name,
+    customer_phone: invoice.customer_phone || "",
+    created_at: invoice.created_at,
+    total_amount: invoice.sales?.total_amount || 0,
+    employee_email: invoice.sales?.employee?.email || "",
+    is_modified: invoice.is_modified || false,
+    new_total_amount: invoice.new_total_amount
+  }));
+};
