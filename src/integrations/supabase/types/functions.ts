@@ -42,7 +42,7 @@ export interface DatabaseFunctions {
       filter_type: string; 
       shop_id: string;
     };
-    Returns: StockSummary;
+    Returns: StockSummary[];
   };
   is_admin: {
     Args: Record<string, never>;

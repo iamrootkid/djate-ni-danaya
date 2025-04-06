@@ -55,7 +55,7 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
       }
       
       // Return the first item in the array, or a default object if empty
-      return data && data.length > 0 ? data[0] : {
+      return data && Array.isArray(data) && data.length > 0 ? data[0] : {
         total_income: 0,
         total_expenses: 0,
         stock_in: 0,

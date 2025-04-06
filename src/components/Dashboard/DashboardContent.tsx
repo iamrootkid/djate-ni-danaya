@@ -14,7 +14,7 @@ interface DashboardContentProps {
   startDate: Date;
   userRole: "admin" | "employee";
   stats: any; // Using any for brevity, but should be properly typed
-  recentOrders: any[]; // Using any[] for brevity, but should be properly typed
+  recentOrders: any[] | null | undefined; // Using any[] for brevity, but should be properly typed
   handleFilterChange: (filter: DateFilter) => void;
   setStartDate: (date: Date) => void;
   isLoading?: boolean;
@@ -67,7 +67,7 @@ export function DashboardContent({
             <BestSellingProducts dateFilter={dateFilter} startDate={startDate} />
           </div>
 
-          <RecentOrders orders={recentOrders || []} />
+          <RecentOrders orders={Array.isArray(recentOrders) ? recentOrders : []} />
         </>
       )}
     </div>

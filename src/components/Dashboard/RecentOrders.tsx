@@ -47,11 +47,16 @@ export const RecentOrders = ({ orders }: RecentOrdersProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders && orders.length > 0 ? (
+            {Array.isArray(orders) && orders.length > 0 ? (
               orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.sale_items && order.sale_items[0]?.products?.name || "N/A"}</TableCell>
+                  <TableCell>
+                    {order.sale_items && 
+                     Array.isArray(order.sale_items) && 
+                     order.sale_items.length > 0 && 
+                     order.sale_items[0]?.products?.name || "N/A"}
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                       order.status === 'completed' ? 'bg-green-100 text-green-700' :

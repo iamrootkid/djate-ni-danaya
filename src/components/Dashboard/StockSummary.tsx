@@ -177,7 +177,7 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
               <p className="text-2xl font-bold text-blue-600">
                 {summary?.stock_in || 0} unités
               </p>
-              {summary?.recent_returns && summary.recent_returns > 0 ? (
+              {summary && 'recent_returns' in summary && summary.recent_returns && summary.recent_returns > 0 ? (
                 <Badge variant="success" className="ml-2">
                   +{summary.recent_returns} retours
                 </Badge>

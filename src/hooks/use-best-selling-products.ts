@@ -22,7 +22,7 @@ export const useBestSellingProducts = () => {
         throw new Error(error.message);
       }
 
-      return data || [];
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!shopId,
   });
