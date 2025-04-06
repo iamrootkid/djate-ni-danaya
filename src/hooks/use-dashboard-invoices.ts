@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useShopId } from "./use-shop-id";
 import { DateFilter } from "@/types/invoice";
 import { Database } from "@/integrations/supabase/types";
+import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
 
 type InvoiceResponse = Database["public"]["Tables"]["invoices"]["Row"] & {
   sales?: {
@@ -65,7 +66,7 @@ export const useDashboardInvoices = (dateFilter: DateFilter = "daily", startDate
     queryFn: async () => {
       if (!shopId) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
         .select(`
           id,
@@ -82,8 +83,34 @@ export const useDashboardInvoices = (dateFilter: DateFilter = "daily", startDate
           new_total_amount,
           is_modified
         `)
-        .eq('shop_id', shopId)
-        .order('created_at', { ascending: false });
+        .eq('shop_id', shopId);
+
+      // Apply date filters
+      if (dateFilter === "daily") {
+        const dayStart = startOfDay(startDate);
+        const dayEnd = endOfDay(startDate);
+        query = query
+          .gte('created_at', dayStart.toISOString())
+          .lte('created_at', dayEnd.toISOString());
+      } else if (dateFilter === "yesterday") {
+        const yesterday = subDays(startDate, 1);
+        const dayStart = startOfDay(yesterday);
+        const dayEnd = endOfDay(yesterday);
+        query = query
+          .gte('created_at', dayStart.toISOString())
+          .lte('created_at', dayEnd.toISOString());
+      } else if (dateFilter === "monthly") {
+        const monthStart = startOfMonth(startDate);
+        const monthEnd = endOfMonth(startDate);
+        query = query
+          .gte('created_at', monthStart.toISOString())
+          .lte('created_at', monthEnd.toISOString());
+      }
+
+      // Apply ordering after filters
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) throw error;
       

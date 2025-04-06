@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,7 +7,6 @@ import { useDashboardSubscriptions } from "@/hooks/dashboard/use-dashboard-subsc
 import { useDashboardFilters } from "@/hooks/dashboard/use-dashboard-filters";
 import { useDashboardRole } from "@/hooks/dashboard/use-dashboard-role";
 import { useDashboardAutoRefresh } from "@/hooks/dashboard/use-dashboard-auto-refresh";
-import { toast } from "@/hooks/use-toast";
 
 export const useDashboard = () => {
   const location = useLocation();
@@ -30,31 +28,6 @@ export const useDashboard = () => {
   
   // Setup auto-refresh
   useDashboardAutoRefresh(shopId);
-  
-  // Force refresh dashboard data when component mounts and set to today's data
-  useEffect(() => {
-    if (shopId) {
-      // Make sure we're looking at today's data
-      handleFilterChange("daily");
-      
-      // Force invalidate queries to ensure fresh data
-      setTimeout(() => {
-        invalidateAllDashboardQueries();
-        toast({
-          title: "Données du jour chargées",
-          description: "Les données du tableau de bord ont été mises à jour."
-        });
-      }, 500); // Small timeout to ensure filter change is processed
-    }
-  }, [shopId, handleFilterChange, invalidateAllDashboardQueries]);
-
-  // Check for location state indicating we should refresh
-  useEffect(() => {
-    if (location.state?.refresh) {
-      console.log("Dashboard refreshing due to navigation state");
-      invalidateAllDashboardQueries();
-    }
-  }, [location.state, invalidateAllDashboardQueries]);
   
   // Pass the loading state to the query parameters
   const { data: stats, isLoading: statsLoading } = useDashboardStats(dateFilter, startDate);

@@ -1,15 +1,15 @@
-
 import { useLocation } from "react-router-dom";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { DashboardContent } from "@/components/Dashboard/DashboardContent";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
+  const initialLoadDone = useRef(false);
   const {
     shopId,
     userRole,
@@ -25,7 +25,8 @@ const Dashboard = () => {
 
   // Force refresh dashboard data when component mounts and set to today's data
   useEffect(() => {
-    if (shopId) {
+    if (shopId && !initialLoadDone.current) {
+      initialLoadDone.current = true;
       // Make sure we're looking at today's data
       handleFilterChange("daily");
       
@@ -52,7 +53,7 @@ const Dashboard = () => {
     }
   }, [location.state, invalidateAllDashboardQueries]);
 
-  // Set up recurring refresh for critical data
+  // Set up recurring refresh for critical data - but without toasts
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (shopId) {
@@ -61,7 +62,7 @@ const Dashboard = () => {
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
         queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
       }
-    }, 30000); // Refresh every 30 seconds
+    }, 60000); // Refresh every 60 seconds instead of 30
     
     return () => clearInterval(intervalId);
   }, [shopId, queryClient]);
