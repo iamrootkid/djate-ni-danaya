@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays, format } from "date-fns";
 import { DateFilter } from "@/types/invoice";
 import { useShopId } from "./use-shop-id";
-import { BestSellingProduct } from "@/utils/invoiceUtils";
+import { BestSellingProduct } from "@/integrations/supabase/types/functions";
 
 export const useBestSellingProducts = (dateFilter: DateFilter = "daily", startDate: Date = new Date()) => {
   const { shopId } = useShopId();

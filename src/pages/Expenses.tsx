@@ -10,8 +10,8 @@ import { startOfDay } from "date-fns";
 const Expenses = () => {
   const [filterType, setFilterType] = useState<"all" | "daily" | "monthly">("daily");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: new Date(),
+    from: startOfDay(new Date()),
+    to: startOfDay(new Date()),
   });
   
   // Initialize with today's date for daily view and ensure it's applied

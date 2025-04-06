@@ -124,7 +124,7 @@ export const useCheckout = () => {
 
         // Generate invoice number
         console.log("Generating invoice number for shop:", shopId);
-        const invoiceNumber = await generateInvoiceNumber(shopId);
+        const invoiceNumber = generateInvoiceNumber();
         console.log("Generated invoice number:", invoiceNumber);
 
         // Create invoice

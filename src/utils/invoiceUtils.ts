@@ -1,29 +1,6 @@
 
 import { ReturnedItem } from "@/types/invoice";
-
-export interface InvoiceModification {
-  id: string;
-  invoice_id: string;
-  modification_type: string;
-  new_amount: number;
-  reason: string;
-  created_at: string;
-  modified_by: string;
-  shop_id: string;
-  returned_items?: ReturnedItem[] | null;
-  profiles?: {
-    email: string;
-    first_name?: string | null;
-    last_name?: string | null;
-  } | null;
-}
-
-export interface BestSellingProduct {
-  product_id: string;
-  product_name: string;
-  total_quantity: number;
-  total_revenue: number;
-}
+import { InvoiceModification, BestSellingProduct, StockSummary } from "@/integrations/supabase/types/functions";
 
 export interface DatabaseFunctions {
   check_column_exists: {
@@ -67,15 +44,6 @@ export interface DatabaseFunctions {
     Args: { invoice_id_param: string };
     Returns: InvoiceModification[];
   };
-}
-
-export interface StockSummary {
-  total_income: number;
-  total_expenses: number;
-  stock_in: number;
-  stock_out: number;
-  profit: number;
-  recent_returns?: number;
 }
 
 // Function required by invoiceService
