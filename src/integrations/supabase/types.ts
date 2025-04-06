@@ -119,12 +119,70 @@ export type Database = {
           },
         ]
       }
+      invoice_modifications: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_id: string
+          modification_type: string
+          modified_by: string
+          new_amount: number | null
+          reason: string
+          returned_items: Json | null
+          shop_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_id: string
+          modification_type: string
+          modified_by: string
+          new_amount?: number | null
+          reason: string
+          returned_items?: Json | null
+          shop_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          modification_type?: string
+          modified_by?: string
+          new_amount?: number | null
+          reason?: string
+          returned_items?: Json | null
+          shop_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_modifications_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_modifications_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           created_at: string
           customer_name: string
+          customer_phone: string | null
           id: string
           invoice_number: string
+          is_modified: boolean | null
+          modification_reason: string | null
+          new_total_amount: number | null
           sale_id: string
           shop_id: string | null
           updated_at: string
@@ -132,8 +190,12 @@ export type Database = {
         Insert: {
           created_at?: string
           customer_name: string
+          customer_phone?: string | null
           id?: string
           invoice_number: string
+          is_modified?: boolean | null
+          modification_reason?: string | null
+          new_total_amount?: number | null
           sale_id: string
           shop_id?: string | null
           updated_at?: string
@@ -141,8 +203,12 @@ export type Database = {
         Update: {
           created_at?: string
           customer_name?: string
+          customer_phone?: string | null
           id?: string
           invoice_number?: string
+          is_modified?: boolean | null
+          modification_reason?: string | null
+          new_total_amount?: number | null
           sale_id?: string
           shop_id?: string | null
           updated_at?: string
@@ -175,6 +241,7 @@ export type Database = {
           price: number
           shop_id: string | null
           stock: number
+          stock_quantity: number | null
           updated_at: string
         }
         Insert: {
@@ -187,6 +254,7 @@ export type Database = {
           price?: number
           shop_id?: string | null
           stock?: number
+          stock_quantity?: number | null
           updated_at?: string
         }
         Update: {
@@ -199,6 +267,7 @@ export type Database = {
           price?: number
           shop_id?: string | null
           stock?: number
+          stock_quantity?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -266,6 +335,7 @@ export type Database = {
           price_at_sale: number
           product_id: string
           quantity: number
+          returned_quantity: number | null
           sale_id: string
           updated_at: string
         }
@@ -275,6 +345,7 @@ export type Database = {
           price_at_sale: number
           product_id: string
           quantity: number
+          returned_quantity?: number | null
           sale_id: string
           updated_at?: string
         }
@@ -284,6 +355,7 @@ export type Database = {
           price_at_sale?: number
           product_id?: string
           quantity?: number
+          returned_quantity?: number | null
           sale_id?: string
           updated_at?: string
         }
@@ -476,6 +548,19 @@ export type Database = {
           column_name: string
         }
         Returns: boolean
+      }
+      create_invoice_modification: {
+        Args: {
+          invoice_id: string
+          modification_type: string
+          new_amount: number
+          reason: string
+          modified_by: string
+          shop_id: string
+          created_at: string
+          returned_items: Json
+        }
+        Returns: Json
       }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>

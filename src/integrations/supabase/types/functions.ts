@@ -73,4 +73,5 @@ export interface StockSummary {
   stock_in: number;
   stock_out: number;
   profit: number;
+  recent_returns?: number;
 }
