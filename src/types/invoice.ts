@@ -1,3 +1,4 @@
+
 export interface InvoiceData {
   id: string;
   invoice_number: string;
@@ -5,6 +6,7 @@ export interface InvoiceData {
   customer_phone?: string;
   created_at: string;
   total_amount: number;
+  sale_id: string;
   employee_email: string;
   is_modified?: boolean;
   new_total_amount?: number;
@@ -30,6 +32,9 @@ export interface InvoiceModification {
     originalQuantity: number;
     price: number;
   }>;
+  profiles?: {
+    email: string;
+  };
 }
 
 export interface ReturnedItem {
@@ -38,8 +43,7 @@ export interface ReturnedItem {
   quantity: number;
   originalQuantity: number;
   selected: boolean;
-  price: number; // Added price property to fix the error
+  price: number;
 }
 
 export type DateFilter = "all" | "daily" | "monthly" | "yesterday";
-
