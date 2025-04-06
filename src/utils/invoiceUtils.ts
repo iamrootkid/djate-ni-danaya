@@ -1,3 +1,4 @@
+
 import { ReturnedItem } from "@/types/invoice";
 
 export interface InvoiceModification {
@@ -12,7 +13,9 @@ export interface InvoiceModification {
   returned_items?: ReturnedItem[] | null;
   profiles?: {
     email: string;
-  };
+    first_name?: string | null;
+    last_name?: string | null;
+  } | null;
 }
 
 export interface BestSellingProduct {
@@ -74,3 +77,20 @@ export interface StockSummary {
   profit: number;
   recent_returns?: number;
 }
+
+// Function required by invoiceService
+export const applyDateFilter = (query: any, startDate: Date, endDate: Date) => {
+  return query
+    .gte("created_at", startDate.toISOString())
+    .lte("created_at", endDate.toISOString());
+};
+
+// Function required by invoiceService
+export const processInvoiceData = (invoices: any[]) => {
+  return invoices;
+};
+
+// Function required by checkout
+export const generateInvoiceNumber = () => {
+  return `INV-${Date.now()}`;
+};

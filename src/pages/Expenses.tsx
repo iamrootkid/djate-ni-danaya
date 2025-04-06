@@ -5,7 +5,7 @@ import { ExpensesList } from "@/components/Expenses/ExpensesList";
 import { ExpensesStats } from "@/components/Expenses/ExpensesStats";
 import { useState, useEffect } from "react";
 import { DateRange } from "react-day-picker";
-import { startOfMonth } from "date-fns";
+import { startOfDay } from "date-fns";
 
 const Expenses = () => {
   const [filterType, setFilterType] = useState<"all" | "daily" | "monthly">("daily");
@@ -14,11 +14,12 @@ const Expenses = () => {
     to: new Date(),
   });
   
-  // Initialize with today's date for daily view
+  // Initialize with today's date for daily view and ensure it's applied
   useEffect(() => {
+    const today = startOfDay(new Date());
     setDateRange({
-      from: new Date(),
-      to: new Date(),
+      from: today,
+      to: today,
     });
   }, []);
 
