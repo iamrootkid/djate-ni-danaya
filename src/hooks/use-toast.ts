@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 20;
@@ -115,7 +115,7 @@ export const reducer = (state: State, action: Action): State => {
   }
 };
 
-const listeners: ((action: Action) => void)[] = [];
+const listeners: Dispatch<Action>[] = [];
 
 let memoryState: State = { toasts: [] };
 
