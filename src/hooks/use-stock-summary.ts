@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "./use-shop-id";
 import { addDays, format, startOfDay, subDays } from "date-fns";
 import { DateFilter } from "@/types/invoice";
+import { StockSummary } from "@/integrations/supabase/types/functions";
 
 export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
   const { shopId } = useShopId();
@@ -53,14 +54,27 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
         throw error;
       }
       
-      // Return the first item in the array, or a default object if empty
-      return data && data.length > 0 ? data[0] : {
-        total_income: 0,
-        total_expenses: 0,
-        stock_in: 0,
-        stock_out: 0,
-        profit: 0
-      };
+      // Ensure all expected properties are returned with defaults
+      const summary: StockSummary = data && data.length > 0 
+        ? {
+            total_income: data[0].total_income || 0,
+            total_expenses: data[0].total_expenses || 0,
+            stock_in: data[0].stock_in || 0,
+            stock_out: data[0].stock_out || 0,
+            profit: data[0].profit || 0,
+            // Explicitly include recent_returns, defaulting to undefined if missing
+            recent_returns: data[0].recent_returns
+          }
+        : {
+            total_income: 0,
+            total_expenses: 0,
+            stock_in: 0,
+            stock_out: 0,
+            profit: 0,
+            recent_returns: undefined
+          };
+      
+      return summary;
     },
     enabled: !!shopId,
     staleTime: 60000, // Data becomes stale after 1 minute
