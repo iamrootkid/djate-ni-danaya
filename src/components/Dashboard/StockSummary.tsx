@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockSummary as StockSummaryType } from "@/integrations/supabase/types/functions";
 import { ArrowUp, ArrowDown, DollarSign, Banknote, RefreshCw } from "lucide-react";
@@ -177,7 +176,7 @@ export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
               <p className="text-2xl font-bold text-blue-600">
                 {summary?.stock_in || 0} unités
               </p>
-              {summary && summary.recent_returns !== undefined && summary.recent_returns > 0 ? (
+              {summary?.recent_returns ? (
                 <Badge variant="success" className="ml-2">
                   +{summary.recent_returns} retours
                 </Badge>

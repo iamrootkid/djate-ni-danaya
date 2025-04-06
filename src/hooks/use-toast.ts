@@ -115,14 +115,14 @@ export const reducer = (state: State, action: Action): State => {
   }
 };
 
-const listeners: ((state: State) => void)[] = [];
+const listeners: ((action: Action) => void)[] = [];
 
 let memoryState: State = { toasts: [] };
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action);
   listeners.forEach((listener) => {
-    listener(memoryState);
+    listener(action);
   });
 }
 
@@ -163,11 +163,9 @@ function useToast() {
   const [state, setState] = useState<State>(memoryState);
 
   useEffect(() => {
-    // Update the type of the listener to match what setState expects
-    const listener = (newState: State) => setState(newState);
-    listeners.push(listener);
+    listeners.push(setState);
     return () => {
-      const index = listeners.indexOf(listener);
+      const index = listeners.indexOf(setState);
       if (index > -1) {
         listeners.splice(index, 1);
       }
