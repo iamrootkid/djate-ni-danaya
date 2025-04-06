@@ -32,7 +32,7 @@ export function SalesStats() {
   const todayFormatted = format(today, "yyyy-MM-dd");
   
   // We need to get daily sales stats
-  const { data: stockSummary, isLoading } = useStockSummary("daily", today);
+  const { data: stockSummary, isLoading } = useStockSummary(today, "daily");
   
   // Use default values if data is loading or not available
   const totalIncome = stockSummary?.total_income || 0;

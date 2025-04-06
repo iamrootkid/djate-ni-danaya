@@ -6,7 +6,7 @@ import { addDays, format, startOfDay, subDays } from "date-fns";
 import { DateFilter } from "@/types/invoice";
 import { StockSummary } from "@/integrations/supabase/types/functions";
 
-export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
+export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "daily") => {
   const { shopId } = useShopId();
   
   // Use default range of last 30 days if no range provided
@@ -28,6 +28,12 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
   };
   
   const filterType = getFilterType();
+
+  console.log("Stock summary params:", {
+    startDate: formattedStartDate,
+    filterType,
+    shopId
+  });
   
   return useQuery({
     queryKey: ["stock-summary", shopId, formattedStartDate, filterType],
@@ -53,6 +59,8 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
         console.error("Error fetching stock summary:", error);
         throw error;
       }
+      
+      console.log("Stock summary response:", data);
       
       // Return the first item in the array, or a default object if empty
       return data && Array.isArray(data) && data.length > 0 ? data[0] : {

@@ -25,6 +25,11 @@ export interface InvoiceModification {
   new_amount: number;
   reason: string;
   created_at: string;
+  modified_by: string;
+  shop_id: string;
+  profiles?: {
+    email: string;
+  } | null;
   returned_items?: Array<{
     id: string;
     name: string;

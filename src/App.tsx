@@ -90,11 +90,12 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
     return <Navigate to="/login" replace />;
   }
 
-  if (!userRole || !allowedRoles.includes(userRole)) {
-    return <Navigate to="/sales" replace />;
+  // Allow access if the user's role is included in allowedRoles OR if the user is an admin
+  if (userRole && (allowedRoles.includes(userRole) || userRole === 'admin')) {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  return <Navigate to="/dashboard" replace />;
 };
 
 const queryClient = new QueryClient({
@@ -146,7 +147,7 @@ const App = () => {
               <Route
                 path="/sales"
                 element={
-                  <ProtectedRoute allowedRoles={["employee"]}>
+                  <ProtectedRoute allowedRoles={["employee", "admin"]}>
                     <Sales />
                   </ProtectedRoute>
                 }
