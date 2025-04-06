@@ -25,7 +25,7 @@ export function DashboardContent({
   startDate,
   userRole,
   stats,
-  recentOrders,
+  recentOrders = [],
   handleFilterChange,
   setStartDate,
   isLoading = false

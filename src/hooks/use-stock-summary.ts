@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "./use-shop-id";
 import { addDays, format, startOfDay, subDays } from "date-fns";
 import { DateFilter } from "@/types/invoice";
+import { StockSummary } from "@/integrations/supabase/types/functions";
 
 export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
   const { shopId } = useShopId();
@@ -59,7 +60,8 @@ export const useStockSummary = (startDate?: Date, dateFilter?: DateFilter) => {
         total_expenses: 0,
         stock_in: 0,
         stock_out: 0,
-        profit: 0
+        profit: 0,
+        recent_returns: 0
       };
     },
     enabled: !!shopId,
