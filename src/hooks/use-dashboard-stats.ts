@@ -99,6 +99,8 @@ export const useDashboardStats = (dateFilter: "all" | "daily" | "monthly" | "yes
       if (dateFilter === "daily") {
         const dayStart = startOfDay(startDate);
         const dayEnd = endOfDay(startDate);
+        console.log("Filtering sales for day:", dayStart.toISOString(), "to", dayEnd.toISOString());
+        
         salesQuery = salesQuery
           .gte("created_at", dayStart.toISOString())
           .lte("created_at", dayEnd.toISOString());
@@ -144,30 +146,38 @@ export const useDashboardStats = (dateFilter: "all" | "daily" | "monthly" | "yes
       if (dateFilter === "daily") {
         const dayStart = startOfDay(startDate);
         const dayEnd = endOfDay(startDate);
+        console.log("Filtering expenses for today:", dayStart.toISOString(), "to", dayEnd.toISOString());
+        
         expensesQuery = expensesQuery
-          .gte("date", dayStart.toISOString())
-          .lte("date", dayEnd.toISOString());
+          .gte("date", dayStart.toISOString().split('T')[0]) // Only use the date part
+          .lte("date", dayEnd.toISOString().split('T')[0]);  // Only use the date part
       } else if (dateFilter === "yesterday") {
         const yesterday = subDays(startDate, 1);
         const dayStart = startOfDay(yesterday);
         const dayEnd = endOfDay(yesterday);
         expensesQuery = expensesQuery
-          .gte("date", dayStart.toISOString())
-          .lte("date", dayEnd.toISOString());
+          .gte("date", dayStart.toISOString().split('T')[0]) // Only use the date part
+          .lte("date", dayEnd.toISOString().split('T')[0]);  // Only use the date part
       } else if (dateFilter === "monthly") {
         const monthStart = startOfMonth(startDate);
         const monthEnd = endOfMonth(startDate);
         expensesQuery = expensesQuery
-          .gte("date", monthStart.toISOString())
-          .lte("date", monthEnd.toISOString());
+          .gte("date", monthStart.toISOString().split('T')[0]) // Only use the date part
+          .lte("date", monthEnd.toISOString().split('T')[0]);  // Only use the date part
       }
 
-      const { data: expenses } = await expensesQuery;
+      const { data: expenses, error: expensesError } = await expensesQuery;
+      
+      if (expensesError) {
+        console.error("Error fetching expenses:", expensesError);
+      }
+      
+      console.log("Expenses data:", expenses);
 
-      const totalExpenses = expenses?.reduce((acc, exp) => acc + exp.amount, 0) || 0;
+      const totalExpenses = expenses?.reduce((acc, exp) => acc + Number(exp.amount), 0) || 0;
       const stockExpenses = expenses
         ?.filter((exp) => exp.type === "stock_purchase")
-        .reduce((acc, exp) => acc + exp.amount, 0) || 0;
+        .reduce((acc, exp) => acc + Number(exp.amount), 0) || 0;
 
       // Calculate growth
       const yesterday = subDays(startDate, 1);

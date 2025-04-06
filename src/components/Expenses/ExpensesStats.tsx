@@ -32,35 +32,38 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
           const fromDate = startOfDay(dateRange.from);
           const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
           
-          console.log("Filtering expenses for date range:", 
-            format(fromDate, "yyyy-MM-dd"), "to", format(toDate, "yyyy-MM-dd"));
+          // For expenses, we need to use the date field which is a date type (not timestamp)
+          const fromDateStr = format(fromDate, "yyyy-MM-dd");
+          const toDateStr = format(toDate, "yyyy-MM-dd");
+          
+          console.log("Filtering expenses for date range:", fromDateStr, "to", toDateStr);
           
           query = query
-            .gte("date", fromDate.toISOString())
-            .lte("date", toDate.toISOString());
+            .gte("date", fromDateStr)
+            .lte("date", toDateStr);
         } else if (filterType === "monthly") {
           const fromMonth = startOfMonth(dateRange.from);
           const toMonth = dateRange.to ? endOfMonth(dateRange.to) : endOfMonth(dateRange.from);
           
-          console.log("Filtering expenses for month range:", 
-            format(fromMonth, "yyyy-MM-dd"), "to", format(toMonth, "yyyy-MM-dd"));
+          // For expenses, we need to use the date field which is a date type (not timestamp)
+          const fromDateStr = format(fromMonth, "yyyy-MM-dd");
+          const toDateStr = format(toMonth, "yyyy-MM-dd");
+          
+          console.log("Filtering expenses for month range:", fromDateStr, "to", toDateStr);
           
           query = query
-            .gte("date", fromMonth.toISOString())
-            .lte("date", toMonth.toISOString());
+            .gte("date", fromDateStr)
+            .lte("date", toDateStr);
         }
       } else if (filterType === "daily") {
         // If no dateRange but filter is daily, default to today
         const today = new Date();
-        const dayStart = startOfDay(today);
-        const dayEnd = endOfDay(today);
+        const todayStr = format(today, "yyyy-MM-dd");
         
-        console.log("No date range provided, defaulting to today:", 
-          format(dayStart, "yyyy-MM-dd"), "to", format(dayEnd, "yyyy-MM-dd"));
+        console.log("No date range provided, defaulting to today:", todayStr);
         
         query = query
-          .gte("date", dayStart.toISOString())
-          .lte("date", dayEnd.toISOString());
+          .eq("date", todayStr);
       }
 
       const { data: expenses, error } = await query;

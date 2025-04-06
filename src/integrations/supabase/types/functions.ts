@@ -25,6 +25,15 @@ export interface BestSellingProduct {
   total_revenue: number;
 }
 
+export interface StockSummary {
+  total_income: number;
+  total_expenses: number;
+  stock_in: number;
+  stock_out: number;
+  profit: number;
+  recent_returns?: number;
+}
+
 export interface DatabaseFunctions {
   check_column_exists: {
     Args: { table_name: string; column_name: string };
@@ -67,13 +76,4 @@ export interface DatabaseFunctions {
     Args: { invoice_id_param: string };
     Returns: InvoiceModification[];
   };
-}
-
-export interface StockSummary {
-  total_income: number;
-  total_expenses: number;
-  stock_in: number;
-  stock_out: number;
-  profit: number;
-  recent_returns?: number;
 }
