@@ -11,7 +11,7 @@ interface BestSellingProductsProps {
 }
 
 export const BestSellingProducts = ({ dateFilter, startDate }: BestSellingProductsProps) => {
-  const { data: topProducts, isLoading, error } = useBestSellingProducts();
+  const { data: topProducts, isLoading, error } = useBestSellingProducts(dateFilter, startDate);
   
   return (
     <Card className="col-span-3">

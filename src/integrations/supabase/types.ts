@@ -587,6 +587,19 @@ export type Database = {
               total_revenue: number
             }[]
           }
+        | {
+            Args: {
+              shop_id_param: string
+              start_date_param: string
+              end_date_param: string
+            }
+            Returns: {
+              product_id: string
+              product_name: string
+              total_quantity: number
+              total_revenue: number
+            }[]
+          }
       get_stock_summary:
         | {
             Args: {
