@@ -3,24 +3,16 @@ import { AppLayout } from "@/components/Layout/AppLayout";
 import { ExpensesHeader } from "@/components/Expenses/ExpensesHeader";
 import { ExpensesList } from "@/components/Expenses/ExpensesList";
 import { ExpensesStats } from "@/components/Expenses/ExpensesStats";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DateRange } from "react-day-picker";
-import { startOfDay } from "date-fns";
+import { startOfMonth } from "date-fns";
 
 const Expenses = () => {
-  const [filterType, setFilterType] = useState<"all" | "daily" | "monthly">("daily");
+  const [filterType, setFilterType] = useState<"all" | "daily" | "monthly">("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfDay(new Date()),
-    to: startOfDay(new Date()),
+    from: startOfMonth(new Date()),
+    to: new Date(),
   });
-  
-  // Initialize with today's date for daily view
-  useEffect(() => {
-    setDateRange({
-      from: startOfDay(new Date()),
-      to: startOfDay(new Date()),
-    });
-  }, []);
 
   return (
     <AppLayout>

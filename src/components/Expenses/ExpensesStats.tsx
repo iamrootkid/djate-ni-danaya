@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +16,6 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
   const { data: stats } = useQuery({
     queryKey: ["expenses-stats", filterType, dateRange, shopId],
     queryFn: async () => {
-      if (!shopId) return null;
-      
       let query = supabase
         .from("expenses")
         .select("type, amount")
@@ -36,20 +33,13 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
         }
       }
 
-      const { data: expenses, error } = await query;
-      
-      if (error) {
-        console.error("Error fetching expenses:", error);
-        return null;
-      }
+      const { data: expenses } = await query;
 
-      if (!expenses || !Array.isArray(expenses)) return { total: 0, byType: {} };
+      if (!expenses) return null;
 
       const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
       const byType = expenses.reduce((acc, curr) => {
-        if (curr.type) {
-          acc[curr.type] = (acc[curr.type] || 0) + curr.amount;
-        }
+        acc[curr.type] = (acc[curr.type] || 0) + curr.amount;
         return acc;
       }, {} as Record<string, number>);
 
@@ -76,14 +66,14 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {stats?.total?.toLocaleString() || "0"} F CFA
+            {stats?.total?.toLocaleString()} F CFA
           </div>
         </CardContent>
       </Card>
       {stats?.byType && Object.entries(stats.byType).map(([type, amount]) => (
         <Card key={type}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{typeLabels[type] || type}</CardTitle>
+            <CardTitle className="text-sm font-medium">{typeLabels[type]}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

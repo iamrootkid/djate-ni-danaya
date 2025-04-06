@@ -1,4 +1,3 @@
-
 export interface InvoiceData {
   id: string;
   invoice_number: string;
@@ -24,8 +23,6 @@ export interface InvoiceModification {
   new_amount: number;
   reason: string;
   created_at: string;
-  modified_by: string;
-  shop_id: string;
   returned_items?: Array<{
     id: string;
     name: string;
@@ -33,9 +30,6 @@ export interface InvoiceModification {
     originalQuantity: number;
     price: number;
   }>;
-  profiles?: {
-    email: string;
-  };
 }
 
 export interface ReturnedItem {
@@ -44,7 +38,8 @@ export interface ReturnedItem {
   quantity: number;
   originalQuantity: number;
   selected: boolean;
-  price: number;
+  price: number; // Added price property to fix the error
 }
 
 export type DateFilter = "all" | "daily" | "monthly" | "yesterday";
+

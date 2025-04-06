@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
@@ -15,7 +14,7 @@ interface DashboardStats {
   };
 }
 
-export const useDashboardStats = (dateFilter: "all" | "daily" | "monthly" | "yesterday" = "daily", startDate: Date = new Date()) => {
+export const useDashboardStats = (dateFilter: "all" | "daily" | "monthly" | "yesterday" = "all", startDate: Date = new Date()) => {
   const { shopId } = useShopId();
 
   return useQuery<DashboardStats>({
