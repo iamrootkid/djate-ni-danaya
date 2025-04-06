@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useBestSellingProducts } from "@/hooks/use-best-selling-products";
 import { BestSellingProduct } from "@/integrations/supabase/types/functions";
 import { DateFilter } from "@/types/invoice";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BestSellingProductsProps {
   dateFilter: DateFilter;
@@ -11,7 +12,7 @@ interface BestSellingProductsProps {
 }
 
 export const BestSellingProducts = ({ dateFilter, startDate }: BestSellingProductsProps) => {
-  const { data: topProducts, isLoading, error } = useBestSellingProducts();
+  const { data: topProducts, isLoading, error } = useBestSellingProducts(dateFilter, startDate);
   
   return (
     <Card className="col-span-3">
@@ -31,7 +32,7 @@ export const BestSellingProducts = ({ dateFilter, startDate }: BestSellingProduc
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-4">
-                  Chargement...
+                  <Skeleton className="h-6 w-full" />
                 </TableCell>
               </TableRow>
             ) : error ? (
