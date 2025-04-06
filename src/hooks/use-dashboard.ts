@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
@@ -12,6 +11,8 @@ export const useDashboard = () => {
   // Set default filter to "daily" to show today's data
   const [dateFilter, setDateFilter] = useState<DateFilter>("daily");
   const [startDate, setStartDate] = useState<Date>(new Date());
+  const [isLoading, setIsLoading] = useState(true);
+  
   const queryClient = useQueryClient();
   const { shopId } = useShopId();
   
@@ -33,6 +34,27 @@ export const useDashboard = () => {
     getUserRole();
   }, []);
   
+  // Invalidate all dashboard-related queries
+  const invalidateAllDashboardQueries = useCallback(() => {
+    if (!shopId) return;
+    
+    console.log("Invalidating all dashboard queries for shop:", shopId);
+    setIsLoading(true);
+    
+    // Use more specific query keys to improve invalidation precision
+    queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId, dateFilter] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId, dateFilter] });
+    queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId, dateFilter] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId, dateFilter] });
+    queryClient.invalidateQueries({ queryKey: ['inventory-report', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['best-selling-products', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['stock-summary', shopId, dateFilter] });
+    
+    // Set a timeout to ensure loading state doesn't get stuck
+    setTimeout(() => setIsLoading(false), 1500);
+  }, [shopId, queryClient, dateFilter]);
+  
   useEffect(() => {
     if (!shopId) {
       console.error("No shop ID found, user should be redirected to login");
@@ -46,24 +68,13 @@ export const useDashboard = () => {
 
     // Invalidate all dashboard-related queries when shop ID changes
     invalidateAllDashboardQueries();
-  }, [shopId]);
-
-  // Function to invalidate all dashboard-related queries
-  const invalidateAllDashboardQueries = () => {
-    if (!shopId) return;
     
-    console.log("Invalidating all dashboard queries for shop:", shopId);
-    
-    queryClient.invalidateQueries({ queryKey: ['dashboard-stats', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard_sales', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['recent-orders', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard_invoices', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['inventory-report', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['best-selling-products', shopId] });
-    queryClient.invalidateQueries({ queryKey: ['products-stock', shopId] });
-  };
+    // Set loading to false after a delay to ensure queries have time to execute
+    setTimeout(() => setIsLoading(false), 1500);
+  }, [shopId, invalidateAllDashboardQueries]);
   
-  const handleFilterChange = (filter: DateFilter) => {
+  const handleFilterChange = useCallback((filter: DateFilter) => {
+    setIsLoading(true);
     setDateFilter(filter);
     const today = new Date();
     
@@ -79,8 +90,11 @@ export const useDashboard = () => {
     }
 
     // Invalidate relevant queries when filter changes
-    invalidateAllDashboardQueries();
-  };
+    // Use a small timeout to ensure state is updated before invalidation
+    setTimeout(() => {
+      invalidateAllDashboardQueries();
+    }, 100);
+  }, [invalidateAllDashboardQueries]);
   
   useEffect(() => {
     if (!shopId) return;
@@ -186,10 +200,22 @@ export const useDashboard = () => {
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
     };
-  }, [queryClient, shopId]);
+  }, [queryClient, shopId, invalidateAllDashboardQueries]);
   
-  const { data: stats } = useDashboardStats(dateFilter, startDate);
-  const { data: recentOrders } = useRecentOrders(dateFilter, startDate);
+  // Pass the loading state to the query parameters
+  const { data: stats, isLoading: statsLoading } = useDashboardStats(dateFilter, startDate);
+  const { data: recentOrders, isLoading: ordersLoading } = useRecentOrders(dateFilter, startDate);
+  
+  // Update loading state based on query states
+  useEffect(() => {
+    if (statsLoading || ordersLoading) {
+      setIsLoading(true);
+    } else {
+      // Add a slight delay to prevent flickering
+      const timer = setTimeout(() => setIsLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [statsLoading, ordersLoading]);
   
   return {
     shopId,
@@ -200,6 +226,7 @@ export const useDashboard = () => {
     recentOrders,
     handleFilterChange,
     setStartDate,
-    invalidateAllDashboardQueries
+    invalidateAllDashboardQueries,
+    isLoading
   };
 };

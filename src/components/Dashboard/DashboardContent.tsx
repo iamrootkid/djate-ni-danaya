@@ -7,6 +7,7 @@ import { DashboardInvoices } from "@/components/Dashboard/DashboardInvoices";
 import { ProductStockStatus } from "@/components/Dashboard/ProductStockStatus";
 import { BestSellingProducts } from "@/components/Dashboard/BestSellingProducts";
 import { DateFilter } from "@/types/invoice";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardContentProps {
   dateFilter: DateFilter;
@@ -16,6 +17,7 @@ interface DashboardContentProps {
   recentOrders: any[]; // Using any[] for brevity, but should be properly typed
   handleFilterChange: (filter: DateFilter) => void;
   setStartDate: (date: Date) => void;
+  isLoading?: boolean;
 }
 
 export function DashboardContent({
@@ -25,7 +27,8 @@ export function DashboardContent({
   stats,
   recentOrders,
   handleFilterChange,
-  setStartDate
+  setStartDate,
+  isLoading = false
 }: DashboardContentProps) {
   return (
     <div className="space-y-6">
@@ -37,19 +40,36 @@ export function DashboardContent({
         userRole={userRole}
       />
       
-      {stats && <DashboardCards stats={stats} />}
+      {isLoading ? (
+        <div className="space-y-6">
+          <Skeleton className="w-full h-28" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Skeleton className="col-span-4 h-80" />
+            <Skeleton className="col-span-3 h-80" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Skeleton className="col-span-3 h-64" />
+            <Skeleton className="col-span-3 h-64 lg:col-span-4" />
+          </div>
+          <Skeleton className="w-full h-72" />
+        </div>
+      ) : (
+        <>
+          {stats && <DashboardCards stats={stats} />}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <SalesChart dateFilter={dateFilter} startDate={startDate} />
-        <DashboardInvoices dateFilter={dateFilter} startDate={startDate} />
-      </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <SalesChart dateFilter={dateFilter} startDate={startDate} />
+            <DashboardInvoices dateFilter={dateFilter} startDate={startDate} />
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <ProductStockStatus />
-        <BestSellingProducts dateFilter={dateFilter} startDate={startDate} />
-      </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <ProductStockStatus />
+            <BestSellingProducts dateFilter={dateFilter} startDate={startDate} />
+          </div>
 
-      <RecentOrders orders={recentOrders || []} />
+          <RecentOrders orders={recentOrders || []} />
+        </>
+      )}
     </div>
   );
 }

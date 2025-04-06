@@ -5,6 +5,7 @@ import { useDashboard } from "@/hooks/use-dashboard";
 import { DashboardContent } from "@/components/Dashboard/DashboardContent";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -18,7 +19,8 @@ const Dashboard = () => {
     recentOrders,
     handleFilterChange,
     setStartDate,
-    invalidateAllDashboardQueries
+    invalidateAllDashboardQueries,
+    isLoading
   } = useDashboard();
 
   // Force refresh dashboard data when component mounts and set to today's data
@@ -26,8 +28,15 @@ const Dashboard = () => {
     if (shopId) {
       // Make sure we're looking at today's data
       handleFilterChange("daily");
+      
       // Force invalidate queries to ensure fresh data
-      invalidateAllDashboardQueries();
+      setTimeout(() => {
+        invalidateAllDashboardQueries();
+        toast({
+          title: "Données du jour chargées",
+          description: "Les données du tableau de bord ont été mises à jour."
+        });
+      }, 500); // Small timeout to ensure filter change is processed
     }
   }, [shopId]);
 
@@ -36,6 +45,10 @@ const Dashboard = () => {
     if (location.state?.refresh) {
       console.log("Dashboard refreshing due to navigation state");
       invalidateAllDashboardQueries();
+      toast({
+        title: "Actualisation",
+        description: "Les données du tableau de bord ont été rafraîchies."
+      });
     }
   }, [location.state, invalidateAllDashboardQueries]);
 
@@ -67,6 +80,7 @@ const Dashboard = () => {
         recentOrders={recentOrders}
         handleFilterChange={handleFilterChange}
         setStartDate={setStartDate}
+        isLoading={isLoading}
       />
     </AppLayout>
   );
