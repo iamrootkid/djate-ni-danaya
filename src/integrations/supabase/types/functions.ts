@@ -35,8 +35,8 @@ export interface DatabaseFunctions {
   get_best_selling_products: {
     Args: { 
       shop_id_param: string; 
-      start_date_param: string; 
-      end_date_param: string 
+      start_date_param: string | null; 
+      end_date_param: string | null; 
     };
     Returns: BestSellingProduct[];
   };
