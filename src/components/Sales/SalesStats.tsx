@@ -4,6 +4,9 @@ import { TrendingUp, DollarSign, Package, BarChart } from "lucide-react";
 import { DateFilter } from "@/types/invoice";
 import { useStockSummary } from "@/hooks/use-stock-summary";
 import { format } from "date-fns";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Adding StatCard component for each stat
 interface StatCardProps {
@@ -27,6 +30,8 @@ const StatCard = ({ title, value, icon, description }: StatCardProps) => (
 );
 
 export function SalesStats() {
+  const queryClient = useQueryClient();
+  
   // Today's date in ISO format for the API
   const today = new Date();
   const todayFormatted = format(today, "yyyy-MM-dd");
@@ -39,6 +44,40 @@ export function SalesStats() {
   const totalExpenses = stockSummary?.total_expenses || 0;
   const stockIn = stockSummary?.stock_in || 0;
   const stockOut = stockSummary?.stock_out || 0;
+  
+  // Subscribe to real-time updates for sales and inventory changes
+  useEffect(() => {
+    // Set up subscriptions for sales and inventory changes
+    const salesChannel = supabase
+      .channel('sales-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sales' },
+        () => {
+          console.log('Sales data changed, refreshing stats...');
+          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+        }
+      )
+      .subscribe();
+      
+    const saleItemsChannel = supabase
+      .channel('sale-items-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sale_items' },
+        () => {
+          console.log('Sale items changed, refreshing stats...');
+          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+        }
+      )
+      .subscribe();
+
+    // Clean up subscriptions when component unmounts
+    return () => {
+      supabase.removeChannel(salesChannel);
+      supabase.removeChannel(saleItemsChannel);
+    };
+  }, [queryClient]);
   
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

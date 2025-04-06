@@ -28,12 +28,6 @@ export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "dail
   };
   
   const filterType = getFilterType();
-
-  console.log("Stock summary params:", {
-    startDate: formattedStartDate,
-    filterType,
-    shopId
-  });
   
   return useQuery({
     queryKey: ["stock-summary", shopId, formattedStartDate, filterType],
@@ -73,8 +67,9 @@ export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "dail
       };
     },
     enabled: !!shopId,
-    staleTime: 60000, // Data becomes stale after 1 minute
-    refetchOnWindowFocus: true, // Refresh data when focus returns to window
-    refetchOnMount: true, // Refresh when component mounts
+    staleTime: 30000, // Data becomes stale after 30 seconds (reduced from 60 seconds)
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 60000, // Refresh every minute to keep the data current
   });
 };

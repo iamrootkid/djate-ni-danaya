@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,11 +43,6 @@ export const CustomerInfoDialog = ({
     
     setIsSubmitting(true);
     try {
-      console.log("Submitting customer info...");
-      console.log("Customer name:", customerName);
-      console.log("Customer phone:", customerPhone);
-      console.log("Cart total:", cartTotal);
-
       if (!customerName.trim()) {
         throw new Error("Le nom du client est requis");
       }
@@ -56,8 +52,7 @@ export const CustomerInfoDialog = ({
       }
 
       const result = await onSubmit(customerName, customerPhone);
-      console.log("Invoice generation result:", result);
-
+      
       if (!result || !result.invoiceNumber) {
         throw new Error("Aucun numéro de facture reçu");
       }

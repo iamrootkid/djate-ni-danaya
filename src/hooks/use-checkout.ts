@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -168,10 +169,11 @@ export const useCheckout = () => {
         title: "Vente effectuée",
         description: `Facture N° ${data.invoiceNumber}`,
       });
+      // Make sure we invalidate all relevant queries to refresh displayed data
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-invoices"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["sales-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-summary"] });
     },
     onError: (error: any) => {
       console.error("Checkout error:", error);
