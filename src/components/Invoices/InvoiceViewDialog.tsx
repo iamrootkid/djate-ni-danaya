@@ -189,7 +189,7 @@ export const InvoiceViewDialog = ({ open, onClose, invoice }: InvoiceViewDialogP
                             </div>
                             <div>
                               <p className="text-sm text-muted-foreground">Modified By</p>
-                              <p className="font-medium">{mod.profiles?.email || "Unknown"}</p>
+                              <p className="font-medium">{mod.profiles && "email" in mod.profiles ? mod.profiles.email : "N/A"}</p>
                             </div>
                           </div>
                           

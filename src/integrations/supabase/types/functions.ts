@@ -33,7 +33,7 @@ export interface DatabaseFunctions {
     Returns: string;
   };
   get_best_selling_products: {
-    Args: { shop_id_param: string; start_date_param: string; end_date_param: string };
+    Args: { shop_id_param: string; start_date_param?: string; end_date_param?: string };
     Returns: BestSellingProduct[];
   };
   get_stock_summary: {

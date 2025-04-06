@@ -1,3 +1,4 @@
+
 import { useLocation } from "react-router-dom";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useDashboard } from "@/hooks/use-dashboard";
@@ -45,7 +46,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (shopId && !initialLoadDone.current) {
       initialLoadDone.current = true;
-      // Make sure we're looking at today's data
+      // Make sure we're looking at today's data (daily filter)
       handleFilterChange("daily");
       
       // Force invalidate queries to ensure fresh data
