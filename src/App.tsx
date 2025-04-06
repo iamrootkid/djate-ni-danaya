@@ -24,101 +24,74 @@ const LoadingSpinner = () => (
   </div>
 );
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: ("employee" | "admin")[];
-}
-
-const ProtectedRoute = ({ children, allowedRoles = ["employee", "admin"] }: ProtectedRouteProps) => {
-  const [session, setSession] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [shopId, setShopId] = useState<string | null>(null);
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for shop ID in localStorage
-    const storedShopId = localStorage.getItem('shopId');
-    if (!storedShopId) {
-      // Redirect to login if no shop ID is found
-      setLoading(false);
-      return;
-    }
-    
-    setShopId(storedShopId);
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        supabase
+        // Get user role from profiles table
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('role, shop_id')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => {
-            if (data) {
-              setUserRole(data.role || null);
-              
-              // Verify shop_id matches what's in the profile
-              if (data.shop_id !== storedShopId) {
-                console.error("Shop ID mismatch, clearing session");
-                localStorage.removeItem('shopId');
-                supabase.auth.signOut();
-                window.location.href = '/login';
-                return;
-              }
-            }
-            setLoading(false);
-          });
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('role, shop_id')
+          .select('role')
           .eq('id', session.user.id)
           .single();
-        
-        if (data) {
-          setUserRole(data.role || null);
-          
-          // Verify shop_id matches what's in the profile
-          if (data.shop_id !== storedShopId) {
-            console.error("Shop ID mismatch in auth state change");
-            localStorage.removeItem('shopId');
-            supabase.auth.signOut();
-            window.location.href = '/login';
-            return;
-          }
+
+        setUserRole(profile?.role || null);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        setIsAuthenticated(true);
+        if (session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          setUserRole(profile?.role || null);
         }
-      } else {
+      }
+      if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
         setUserRole(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  if (!shopId) {
-    return <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  if (!session) {
-    return <Navigate to="/login" />;
-  }
-
-  if (!userRole || !allowedRoles.includes(userRole as "employee" | "admin")) {
-    return <Navigate to={userRole === "employee" ? "/sales" : "/dashboard"} />;
+  if (!userRole || !allowedRoles.includes(userRole)) {
+    return <Navigate to="/sales" replace />;
   }
 
   return <>{children}</>;
@@ -138,9 +111,8 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <SidebarProvider>
-          <Toaster />
-          <Sonner />
           <BrowserRouter>
+            <Toaster />
             <Routes>
               <Route 
                 path="/" 
@@ -219,7 +191,14 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/personnel" element={<Personnel />} />
+              <Route
+                path="/personnel"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Personnel />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </BrowserRouter>
         </SidebarProvider>

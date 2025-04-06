@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, Dispatch } from "react";
 import { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 20;
@@ -115,14 +114,14 @@ export const reducer = (state: State, action: Action): State => {
   }
 };
 
-const listeners: ((state: State) => void)[] = [];
+const listeners: ((action: Action) => void)[] = [];
 
 let memoryState: State = { toasts: [] };
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action);
   listeners.forEach((listener) => {
-    listener(memoryState);
+    listener(action);
   });
 }
 
@@ -163,11 +162,13 @@ function useToast() {
   const [state, setState] = useState<State>(memoryState);
 
   useEffect(() => {
-    // Update the type of the listener to match what setState expects
-    const listener = (newState: State) => setState(newState);
-    listeners.push(listener);
+    function handleStateChange(action: Action) {
+      setState(reducer(state, action));
+    }
+
+    listeners.push(handleStateChange);
     return () => {
-      const index = listeners.indexOf(listener);
+      const index = listeners.indexOf(handleStateChange);
       if (index > -1) {
         listeners.splice(index, 1);
       }

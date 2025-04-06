@@ -1,3 +1,4 @@
+
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { InvoiceData } from "@/types/invoice";
 import { supabase } from "@/integrations/supabase/client";
@@ -155,3 +156,4 @@ export const generateInvoiceNumber = async (shopId: string): Promise<string> => 
     return `INV-${timestamp}`;
   }
 };
+

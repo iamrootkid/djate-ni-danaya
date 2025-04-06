@@ -5,6 +5,7 @@ import { DashboardContent } from "@/components/Dashboard/DashboardContent";
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -23,6 +24,23 @@ const Dashboard = () => {
     isLoading
   } = useDashboard();
 
+  // Initialize Supabase session
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.error("No session found");
+          return;
+        }
+      } catch (error) {
+        console.error("Error initializing session:", error);
+      }
+    };
+
+    initSession();
+  }, []);
+
   // Force refresh dashboard data when component mounts and set to today's data
   useEffect(() => {
     if (shopId && !initialLoadDone.current) {
@@ -39,7 +57,7 @@ const Dashboard = () => {
         });
       }, 500); // Small timeout to ensure filter change is processed
     }
-  }, [shopId]);
+  }, [shopId, handleFilterChange, invalidateAllDashboardQueries]);
 
   // Check for location state indicating we should refresh
   useEffect(() => {
@@ -57,12 +75,22 @@ const Dashboard = () => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (shopId) {
-        console.log("Auto-refreshing dashboard data");
-        queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
+        console.log("Auto-refreshing dashboard data silently");
+        // Silently invalidate queries without triggering loading states
+        queryClient.invalidateQueries({ 
+          queryKey: ['stock-summary'],
+          type: 'inactive'
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['dashboard-stats'],
+          type: 'inactive'
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['dashboard_invoices'],
+          type: 'inactive'
+        });
       }
-    }, 60000); // Refresh every 60 seconds instead of 30
+    }, 60000); // Refresh every 60 seconds
     
     return () => clearInterval(intervalId);
   }, [shopId, queryClient]);
