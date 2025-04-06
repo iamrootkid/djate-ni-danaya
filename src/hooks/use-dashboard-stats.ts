@@ -2,6 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { useShopId } from "./use-shop-id";
+import { Database } from "@/integrations/supabase/types";
+
+type InvoiceWithSales = {
+  id: string;
+  created_at: string;
+  is_modified: boolean;
+  new_total_amount?: number;
+  sales?: {
+    total_amount: number;
+  };
+};
 
 interface DashboardStats {
   products: number;
@@ -87,11 +98,12 @@ export const useDashboardStats = (dateFilter: "all" | "daily" | "monthly" | "yes
         .from("invoices")
         .select(`
           id,
+          created_at,
+          is_modified,
+          new_total_amount,
           sales (
             total_amount
-          ),
-          is_modified,
-          new_total_amount
+          )
         `)
         .eq("shop_id", shopId);
 
@@ -120,7 +132,14 @@ export const useDashboardStats = (dateFilter: "all" | "daily" | "monthly" | "yes
           .lte("created_at", monthEnd.toISOString());
       }
 
-      const { data: sales } = await salesQuery;
+      const { data: salesData, error: salesError } = await salesQuery;
+      
+      if (salesError) {
+        console.error("Error fetching sales:", salesError);
+        throw salesError;
+      }
+
+      const sales = (salesData as unknown) as InvoiceWithSales[];
       const totalSales = sales?.reduce((acc, invoice) => {
         const amount = invoice.is_modified && invoice.new_total_amount !== undefined
           ? invoice.new_total_amount
