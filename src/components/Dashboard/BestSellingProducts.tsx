@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useBestSellingProducts } from "@/hooks/use-best-selling-products";
 import { BestSellingProduct } from "@/integrations/supabase/types/functions";
 import { DateFilter } from "@/types/invoice";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BestSellingProductsProps {
   dateFilter: DateFilter;
@@ -29,11 +30,18 @@ export const BestSellingProducts = ({ dateFilter, startDate }: BestSellingProduc
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
-                  Chargement...
-                </TableCell>
-              </TableRow>
+              <>
+                <TableRow>
+                  <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><Skeleton className="h-4 w-[170px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[60px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[90px]" /></TableCell>
+                </TableRow>
+              </>
             ) : error ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-4 text-red-500">

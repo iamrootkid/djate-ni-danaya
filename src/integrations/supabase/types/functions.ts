@@ -13,7 +13,7 @@ export interface InvoiceModification {
   returned_items?: ReturnedItem[] | null;
   profiles?: {
     email: string;
-  };
+  } | null;
 }
 
 export interface BestSellingProduct {
