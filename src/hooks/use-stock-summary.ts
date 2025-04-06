@@ -73,9 +73,8 @@ export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "dail
       };
     },
     enabled: !!shopId,
-    staleTime: 10000, // Data becomes stale after 10 seconds (reduced from 1 minute)
+    staleTime: 60000, // Data becomes stale after 1 minute
     refetchOnWindowFocus: true, // Refresh data when focus returns to window
     refetchOnMount: true, // Refresh when component mounts
-    refetchInterval: 30000, // Automatically refresh every 30 seconds
   });
 };

@@ -1,11 +1,10 @@
-
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Product } from "@/types/sales";
 import { ProductList } from "@/components/Sales/ProductList";
 import { CartSummary } from "@/components/Sales/CartSummary";
@@ -28,7 +27,6 @@ const Sales = () => {
   const isMobile = useIsMobile();
   const { shopId } = useShopId();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   
   const { cart, cartTotal, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
   const checkoutMutation = useCheckout();
@@ -139,17 +137,7 @@ const Sales = () => {
       },
       {
         onSuccess: () => {
-          // Clear the cart
           clearCart();
-          
-          // Invalidate queries to refresh the data
-          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
-          
-          toast({
-            title: "Vente effectuée",
-            description: `Facture ${result.invoiceNumber} créée avec succès`,
-            variant: "default"
-          });
         },
       }
     );
