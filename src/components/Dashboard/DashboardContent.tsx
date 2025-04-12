@@ -9,7 +9,6 @@ import { DateFilter } from "@/types/invoice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DynamicMetric } from "@/components/Dashboard/DynamicMetric";
 import { motion } from "framer-motion";
 
 interface DashboardContentProps {
@@ -74,8 +73,6 @@ export function DashboardContent({
         >
           {stats && <DashboardCards stats={stats} />}
 
-          <DynamicMetric dateFilter={dateFilter} />
-
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
@@ -83,16 +80,22 @@ export function DashboardContent({
             </TabsList>
             
             <TabsContent value="overview">
-              <ResizablePanelGroup direction="horizontal" className="min-h-[500px] rounded-lg border">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
+                <div className="col-span-7 md:col-span-7">
+                  <SalesChart dateFilter={dateFilter} startDate={startDate} />
+                </div>
+              </div>
+              
+              <ResizablePanelGroup direction="horizontal" className="min-h-[400px] rounded-lg border">
                 <ResizablePanel defaultSize={65} minSize={40}>
                   <div className="p-4 h-full">
-                    <SalesChart dateFilter={dateFilter} startDate={startDate} />
+                    <DashboardInvoices dateFilter={dateFilter} startDate={startDate} />
                   </div>
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={35} minSize={30}>
                   <div className="p-4 h-full">
-                    <DashboardInvoices dateFilter={dateFilter} startDate={startDate} />
+                    <ProductStockStatus />
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>

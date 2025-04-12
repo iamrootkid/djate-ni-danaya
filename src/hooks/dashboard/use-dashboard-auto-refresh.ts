@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -10,10 +11,6 @@ export const useDashboardAutoRefresh = (shopId: string | null) => {
       if (shopId) {
         console.log("Auto-refreshing dashboard data silently");
         // Silently invalidate queries without triggering loading states
-        queryClient.invalidateQueries({ 
-          queryKey: ['stock-summary'],
-          type: 'inactive'
-        });
         queryClient.invalidateQueries({ 
           queryKey: ['dashboard-stats'],
           type: 'inactive'

@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShopId } from "@/hooks/use-shop-id";
@@ -10,7 +11,6 @@ export const useDashboardSubscriptions = () => {
   const invalidateAllDashboardQueries = () => {
     queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
-    queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
     queryClient.invalidateQueries({ queryKey: ['recent-orders'] });
   };
 
@@ -45,4 +45,4 @@ export const useDashboardSubscriptions = () => {
     shopId,
     invalidateAllDashboardQueries
   };
-}; 
+};
