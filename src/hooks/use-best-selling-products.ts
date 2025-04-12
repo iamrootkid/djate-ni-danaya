@@ -36,6 +36,7 @@ export const useBestSellingProducts = (dateFilter?: DateFilter, startDate?: Date
       return { startDateParam: null, endDateParam: null };
     }
     
+    // Format dates as strings for the API
     const startFormatted = format(start, "yyyy-MM-dd");
     const endFormatted = format(end, "yyyy-MM-dd");
     
@@ -51,6 +52,7 @@ export const useBestSellingProducts = (dateFilter?: DateFilter, startDate?: Date
     queryKey: ["bestSellingProducts", shopId, dateFilter, startDateParam, endDateParam],
     queryFn: async () => {
       if (!shopId) {
+        console.log("No shop ID available, cannot fetch best selling products");
         return [];
       }
 
@@ -71,7 +73,7 @@ export const useBestSellingProducts = (dateFilter?: DateFilter, startDate?: Date
         throw new Error(error.message);
       }
 
-      console.log("Best selling products data:", data);
+      console.log("Best selling products data received:", data);
       return Array.isArray(data) ? data : [];
     },
     enabled: !!shopId,
