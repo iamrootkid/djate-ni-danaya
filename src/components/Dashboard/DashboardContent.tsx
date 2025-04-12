@@ -5,7 +5,6 @@ import { RecentOrders } from "@/components/Dashboard/RecentOrders";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { DashboardInvoices } from "@/components/Dashboard/DashboardInvoices";
 import { ProductStockStatus } from "@/components/Dashboard/ProductStockStatus";
-import { BestSellingProducts } from "@/components/Dashboard/BestSellingProducts";
 import { DateFilter } from "@/types/invoice";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -64,7 +63,6 @@ export function DashboardContent({
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <ProductStockStatus />
-            <BestSellingProducts dateFilter={dateFilter} startDate={startDate} />
           </div>
 
           <RecentOrders orders={Array.isArray(recentOrders) ? recentOrders : []} />
@@ -73,3 +71,4 @@ export function DashboardContent({
     </div>
   );
 }
+
