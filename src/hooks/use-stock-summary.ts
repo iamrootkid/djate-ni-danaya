@@ -5,7 +5,7 @@ import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns
 import { useShopId } from "@/hooks/use-shop-id";
 import { StockSummary } from "@/integrations/supabase/types/functions";
 
-export const useStockSummary = (date: Date = new Date(), filter: "daily" | "monthly" = "daily") => {
+export const useStockSummary = (date: Date = new Date(), filter: "daily" | "monthly" | "yesterday" = "daily") => {
   const { shopId } = useShopId();
 
   return useQuery<StockSummary>({
@@ -50,6 +50,11 @@ export const useStockSummary = (date: Date = new Date(), filter: "daily" | "mont
         }
 
         // Add recent returns count if needed
+        const enhancedSummary = {
+          ...summary,
+          recent_returns: 0
+        };
+
         if (filter === "daily") {
           // Get the start and end of today
           const dayStart = startOfDay(date).toISOString();
@@ -63,11 +68,11 @@ export const useStockSummary = (date: Date = new Date(), filter: "daily" | "mont
             .gte("created_at", dayStart)
             .lte("created_at", dayEnd);
 
-          summary.recent_returns = returns || 0;
+          enhancedSummary.recent_returns = returns || 0;
         }
 
-        console.log("Stock summary:", summary);
-        return summary;
+        console.log("Stock summary:", enhancedSummary);
+        return enhancedSummary;
       } catch (error) {
         console.error("Error fetching stock summary:", error);
         return {

@@ -18,7 +18,9 @@ interface StockSummaryProps {
 }
 
 export const StockSummary = ({ startDate, dateFilter }: StockSummaryProps) => {
-  const { data: summary, isLoading, refetch } = useStockSummary(startDate, dateFilter);
+  // Convert 'all' to 'daily' when using useStockSummary
+  const stockSummaryFilter = dateFilter === 'all' ? 'daily' : (dateFilter as 'daily' | 'monthly' | 'yesterday');
+  const { data: summary, isLoading, refetch } = useStockSummary(startDate, stockSummaryFilter);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const { shopId } = useShopId();

@@ -1,7 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, DollarSign, Package, Users, ShoppingCart, ChevronUp, ChevronDown } from "lucide-react";
-import { DateFilter } from "@/types/invoice";
 import { useStockSummary } from "@/hooks/use-stock-summary";
 import { format, startOfDay } from "date-fns";
 import { useEffect, useState } from "react";
@@ -12,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { useShopId } from "@/hooks/use-shop-id";
 
-// Adding StatCard component for each stat
+// StatCard component for each stat
 interface StatCardProps {
   title: string;
   value: string | JSX.Element;
@@ -65,16 +64,16 @@ export function SalesStats() {
   const queryClient = useQueryClient();
   const { shopId } = useShopId();
   
-  // Today's date in ISO format for the API
+  // Today's date and use for today's data specifically
   const today = new Date();
   const todayFormatted = format(today, "yyyy-MM-dd");
   const startOfToday = startOfDay(today).toISOString();
   
-  // We need to get daily sales stats
-  const { data: stockSummary, isLoading: summaryLoading } = useStockSummary(today, "daily");
+  // Get today's sales stats specifically
+  const { data: stockSummary, isLoading: summaryLoading, refetch: refetchSummary } = useStockSummary(today, "daily");
   
-  // Get client count - updated to correctly count distinct customers
-  const { data: clientCount, isLoading: clientsLoading } = useQuery({
+  // Get client count
+  const { data: clientCount, isLoading: clientsLoading, refetch: refetchClients } = useQuery({
     queryKey: ["client-count", shopId, todayFormatted],
     queryFn: async () => {
       if (!shopId) return { count: 0, today: 0 };
@@ -116,8 +115,8 @@ export function SalesStats() {
     enabled: !!shopId
   });
   
-  // Get transaction count - updated to correctly count today's transactions
-  const { data: transactionCount, isLoading: transactionsLoading } = useQuery({
+  // Get transaction count
+  const { data: transactionCount, isLoading: transactionsLoading, refetch: refetchTransactions } = useQuery({
     queryKey: ["transaction-count", shopId, todayFormatted],
     queryFn: async () => {
       if (!shopId) return { count: 0, today: 0 };
@@ -145,18 +144,29 @@ export function SalesStats() {
     enabled: !!shopId
   });
   
+  // Specifically refetch data on component mount to ensure we have fresh data
+  useEffect(() => {
+    if (shopId) {
+      refetchSummary();
+      refetchClients();
+      refetchTransactions();
+    }
+  }, [shopId, refetchSummary, refetchClients, refetchTransactions]);
+  
   // Subscribe to real-time updates for sales and inventory changes
   useEffect(() => {
+    if (!shopId) return;
+    
     // Set up subscriptions for sales and inventory changes
     const salesChannel = supabase
       .channel('sales-updates')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'sales' },
+        { event: '*', schema: 'public', table: 'sales', filter: `shop_id=eq.${shopId}` },
         () => {
           console.log('Sales data changed, refreshing stats...');
-          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
-          queryClient.invalidateQueries({ queryKey: ['transaction-count'] });
+          refetchSummary();
+          refetchTransactions();
         }
       )
       .subscribe();
@@ -165,10 +175,10 @@ export function SalesStats() {
       .channel('invoices-updates')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'invoices' },
+        { event: '*', schema: 'public', table: 'invoices', filter: `shop_id=eq.${shopId}` },
         () => {
           console.log('Invoices changed, refreshing stats...');
-          queryClient.invalidateQueries({ queryKey: ['client-count'] });
+          refetchClients();
         }
       )
       .subscribe();
@@ -180,7 +190,7 @@ export function SalesStats() {
         { event: '*', schema: 'public', table: 'sale_items' },
         () => {
           console.log('Sale items changed, refreshing stats...');
-          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+          refetchSummary();
         }
       )
       .subscribe();
@@ -189,10 +199,10 @@ export function SalesStats() {
       .channel('expenses-updates')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'expenses' },
+        { event: '*', schema: 'public', table: 'expenses', filter: `shop_id=eq.${shopId}` },
         () => {
           console.log('Expenses changed, refreshing stats...');
-          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+          refetchSummary();
         }
       )
       .subscribe();
@@ -204,13 +214,11 @@ export function SalesStats() {
       supabase.removeChannel(saleItemsChannel);
       supabase.removeChannel(expensesChannel);
     };
-  }, [queryClient]);
+  }, [shopId, queryClient, refetchSummary, refetchClients, refetchTransactions]);
   
   // Use default values if data is loading or not available
   const totalIncome = stockSummary?.total_income || 0;
   const totalExpenses = stockSummary?.total_expenses || 0;
-  const stockIn = stockSummary?.stock_in || 0;
-  const stockOut = stockSummary?.stock_out || 0;
   
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

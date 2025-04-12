@@ -14,7 +14,9 @@ interface DynamicMetricProps {
 
 export function DynamicMetric({ dateFilter }: DynamicMetricProps) {
   const queryClient = useQueryClient();
-  const { data: stockSummary, isLoading, error } = useStockSummary(new Date(), dateFilter);
+  // Convert 'all' to 'daily' when using useStockSummary
+  const stockSummaryFilter = dateFilter === 'all' ? 'daily' : (dateFilter as 'daily' | 'monthly' | 'yesterday');
+  const { data: stockSummary, isLoading, error } = useStockSummary(new Date(), stockSummaryFilter);
   const [animatedValue, setAnimatedValue] = useState(0);
   const [previousValue, setPreviousValue] = useState(0);
   const [isIncreasing, setIsIncreasing] = useState(true);
