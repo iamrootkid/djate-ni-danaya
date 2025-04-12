@@ -1,11 +1,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { DateFilter } from "@/types/invoice";
 import { useStockSummary } from "@/hooks/use-stock-summary";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DynamicMetricProps {
   dateFilter: DateFilter;
@@ -13,7 +14,7 @@ interface DynamicMetricProps {
 
 export function DynamicMetric({ dateFilter }: DynamicMetricProps) {
   const queryClient = useQueryClient();
-  const { data: stockSummary } = useStockSummary(new Date(), dateFilter);
+  const { data: stockSummary, isLoading, error } = useStockSummary(new Date(), dateFilter);
   const [animatedValue, setAnimatedValue] = useState(0);
   const [previousValue, setPreviousValue] = useState(0);
   const [isIncreasing, setIsIncreasing] = useState(true);
@@ -23,34 +24,38 @@ export function DynamicMetric({ dateFilter }: DynamicMetricProps) {
     if (!stockSummary) return;
     
     const targetValue = stockSummary.total_income || 0;
-    setPreviousValue(animatedValue);
-    setIsIncreasing(targetValue >= previousValue);
     
-    // Animate the counter from current to target
-    let startValue = previousValue;
-    const duration = 1000;
-    const startTime = Date.now();
-    
-    const animateValue = () => {
-      const now = Date.now();
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+    // Only update previous value when we have a new target value
+    if (previousValue !== targetValue) {
+      setPreviousValue(animatedValue);
+      setIsIncreasing(targetValue >= previousValue);
       
-      // Use easeOutExpo animation function
-      const easeProgress = progress === 1 
-        ? 1 
-        : 1 - Math.pow(2, -10 * progress);
+      // Animate the counter from current to target
+      let startValue = animatedValue;
+      const duration = 1000;
+      const startTime = Date.now();
       
-      const currentValue = startValue + easeProgress * (targetValue - startValue);
-      setAnimatedValue(Math.round(currentValue));
+      const animateValue = () => {
+        const now = Date.now();
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Use easeOutExpo animation function
+        const easeProgress = progress === 1 
+          ? 1 
+          : 1 - Math.pow(2, -10 * progress);
+        
+        const currentValue = startValue + easeProgress * (targetValue - startValue);
+        setAnimatedValue(Math.round(currentValue));
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateValue);
+        }
+      };
       
-      if (progress < 1) {
-        requestAnimationFrame(animateValue);
-      }
-    };
-    
-    requestAnimationFrame(animateValue);
-  }, [stockSummary]);
+      requestAnimationFrame(animateValue);
+    }
+  }, [stockSummary, previousValue, animatedValue]);
   
   // Set up real-time subscription for sales updates
   useEffect(() => {
@@ -64,7 +69,19 @@ export function DynamicMetric({ dateFilter }: DynamicMetricProps) {
           table: 'sales' 
         },
         (payload) => {
-          console.log("Sales change detected in dynamic metric");
+          console.log("Sales change detected in dynamic metric:", payload);
+          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'invoices' 
+        },
+        (payload) => {
+          console.log("Invoice change detected in dynamic metric:", payload);
           queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
         }
       )
@@ -79,12 +96,58 @@ export function DynamicMetric({ dateFilter }: DynamicMetricProps) {
     return new Intl.NumberFormat('fr-FR').format(num) + ' F CFA';
   };
   
+  const getLabel = () => {
+    switch(dateFilter) {
+      case 'daily':
+        return 'Revenus du jour';
+      case 'yesterday':
+        return 'Revenus d\'hier';
+      case 'monthly':
+        return 'Revenus du mois';
+      default:
+        return 'Revenus en temps réel';
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50">
+        <CardHeader>
+          <CardTitle>Revenus en temps réel</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-8 w-36 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (error) {
+    console.error("Error fetching stock summary:", error);
+    return (
+      <Card className="bg-gradient-to-br from-red-50 to-orange-50 overflow-hidden relative">
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>Revenus en temps réel</span>
+            <Activity className="h-5 w-5 text-red-600" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-red-600">
+            Erreur de chargement des données. Veuillez réessayer.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 overflow-hidden relative">
       <div className="absolute inset-0 bg-grid-pattern opacity-5" />
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>Revenus en temps réel</span>
+          <span>{getLabel()}</span>
           {isIncreasing ? (
             <TrendingUp className="h-5 w-5 text-green-600" />
           ) : (

@@ -15,6 +15,7 @@ export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "dail
   
   const start = startDate || defaultStartDate;
   
+  // Format date as string YYYY-MM-DD to avoid Supabase function overloading issues
   const formattedStartDate = format(startOfDay(start), "yyyy-MM-dd");
   
   // Convert DateFilter to filter_type expected by the RPC function
@@ -42,7 +43,7 @@ export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "dail
         filterType
       });
       
-      // Explicitly cast the function call parameters
+      // Always use string parameters to avoid function overloading issues
       const { data, error } = await supabase.rpc("get_stock_summary", {
         start_date: formattedStartDate,
         filter_type: filterType,
@@ -67,9 +68,9 @@ export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "dail
       };
     },
     enabled: !!shopId,
-    staleTime: 30000, // Data becomes stale after 30 seconds (reduced from 60 seconds)
+    staleTime: 15000, // Data becomes stale after 15 seconds (reduced for more frequent updates)
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchInterval: 60000, // Refresh every minute to keep the data current
+    refetchInterval: 30000, // Refresh every 30 seconds to keep the data current
   });
 };

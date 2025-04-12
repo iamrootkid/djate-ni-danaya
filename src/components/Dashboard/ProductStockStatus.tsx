@@ -165,7 +165,7 @@ export const ProductStockStatus = () => {
                             <AlertTriangle className="w-4 h-4 mr-1" />
                             Stock d'alerte
                           </span>
-                          <Progress value={(product.stock / 5) * 100} className="h-2 bg-red-100" indicatorClassName="bg-red-600" />
+                          <Progress value={(product.stock / 5) * 100} className="h-2 bg-red-100" />
                         </div>
                       ) : product.stock < 10 ? (
                         <div className="space-y-1">
@@ -173,12 +173,12 @@ export const ProductStockStatus = () => {
                             <AlertCircle className="w-4 h-4 mr-1" />
                             Stock bas
                           </span>
-                          <Progress value={(product.stock / 10) * 100} className="h-2 bg-yellow-100" indicatorClassName="bg-yellow-600" />
+                          <Progress value={(product.stock / 10) * 100} className="h-2 bg-yellow-100" />
                         </div>
                       ) : (
                         <div className="space-y-1">
                           <span className="text-green-600">En stock</span>
-                          <Progress value={100} className="h-2 bg-green-100" indicatorClassName="bg-green-600" />
+                          <Progress value={100} className="h-2 bg-green-100" />
                         </div>
                       )}
                     </TableCell>
