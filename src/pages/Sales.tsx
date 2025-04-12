@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,6 @@ import { SalesHeader } from "@/components/Sales/SalesHeader";
 import { CustomerInfoDialog } from "@/components/Sales/CustomerInfoDialog";
 import { useCart } from "@/hooks/use-cart";
 import { useCheckout } from "@/hooks/use-checkout";
-import { SalesStats } from "@/components/Sales/SalesStats";
 import { CategoryFilter } from "@/components/Sales/CategoryFilter";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
@@ -155,8 +155,6 @@ const Sales = () => {
           setPaymentMethod={setPaymentMethod}
           onCheckout={handleCheckout}
         />
-
-        <SalesStats />
 
         <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
           <Card className={`${isMobile ? 'mb-4' : ''}`}>

@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { useShopId } from "@/hooks/use-shop-id";
 import { StockSummary } from "@/integrations/supabase/types/functions";
 
@@ -49,30 +49,11 @@ export const useStockSummary = (date: Date = new Date(), filter: "daily" | "mont
           };
         }
 
-        // Add recent returns count if needed
-        const enhancedSummary = {
+        console.log("Stock summary:", summary);
+        return {
           ...summary,
-          recent_returns: 0
+          recent_returns: 0  // Setting default value since we're not using this anymore
         };
-
-        if (filter === "daily") {
-          // Get the start and end of today
-          const dayStart = startOfDay(date).toISOString();
-          const dayEnd = endOfDay(date).toISOString();
-
-          const { count: returns } = await supabase
-            .from("invoice_modifications")
-            .select("*", { count: "exact", head: true })
-            .eq("shop_id", shopId)
-            .eq("modification_type", "return")
-            .gte("created_at", dayStart)
-            .lte("created_at", dayEnd);
-
-          enhancedSummary.recent_returns = returns || 0;
-        }
-
-        console.log("Stock summary:", enhancedSummary);
-        return enhancedSummary;
       } catch (error) {
         console.error("Error fetching stock summary:", error);
         return {

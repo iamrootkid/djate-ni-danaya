@@ -24,14 +24,6 @@ export const useDashboardAutoRefresh = (shopId: string | null) => {
           queryKey: ['dashboard_invoices'],
           type: 'inactive'
         });
-        queryClient.invalidateQueries({
-          queryKey: ['client-count'],
-          type: 'inactive'
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['transaction-count'],
-          type: 'inactive'
-        });
       }
     }, 60000); // Refresh every 60 seconds
     
@@ -57,7 +49,6 @@ export const useDashboardAutoRefresh = (shopId: string | null) => {
           () => {
             console.log("Sales data changed, refreshing");
             queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
-            queryClient.invalidateQueries({ queryKey: ['transaction-count'] });
           }
         )
         .subscribe(),
@@ -93,7 +84,6 @@ export const useDashboardAutoRefresh = (shopId: string | null) => {
           },
           () => {
             console.log("Invoice data changed, refreshing");
-            queryClient.invalidateQueries({ queryKey: ['client-count'] });
           }
         )
         .subscribe()
