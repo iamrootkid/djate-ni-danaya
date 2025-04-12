@@ -1,76 +1,86 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useShopId } from "./use-shop-id";
-import { addDays, format, startOfDay, subDays } from "date-fns";
-import { DateFilter } from "@/types/invoice";
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
+import { useShopId } from "@/hooks/use-shop-id";
 import { StockSummary } from "@/integrations/supabase/types/functions";
 
-export const useStockSummary = (startDate?: Date, dateFilter: DateFilter = "daily") => {
+export const useStockSummary = (date: Date = new Date(), filter: "daily" | "monthly" = "daily") => {
   const { shopId } = useShopId();
-  
-  // Use default range of last 30 days if no range provided
-  const today = new Date();
-  const defaultStartDate = subDays(today, 30);
-  
-  const start = startDate || defaultStartDate;
-  
-  // Format date as string YYYY-MM-DD to avoid Supabase function overloading issues
-  const formattedStartDate = format(startOfDay(start), "yyyy-MM-dd");
-  
-  // Convert DateFilter to filter_type expected by the RPC function
-  const getFilterType = () => {
-    switch (dateFilter) {
-      case "daily": return "daily";
-      case "monthly": return "monthly";
-      case "yesterday": return "yesterday";
-      default: return "all";
-    }
-  };
-  
-  const filterType = getFilterType();
-  
-  return useQuery({
-    queryKey: ["stock-summary", shopId, formattedStartDate, filterType],
+
+  return useQuery<StockSummary>({
+    queryKey: ["stock-summary", format(date, "yyyy-MM-dd"), filter, shopId],
     queryFn: async () => {
-      if (!shopId) {
-        throw new Error("Shop ID is required");
-      }
-      
-      console.log("Fetching stock summary for:", {
-        shopId,
-        startDate: formattedStartDate,
-        filterType
-      });
-      
-      // Always use string parameters to avoid function overloading issues
-      const { data, error } = await supabase.rpc("get_stock_summary", {
-        start_date: formattedStartDate,
-        filter_type: filterType,
-        shop_id: shopId
-      });
-      
-      if (error) {
-        console.error("Error fetching stock summary:", error);
-        throw error;
-      }
-      
-      console.log("Stock summary response:", data);
-      
-      // Return the first item in the array, or a default object if empty
-      return data && Array.isArray(data) && data.length > 0 ? data[0] : {
+      if (!shopId) return {
         total_income: 0,
         total_expenses: 0,
         stock_in: 0,
         stock_out: 0,
         profit: 0,
-        recent_returns: 0
+        recent_returns: 0,
       };
+
+      const dateStr = format(date, "yyyy-MM-dd");
+      console.log(`Fetching stock summary for ${dateStr} with filter ${filter}`);
+
+      try {
+        // Call the Supabase function to get stock summary
+        const { data, error } = await supabase
+          .rpc("get_stock_summary", {
+            start_date: dateStr,
+            filter_type: filter,
+            shop_id: shopId,
+          });
+
+        if (error) throw error;
+
+        // Format the response
+        const summary = Array.isArray(data) ? data[0] : data;
+        
+        if (!summary) {
+          console.error("No stock summary data returned");
+          return {
+            total_income: 0,
+            total_expenses: 0,
+            stock_in: 0,
+            stock_out: 0,
+            profit: 0,
+            recent_returns: 0,
+          };
+        }
+
+        // Add recent returns count if needed
+        if (filter === "daily") {
+          // Get the start and end of today
+          const dayStart = startOfDay(date).toISOString();
+          const dayEnd = endOfDay(date).toISOString();
+
+          const { count: returns } = await supabase
+            .from("invoice_modifications")
+            .select("*", { count: "exact", head: true })
+            .eq("shop_id", shopId)
+            .eq("modification_type", "return")
+            .gte("created_at", dayStart)
+            .lte("created_at", dayEnd);
+
+          summary.recent_returns = returns || 0;
+        }
+
+        console.log("Stock summary:", summary);
+        return summary;
+      } catch (error) {
+        console.error("Error fetching stock summary:", error);
+        return {
+          total_income: 0,
+          total_expenses: 0,
+          stock_in: 0,
+          stock_out: 0,
+          profit: 0,
+          recent_returns: 0,
+        };
+      }
     },
     enabled: !!shopId,
-    staleTime: 15000, // Data becomes stale after 15 seconds (reduced for more frequent updates)
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchInterval: 30000, // Refresh every 30 seconds to keep the data current
+    refetchInterval: 60000, // Refetch every minute
   });
 };

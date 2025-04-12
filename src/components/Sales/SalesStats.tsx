@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, DollarSign, Package, Users, ShoppingCart, ChevronUp, ChevronDown } from "lucide-react";
 import { DateFilter } from "@/types/invoice";
 import { useStockSummary } from "@/hooks/use-stock-summary";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,59 +68,74 @@ export function SalesStats() {
   // Today's date in ISO format for the API
   const today = new Date();
   const todayFormatted = format(today, "yyyy-MM-dd");
+  const startOfToday = startOfDay(today).toISOString();
   
   // We need to get daily sales stats
   const { data: stockSummary, isLoading: summaryLoading } = useStockSummary(today, "daily");
   
-  // Get client count
+  // Get client count - updated to correctly count distinct customers
   const { data: clientCount, isLoading: clientsLoading } = useQuery({
-    queryKey: ["client-count", shopId],
+    queryKey: ["client-count", shopId, todayFormatted],
     queryFn: async () => {
       if (!shopId) return { count: 0, today: 0 };
       
-      const { count: totalClients } = await supabase
+      // Get total unique customers
+      const { data: totalClients, error: totalError } = await supabase
         .from("invoices")
-        .select("customer_name", { count: "exact", head: true })
+        .select("customer_name")
         .eq("shop_id", shopId)
         .not("customer_name", "eq", "");
       
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
+      // Count distinct customers
+      const uniqueTotalCustomers = new Set(
+        totalClients?.map(invoice => invoice.customer_name.toLowerCase().trim())
+      ).size;
       
-      const { count: todayClients } = await supabase
+      // Get today's unique customers
+      const { data: todayClients, error: todayError } = await supabase
         .from("invoices")
-        .select("customer_name", { count: "exact", head: true })
+        .select("customer_name")
         .eq("shop_id", shopId)
         .not("customer_name", "eq", "")
-        .gte("created_at", startOfToday.toISOString());
+        .gte("created_at", startOfToday);
+      
+      // Count distinct today's customers
+      const uniqueTodayCustomers = new Set(
+        todayClients?.map(invoice => invoice.customer_name.toLowerCase().trim())
+      ).size;
+      
+      if (totalError || todayError) {
+        console.error("Error fetching client counts:", totalError || todayError);
+      }
       
       return {
-        count: totalClients || 0,
-        today: todayClients || 0
+        count: uniqueTotalCustomers || 0,
+        today: uniqueTodayCustomers || 0
       };
     },
     enabled: !!shopId
   });
   
-  // Get transaction count
+  // Get transaction count - updated to correctly count today's transactions
   const { data: transactionCount, isLoading: transactionsLoading } = useQuery({
-    queryKey: ["transaction-count", shopId],
+    queryKey: ["transaction-count", shopId, todayFormatted],
     queryFn: async () => {
       if (!shopId) return { count: 0, today: 0 };
       
-      const { count: totalTransactions } = await supabase
+      const { count: totalTransactions, error: totalError } = await supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
         .eq("shop_id", shopId);
       
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-      
-      const { count: todayTransactions } = await supabase
+      const { count: todayTransactions, error: todayError } = await supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
         .eq("shop_id", shopId)
-        .gte("created_at", startOfToday.toISOString());
+        .gte("created_at", startOfToday);
+      
+      if (totalError || todayError) {
+        console.error("Error fetching transaction counts:", totalError || todayError);
+      }
       
       return {
         count: totalTransactions || 0,
@@ -169,12 +184,25 @@ export function SalesStats() {
         }
       )
       .subscribe();
+      
+    const expensesChannel = supabase
+      .channel('expenses-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expenses' },
+        () => {
+          console.log('Expenses changed, refreshing stats...');
+          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+        }
+      )
+      .subscribe();
 
     // Clean up subscriptions when component unmounts
     return () => {
       supabase.removeChannel(salesChannel);
       supabase.removeChannel(invoicesChannel);
       supabase.removeChannel(saleItemsChannel);
+      supabase.removeChannel(expensesChannel);
     };
   }, [queryClient]);
   
