@@ -5,6 +5,9 @@ import { useBestSellingProducts } from "@/hooks/use-best-selling-products";
 import { BestSellingProduct } from "@/integrations/supabase/types/functions";
 import { DateFilter } from "@/types/invoice";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface BestSellingProductsProps {
   dateFilter: DateFilter;
@@ -12,7 +15,41 @@ interface BestSellingProductsProps {
 }
 
 export const BestSellingProducts = ({ dateFilter, startDate }: BestSellingProductsProps) => {
-  const { data: topProducts, isLoading, error } = useBestSellingProducts(dateFilter, startDate);
+  const { data: topProducts, isLoading, error, refetch } = useBestSellingProducts(dateFilter, startDate);
+  const queryClient = useQueryClient();
+  
+  // Subscribe to real-time updates for product sales
+  useEffect(() => {
+    const salesChannel = supabase
+      .channel('best-products-sales-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sales' },
+        () => {
+          console.log('Sales data changed, refreshing best products...');
+          queryClient.invalidateQueries({ queryKey: ['bestSellingProducts'] });
+        }
+      )
+      .subscribe();
+      
+    const saleItemsChannel = supabase
+      .channel('best-products-items-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sale_items' },
+        () => {
+          console.log('Sale items changed, refreshing best products...');
+          queryClient.invalidateQueries({ queryKey: ['bestSellingProducts'] });
+        }
+      )
+      .subscribe();
+
+    // Clean up subscriptions when component unmounts
+    return () => {
+      supabase.removeChannel(salesChannel);
+      supabase.removeChannel(saleItemsChannel);
+    };
+  }, [queryClient]);
   
   return (
     <Card className="col-span-3">

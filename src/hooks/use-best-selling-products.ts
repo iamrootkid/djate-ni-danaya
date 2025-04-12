@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { BestSellingProduct } from "@/integrations/supabase/types/functions";
 import { DateFilter } from "@/types/invoice";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { useShopId } from "./use-shop-id";
 
 export const useBestSellingProducts = (dateFilter?: DateFilter, startDate?: Date) => {
-  const shopId = localStorage.getItem("shopId") || "";
+  const { shopId } = useShopId();
   
   // Calculate date range based on filter
   const calculateDateRange = () => {
@@ -74,5 +75,8 @@ export const useBestSellingProducts = (dateFilter?: DateFilter, startDate?: Date
       return Array.isArray(data) ? data : [];
     },
     enabled: !!shopId,
+    staleTime: 30000, // Data becomes stale after 30 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 };

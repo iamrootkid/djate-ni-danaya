@@ -1,8 +1,10 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 import { useSalesReport } from "@/hooks/use-sales-report";
 import { useBestSellingProducts } from "@/hooks/use-best-selling-products";
 import { DateRange } from "react-day-picker";
+import { useState } from "react";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -12,7 +14,10 @@ interface SalesReportProps {
 
 export const SalesReport = ({ dateRange }: SalesReportProps) => {
   const { data: salesData, isLoading: salesLoading } = useSalesReport(dateRange);
-  const { data: bestSellingProducts, isLoading: productsLoading } = useBestSellingProducts();
+  const { data: bestSellingProducts, isLoading: productsLoading } = useBestSellingProducts(
+    dateRange.from && dateRange.to ? "all" : undefined,
+    dateRange.from
+  );
   
   // Process sales data for the chart
   const chartData = salesData?.map(sale => ({
