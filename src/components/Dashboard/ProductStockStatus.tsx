@@ -1,18 +1,23 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { useEffect } from "react";
+import { AlertTriangle, AlertCircle, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useShopId } from "@/hooks/use-shop-id";
 import { useQueryClient } from "@tanstack/react-query";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 export const ProductStockStatus = () => {
   const { toast } = useToast();
   const { shopId } = useShopId();
   const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { data: products, isLoading } = useQuery({
     queryKey: ["products-stock", shopId],
@@ -95,13 +100,29 @@ export const ProductStockStatus = () => {
     };
   }, [shopId, queryClient, toast]);
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    queryClient.invalidateQueries({ queryKey: ['products-stock'] });
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
   return (
-    <Card className="col-span-3">
+    <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Produits à faible stock</CardTitle>
-        <Badge variant="outline">
-          {products?.filter(p => p.stock <= 5).length || 0} produits en alerte
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">
+            {products?.filter(p => p.stock <= 5).length || 0} produits en alerte
+          </Badge>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleRefresh}
+            className={isRefreshing ? "animate-spin" : ""}
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -115,7 +136,6 @@ export const ProductStockStatus = () => {
                 <TableHead>Produit</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Catégorie</TableHead>
-                <TableHead>Dernier vendeur</TableHead>
                 <TableHead>Statut</TableHead>
               </TableRow>
             </TableHeader>
@@ -123,23 +143,43 @@ export const ProductStockStatus = () => {
               {products && products.length > 0 ? (
                 products.map((product) => (
                   <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>{product.name}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Dernier vendeur: {product.last_seller_email}</p>
+                            <p>Prix: {product.price.toLocaleString()} F CFA</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                     <TableCell>{product.stock}</TableCell>
                     <TableCell>{product.categories?.name || 'Non catégorisé'}</TableCell>
-                    <TableCell>{product.last_seller_email}</TableCell>
                     <TableCell>
                       {product.stock <= 5 ? (
-                        <span className="inline-flex items-center text-red-600">
-                          <AlertTriangle className="w-4 h-4 mr-1" />
-                          Stock d'alerte
-                        </span>
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center text-red-600">
+                            <AlertTriangle className="w-4 h-4 mr-1" />
+                            Stock d'alerte
+                          </span>
+                          <Progress value={(product.stock / 5) * 100} className="h-2 bg-red-100" indicatorClassName="bg-red-600" />
+                        </div>
                       ) : product.stock < 10 ? (
-                        <span className="inline-flex items-center text-yellow-600">
-                          <AlertTriangle className="w-4 h-4 mr-1" />
-                          Stock bas
-                        </span>
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center text-yellow-600">
+                            <AlertCircle className="w-4 h-4 mr-1" />
+                            Stock bas
+                          </span>
+                          <Progress value={(product.stock / 10) * 100} className="h-2 bg-yellow-100" indicatorClassName="bg-yellow-600" />
+                        </div>
                       ) : (
-                        <span className="text-green-600">En stock</span>
+                        <div className="space-y-1">
+                          <span className="text-green-600">En stock</span>
+                          <Progress value={100} className="h-2 bg-green-100" indicatorClassName="bg-green-600" />
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -157,4 +197,4 @@ export const ProductStockStatus = () => {
       </CardContent>
     </Card>
   );
-};
+}

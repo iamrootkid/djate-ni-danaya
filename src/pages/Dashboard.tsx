@@ -1,3 +1,4 @@
+
 import { useLocation } from "react-router-dom";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useDashboard } from "@/hooks/use-dashboard";
@@ -6,6 +7,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Toaster } from "sonner";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -101,6 +103,7 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
+      <Toaster position="top-right" />
       <DashboardContent
         dateFilter={dateFilter}
         startDate={startDate}
