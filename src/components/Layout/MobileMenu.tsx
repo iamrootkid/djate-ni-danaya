@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -10,6 +11,7 @@ import {
   Store,
   Receipt,
   Menu,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -23,60 +25,61 @@ export const MobileMenu = ({ userRole }: MobileMenuProps) => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  const menuItems = [
+  // Admin-specific menu items
+  const adminMenuItems = [
     {
       href: "/dashboard",
       label: "Tableau de bord",
       icon: LayoutDashboard,
-      roles: ["admin"],
     },
     {
       href: "/categories",
       label: "Catégories",
       icon: Tags,
-      roles: ["admin"],
     },
     {
       href: "/products",
       label: "Produits",
       icon: Package,
-      roles: ["admin"],
-    },
-    {
-      href: "/sales",
-      label: "Ventes",
-      icon: Store,
-      roles: ["employee"],
     },
     {
       href: "/staff",
       label: "Personnel",
       icon: Users,
-      roles: ["admin"],
+    },
+    {
+      href: "/expenses",
+      label: "Dépenses",
+      icon: DollarSign,
     },
     {
       href: "/reports",
       label: "Rapports",
       icon: FileBarChart2,
-      roles: ["admin"],
     },
     {
       href: "/invoices",
       label: "Factures",
       icon: Receipt,
-      roles: ["admin"],
     },
     {
       href: "/settings",
       label: "Paramètres",
       icon: Settings,
-      roles: ["admin"],
-    },
+    }
+  ];
+  
+  // Employee-specific menu items
+  const employeeMenuItems = [
+    {
+      href: "/sales",
+      label: "Ventes",
+      icon: Store,
+    }
   ];
 
-  const filteredMenuItems = menuItems.filter((item) => 
-    item.roles.includes(userRole)
-  );
+  // Select which menu items to show based on user role
+  const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -91,7 +94,7 @@ export const MobileMenu = ({ userRole }: MobileMenuProps) => {
       </SheetTrigger>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
         <nav className="space-y-4 pt-4">
-          {filteredMenuItems.map((item) => {
+          {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
 

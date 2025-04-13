@@ -67,6 +67,6 @@ export const useStockSummary = (date: Date = new Date(), filter: "daily" | "mont
       }
     },
     enabled: !!shopId,
-    refetchInterval: 60000, // Refetch every minute
+    staleTime: 30000, // Keep data fresh for 30 seconds before refetching
   });
 };

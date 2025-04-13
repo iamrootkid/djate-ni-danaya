@@ -84,6 +84,7 @@ export const useDashboardAutoRefresh = (shopId: string | null) => {
           },
           () => {
             console.log("Invoice data changed, refreshing");
+            queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
           }
         )
         .subscribe()

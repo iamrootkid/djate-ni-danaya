@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { DateFilter } from "@/types/invoice";
 
@@ -10,18 +11,10 @@ export const useDashboardFilters = (onFilterChange?: () => void) => {
     setIsLoading(true);
     setDateFilter(filter);
     
-    const today = new Date();
-    setStartDate(today);
-
-    // Call the optional callback if provided
+    // Only trigger the callback if provided
     if (onFilterChange) {
       onFilterChange();
     }
-
-    // Reset loading state after a short delay
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
   }, [onFilterChange]);
 
   return {
@@ -32,4 +25,4 @@ export const useDashboardFilters = (onFilterChange?: () => void) => {
     handleFilterChange,
     setStartDate
   };
-}; 
+};

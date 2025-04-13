@@ -1,3 +1,4 @@
+
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Tags, Package, Users, FileBarChart2, Settings, Store, Receipt, LogOut, DollarSign } from "lucide-react";
 import { Sidebar as UISidebar, SidebarContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
@@ -14,68 +15,65 @@ const Navigation = ({
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
-  const menuItems = [
+  // Define admin menu items separately from employee items
+  const adminMenuItems = [
     {
       href: "/dashboard",
       label: "Tableau de bord",
       icon: LayoutDashboard,
-      roles: ["admin"]
     },
     {
       href: "/categories",
       label: "Catégories",
       icon: Tags,
-      roles: ["admin"]
     },
     {
       href: "/products",
       label: "Produits",
       icon: Package,
-      roles: ["admin"]
-    },
-    {
-      href: "/sales",
-      label: "Ventes",
-      icon: Store,
-      roles: ["employee"]
     },
     {
       href: "/staff",
       label: "Personnel",
       icon: Users,
-      roles: ["admin"]
     },
     {
       href: "/expenses",
       label: "Dépenses",
       icon: DollarSign,
-      roles: ["admin"]
     },
     {
       href: "/reports",
       label: "Rapports",
       icon: FileBarChart2,
-      roles: ["admin"]
     },
     {
       href: "/invoices",
       label: "Factures",
       icon: Receipt,
-      roles: ["admin"]
     },
     {
       href: "/settings",
       label: "Paramètres",
       icon: Settings,
-      roles: ["admin"]
+    }
+  ];
+  
+  // Employee-specific menu items
+  const employeeMenuItems = [
+    {
+      href: "/sales",
+      label: "Ventes",
+      icon: Store,
     }
   ];
 
-  const filteredMenuItems = menuItems.filter(item => item.roles.includes(userRole));
+  // Show admin menu items for admins, and employee items for employees
+  const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
 
   return (
     <SidebarMenu>
-      {filteredMenuItems.map(({ href, label, icon: Icon }) => (
+      {menuItems.map(({ href, label, icon: Icon }) => (
         <SidebarMenuItem key={href}>
           <SidebarMenuButton
             asChild

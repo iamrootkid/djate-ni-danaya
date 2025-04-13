@@ -19,7 +19,7 @@ export const useDashboard = () => {
   const { 
     dateFilter, 
     startDate, 
-    isLoading, 
+    isLoading: filtersLoading, 
     setIsLoading,
     handleFilterChange, 
     setStartDate 
@@ -30,17 +30,19 @@ export const useDashboard = () => {
   // Setup auto-refresh
   useDashboardAutoRefresh(shopId);
   
-  // Pass the loading state to the query parameters
+  // Load data in parallel with proper suspense handling
   const { data: stats, isLoading: statsLoading } = useDashboardStats(dateFilter, startDate);
   const { data: recentOrders, isLoading: ordersLoading } = useRecentOrders(dateFilter, startDate);
   
   // Update loading state based on query states
   useEffect(() => {
-    if (statsLoading || ordersLoading) {
+    const isCurrentlyLoading = statsLoading || ordersLoading;
+    
+    if (isCurrentlyLoading) {
       setIsLoading(true);
     } else {
       // Add a slight delay to prevent flickering
-      const timer = setTimeout(() => setIsLoading(false), 500);
+      const timer = setTimeout(() => setIsLoading(false), 300);
       return () => clearTimeout(timer);
     }
   }, [statsLoading, ordersLoading, setIsLoading]);
@@ -55,6 +57,6 @@ export const useDashboard = () => {
     handleFilterChange,
     setStartDate,
     invalidateAllDashboardQueries,
-    isLoading
+    isLoading: filtersLoading || statsLoading || ordersLoading
   };
 };
