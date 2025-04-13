@@ -7,6 +7,59 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserProfile } from "@/components/Dashboard/UserProfile";
 
+// Define admin menu items separately from employee items
+const adminMenuItems = [
+  {
+    href: "/dashboard",
+    label: "Tableau de bord",
+    icon: LayoutDashboard,
+  },
+  {
+    href: "/categories",
+    label: "Catégories",
+    icon: Tags,
+  },
+  {
+    href: "/products",
+    label: "Produits",
+    icon: Package,
+  },
+  {
+    href: "/staff",
+    label: "Personnel",
+    icon: Users,
+  },
+  {
+    href: "/expenses",
+    label: "Dépenses",
+    icon: DollarSign,
+  },
+  {
+    href: "/reports",
+    label: "Rapports",
+    icon: FileBarChart2,
+  },
+  {
+    href: "/invoices",
+    label: "Factures",
+    icon: Receipt,
+  },
+  {
+    href: "/settings",
+    label: "Paramètres",
+    icon: Settings,
+  }
+];
+
+// Employee-specific menu items
+const employeeMenuItems = [
+  {
+    href: "/sales",
+    label: "Ventes",
+    icon: Store,
+  }
+];
+
 const Navigation = ({
   userRole
 }: {
@@ -14,59 +67,6 @@ const Navigation = ({
 }) => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
-
-  // Define admin menu items separately from employee items
-  const adminMenuItems = [
-    {
-      href: "/dashboard",
-      label: "Tableau de bord",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/categories",
-      label: "Catégories",
-      icon: Tags,
-    },
-    {
-      href: "/products",
-      label: "Produits",
-      icon: Package,
-    },
-    {
-      href: "/staff",
-      label: "Personnel",
-      icon: Users,
-    },
-    {
-      href: "/expenses",
-      label: "Dépenses",
-      icon: DollarSign,
-    },
-    {
-      href: "/reports",
-      label: "Rapports",
-      icon: FileBarChart2,
-    },
-    {
-      href: "/invoices",
-      label: "Factures",
-      icon: Receipt,
-    },
-    {
-      href: "/settings",
-      label: "Paramètres",
-      icon: Settings,
-    }
-  ];
-  
-  // Employee-specific menu items
-  const employeeMenuItems = [
-    {
-      href: "/sales",
-      label: "Ventes",
-      icon: Store,
-    }
-  ];
 
   // Show admin menu items for admins, and employee items for employees
   const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
