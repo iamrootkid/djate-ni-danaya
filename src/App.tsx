@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import "./App.css";
 import { ToastProvider } from "@/components/ToastProvider"; // Fixed import path
+import { SidebarProvider } from "@/components/ui/sidebar"; // Import SidebarProvider
 
 // Lazy load pages
 const Login = React.lazy(() => import("@/pages/Login"));
@@ -33,24 +34,26 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Toaster />
-        <ToastProvider />
-        <Suspense fallback={<div>Chargement...</div>}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/staff" element={<Staff />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/personnel" element={<Personnel />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </Suspense>
+        <SidebarProvider>
+          <Toaster />
+          <ToastProvider />
+          <Suspense fallback={<div>Chargement...</div>}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/categories" element={<Categories />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/invoices" element={<Invoices />} />
+              <Route path="/staff" element={<Staff />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/personnel" element={<Personnel />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </Suspense>
+        </SidebarProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
