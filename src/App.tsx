@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import "./App.css";
-import { ToastProvider } from "@/components/ui/toaster";
+import { ToastProvider } from "@/components/ToastProvider"; // Fixed import path
 
 // Lazy load pages
 const Login = React.lazy(() => import("@/pages/Login"));
