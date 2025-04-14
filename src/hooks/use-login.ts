@@ -83,6 +83,7 @@ export const useLogin = (role: 'admin' | 'employee') => {
       const message = getErrorMessage(error);
       toast.error(message);
       console.error('Login error:', error);
+      throw error; // Propagate the error to handle in the component
     } finally {
       setLoading(false);
     }
