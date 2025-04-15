@@ -79,6 +79,7 @@ export const MobileMenu = ({ userRole }: MobileMenuProps) => {
   ];
 
   // Select which menu items to show based on user role
+  // Ensure admin users never see the Sales menu item
   const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
 
   return (

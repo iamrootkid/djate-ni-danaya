@@ -68,7 +68,8 @@ const Navigation = ({
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
-  // Show admin menu items for admins, and employee items for employees
+  // Only show admin menu items for admins, and employee items for employees
+  // We ensure that admin users never see the Sales menu item
   const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
 
   return (

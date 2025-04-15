@@ -17,6 +17,8 @@ import { CategoryFilter } from "@/components/Sales/CategoryFilter";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useShopId } from "@/hooks/use-shop-id";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
 
 const Sales = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,18 +29,12 @@ const Sales = () => {
   const isMobile = useIsMobile();
   const { shopId } = useShopId();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const { cart, cartTotal, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
   const checkoutMutation = useCheckout();
 
-  // Redirect if no shop ID (should be handled by ProtectedRoute)
-  useEffect(() => {
-    if (!shopId) {
-      console.error("No shop ID found, user should be redirected to login");
-    }
-  }, [shopId]);
-
-  // Get user role
+  // Check user role and redirect if admin
   useEffect(() => {
     const getUserRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -50,12 +46,31 @@ const Sales = () => {
           .single();
         
         if (profileData?.role) {
-          setUserRole(profileData.role as "admin" | "employee");
+          const role = profileData.role as "admin" | "employee";
+          setUserRole(role);
+          
+          // If admin, redirect to dashboard
+          if (role === "admin") {
+            toast({
+              title: "Accès restreint",
+              description: "Cette page est réservée aux employés",
+              variant: "destructive"
+            });
+            navigate("/dashboard");
+          }
         }
       }
     };
+
     getUserRole();
-  }, []);
+  }, [navigate, toast]);
+
+  // Redirect if no shop ID (should be handled by ProtectedRoute)
+  useEffect(() => {
+    if (!shopId) {
+      console.error("No shop ID found, user should be redirected to login");
+    }
+  }, [shopId]);
 
   // Fetch products with category information, filtered by shop ID
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -84,7 +99,7 @@ const Sales = () => {
       if (error) throw error;
       return data as (Product & { categories: { name: string } | null })[];
     },
-    enabled: !!shopId,
+    enabled: !!shopId && userRole === "employee",
   });
 
   // Fetch category name for display, filtered by shop ID
@@ -103,7 +118,7 @@ const Sales = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedCategory && !!shopId,
+    enabled: !!selectedCategory && !!shopId && userRole === "employee",
   });
 
   const filteredProducts = products.filter(
@@ -143,6 +158,22 @@ const Sales = () => {
     );
     return { invoiceNumber: result.invoiceNumber };
   };
+
+  // If user is admin, show an empty state with a message
+  if (userRole === "admin") {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full mt-20">
+          <Alert className="max-w-md">
+            <AlertTitle>Accès restreint</AlertTitle>
+            <AlertDescription>
+              Cette page est réservée aux employés. Vous êtes un administrateur et vous serez redirigé vers le tableau de bord.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

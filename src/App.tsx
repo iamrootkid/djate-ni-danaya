@@ -91,6 +91,11 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
     return <Navigate to="/login" replace />;
   }
 
+  // Special case for the sales route - redirect admins to dashboard
+  if (userRole === 'admin' && window.location.pathname === '/sales') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   if (userRole && (allowedRoles.includes(userRole) || userRole === 'admin')) {
     return <>{children}</>;
   }
@@ -147,7 +152,7 @@ const App = () => {
                 <Route
                   path="/sales"
                   element={
-                    <ProtectedRoute allowedRoles={["employee", "admin"]}>
+                    <ProtectedRoute allowedRoles={["employee"]}>
                       <Sales />
                     </ProtectedRoute>
                   }
