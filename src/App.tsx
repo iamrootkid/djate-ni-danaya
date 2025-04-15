@@ -8,7 +8,7 @@ import { ToastProvider } from "@/components/ToastProvider"; // Fixed import path
 import { SidebarProvider } from "@/components/ui/sidebar"; // Import SidebarProvider
 
 // Lazy load pages
-const Login = React.lazy(() => import("@/pages/Login"));
+const Login = React.lazy(() => import("./pages/Login"));
 const Dashboard = React.lazy(() => import("@/pages/Dashboard"));
 const Categories = React.lazy(() => import("@/pages/Categories"));
 const Products = React.lazy(() => import("@/pages/Products"));
@@ -37,7 +37,7 @@ function App() {
         <SidebarProvider>
           <Toaster />
           <ToastProvider />
-          <Suspense fallback={<div>Chargement...</div>}>
+          <Suspense fallback={<div>Loading...</div>}>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Dashboard />} />
