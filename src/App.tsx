@@ -40,7 +40,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
           return;
         }
 
-        // Get user role from profiles table
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
@@ -90,7 +89,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
     return <Navigate to="/login" replace />;
   }
 
-  // Allow access if the user's role is included in allowedRoles OR if the user is an admin
   if (userRole && (allowedRoles.includes(userRole) || userRole === 'admin')) {
     return <>{children}</>;
   }
@@ -109,11 +107,12 @@ const queryClient = new QueryClient({
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <SidebarProvider>
-          <BrowserRouter>
+    <SidebarProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <TooltipProvider>
             <Toaster />
+            <Sonner />
             <Routes>
               <Route 
                 path="/" 
@@ -201,10 +200,10 @@ const App = () => {
                 }
               />
             </Routes>
-          </BrowserRouter>
-        </SidebarProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+          </TooltipProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </SidebarProvider>
   );
 };
 
