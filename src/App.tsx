@@ -1,59 +1,211 @@
-
-import React, { Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
-import "./App.css";
-import { ToastProvider } from "@/components/ui/toaster";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
+import Categories from "./pages/Categories";
+import Sales from "./pages/Sales";
+import Staff from "./pages/Staff";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import Invoices from "./pages/Invoices";
+import Expenses from "./pages/Expenses";
+import Personnel from "@/pages/Personnel";
 
-// Lazy load pages
-const Login = React.lazy(() => import("@/pages/Login"));
-const Dashboard = React.lazy(() => import("@/pages/Dashboard"));
-const Categories = React.lazy(() => import("@/pages/Categories"));
-const Products = React.lazy(() => import("@/pages/Products"));
-const Sales = React.lazy(() => import("@/pages/Sales"));
-const Reports = React.lazy(() => import("@/pages/Reports"));
-const Invoices = React.lazy(() => import("@/pages/Invoices"));
-const Staff = React.lazy(() => import("@/pages/Staff"));
-const Settings = React.lazy(() => import("@/pages/Settings"));
-const Personnel = React.lazy(() => import("@/pages/Personnel"));
-const Expenses = React.lazy(() => import("@/pages/Expenses"));
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
 
-// Create a client
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+
+        // Get user role from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        setUserRole(profile?.role || null);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        setIsAuthenticated(true);
+        if (session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          setUserRole(profile?.role || null);
+        }
+      }
+      if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Allow access if the user's role is included in allowedRoles OR if the user is an admin
+  if (userRole && (allowedRoles.includes(userRole) || userRole === 'admin')) {
+    return <>{children}</>;
+  }
+
+  return <Navigate to="/dashboard" replace />;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
       retry: 1,
+      refetchOnWindowFocus: false,
     },
   },
 });
 
-function App() {
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Toaster />
-        <ToastProvider />
-        <Suspense fallback={<div>Chargement...</div>}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/staff" element={<Staff />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/personnel" element={<Personnel />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+      <TooltipProvider>
+        <SidebarProvider>
+          <BrowserRouter>
+            <Toaster />
+            <Routes>
+              <Route 
+                path="/" 
+                element={<Navigate to="/login" replace />}
+              />
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/categories"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Categories />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Products />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sales"
+                element={
+                  <ProtectedRoute allowedRoles={["employee", "admin"]}>
+                    <Sales />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/staff"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Staff />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Reports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/invoices"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Invoices />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/expenses"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Expenses />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/personnel"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Personnel />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
+        </SidebarProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

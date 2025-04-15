@@ -20,6 +20,7 @@ export const getLoginErrorMessage = (error: AuthError): string => {
   return 'Une erreur inattendue s\'est produite. Veuillez réessayer.';
 };
 
+// Add the missing getErrorMessage function that's imported in use-login.ts
 export const getErrorMessage = (error: any): string => {
   if (error instanceof AuthError) {
     return getLoginErrorMessage(error);
