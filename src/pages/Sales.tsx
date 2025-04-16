@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -198,7 +199,7 @@ const Sales = () => {
               <CategoryFilter 
                 selectedCategory={selectedCategory}
                 onSelectCategory={setSelectedCategory}
-                isAdmin={userRole === "admin"}
+                isAdmin={false}
               />
               
               <ProductList 
