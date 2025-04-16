@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -34,7 +33,6 @@ const Sales = () => {
   const { cart, cartTotal, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
   const checkoutMutation = useCheckout();
 
-  // Check user role and redirect if admin
   useEffect(() => {
     const getUserRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -49,7 +47,6 @@ const Sales = () => {
           const role = profileData.role as "admin" | "employee";
           setUserRole(role);
           
-          // If admin, redirect to dashboard
           if (role === "admin") {
             toast({
               title: "Accès restreint",
@@ -65,14 +62,12 @@ const Sales = () => {
     getUserRole();
   }, [navigate, toast]);
 
-  // Redirect if no shop ID (should be handled by ProtectedRoute)
   useEffect(() => {
     if (!shopId) {
       console.error("No shop ID found, user should be redirected to login");
     }
   }, [shopId]);
 
-  // Fetch products with category information, filtered by shop ID
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products", selectedCategory, shopId],
     queryFn: async () => {
@@ -102,7 +97,6 @@ const Sales = () => {
     enabled: !!shopId && userRole === "employee",
   });
 
-  // Fetch category name for display, filtered by shop ID
   const { data: categoryData } = useQuery({
     queryKey: ["category", selectedCategory, shopId],
     queryFn: async () => {
@@ -159,7 +153,6 @@ const Sales = () => {
     return { invoiceNumber: result.invoiceNumber };
   };
 
-  // If user is admin, show an empty state with a message
   if (userRole === "admin") {
     return (
       <AppLayout>
