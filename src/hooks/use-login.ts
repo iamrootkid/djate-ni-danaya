@@ -14,14 +14,22 @@ export const useLogin = (role: 'admin' | 'employee') => {
     setLoading(true);
     
     try {
+      // Clear any existing sessions first to prevent conflicts
+      await supabase.auth.signOut();
+      
       // First check if the shop exists
       const { data: shopData, error: shopError } = await supabase
         .from('shops')
         .select('id')
         .eq('id', shopId)
-        .single();
+        .maybeSingle();
       
-      if (shopError || !shopData) {
+      if (shopError) {
+        console.error("Shop verification error:", shopError);
+        throw new Error(`Erreur lors de la vérification du magasin: ${shopError.message}`);
+      }
+      
+      if (!shopData) {
         throw new Error(`Ce magasin n'existe pas. Veuillez vérifier l'identifiant du magasin.`);
       }
 
@@ -35,6 +43,10 @@ export const useLogin = (role: 'admin' | 'employee') => {
         throw authError;
       }
 
+      if (!authData.user || !authData.session) {
+        throw new Error("Authentification échouée: Aucun utilisateur ou session n'a été créé");
+      }
+
       // Save the email for remember me
       if (values.rememberMe) {
         localStorage.setItem('rememberedEmail', values.email);
@@ -42,16 +54,25 @@ export const useLogin = (role: 'admin' | 'employee') => {
         localStorage.removeItem('rememberedEmail');
       }
 
+      // Reset login attempts counter
+      localStorage.removeItem('loginAttempts');
+
       // Fetch the user's profile to check their role and shop_id
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, shop_id')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
       
       if (profileError) {
+        console.error("Profile fetch error:", profileError);
         await supabase.auth.signOut();
         throw new Error('Impossible de récupérer le profil utilisateur');
+      }
+      
+      if (!profile) {
+        await supabase.auth.signOut();
+        throw new Error("Profil utilisateur introuvable");
       }
 
       console.log('User role from profile:', profile.role, 'Expected role:', role);
@@ -83,6 +104,7 @@ export const useLogin = (role: 'admin' | 'employee') => {
       const message = getErrorMessage(error);
       toast.error(message);
       console.error('Login error:', error);
+      throw error;
     } finally {
       setLoading(false);
     }

@@ -35,6 +35,20 @@ export const LoginForm = ({ selectedRole, shopId, onBack, onForgotPassword }: Lo
 
   const onSubmit = async (values: LoginFormValues) => {
     setError(null);
+    
+    // Limit login attempts (simple rate limiting on client-side)
+    const now = Date.now();
+    const lastLoginAttempt = parseInt(localStorage.getItem('lastLoginAttempt') || '0');
+    const loginAttempts = parseInt(localStorage.getItem('loginAttempts') || '0');
+    
+    if (now - lastLoginAttempt < 60000 && loginAttempts >= 5) {
+      setError("Trop de tentatives de connexion. Veuillez réessayer dans une minute.");
+      return;
+    }
+    
+    localStorage.setItem('lastLoginAttempt', now.toString());
+    localStorage.setItem('loginAttempts', (now - lastLoginAttempt >= 60000 ? 1 : loginAttempts + 1).toString());
+    
     try {
       await handleLogin(values, shopId);
     } catch (err: any) {

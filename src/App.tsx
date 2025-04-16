@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
@@ -19,6 +18,7 @@ import Settings from "./pages/Settings";
 import Invoices from "./pages/Invoices";
 import Expenses from "./pages/Expenses";
 import Personnel from "@/pages/Personnel";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -30,60 +30,48 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        if (authLoading) {
+          return;
+        }
         
-        if (!session) {
+        if (!user) {
           setIsAuthenticated(false);
           setLoading(false);
           return;
         }
 
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', session.user.id)
-          .single();
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error fetching user role:", error);
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
 
         setUserRole(profile?.role || null);
         setIsAuthenticated(true);
+        setLoading(false);
       } catch (error) {
         console.error('Error checking auth status:', error);
         setIsAuthenticated(false);
-      } finally {
         setLoading(false);
       }
     };
 
     checkAuth();
+  }, [user, authLoading]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
-        setIsAuthenticated(true);
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-          setUserRole(profile?.role || null);
-        }
-      }
-      if (event === 'SIGNED_OUT') {
-        setIsAuthenticated(false);
-        setUserRole(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  if (loading) {
+  if (loading || authLoading) {
     return <LoadingSpinner />;
   }
 
@@ -106,8 +94,20 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Don't retry on 401/403 auth errors or 429 rate limit errors
+        if (
+          error instanceof Error &&
+          'status' in (error as any) &&
+          ([401, 403, 429].includes((error as any).status))
+        ) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
+      staleTime: 60000, // 1 minute
     },
   },
 });
@@ -115,103 +115,105 @@ const queryClient = new QueryClient({
 const App = () => {
   return (
     <ThemeProvider attribute="class" defaultTheme="light">
-      <SidebarProvider>
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <TooltipProvider>
-              <Routes>
-                <Route 
-                  path="/" 
-                  element={<Navigate to="/login" replace />}
-                />
-                <Route path="/login" element={<Login />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/categories"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Categories />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/products"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Products />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/sales"
-                  element={
-                    <ProtectedRoute allowedRoles={["employee"]}>
-                      <Sales />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/staff"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Staff />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/reports"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Reports />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Settings />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/invoices"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Invoices />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/expenses"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Expenses />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/personnel"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <Personnel />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-              <Toaster />
-              <Sonner />
-            </TooltipProvider>
-          </BrowserRouter>
-        </QueryClientProvider>
-      </SidebarProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <SidebarProvider>
+              <TooltipProvider>
+                <Routes>
+                  <Route 
+                    path="/" 
+                    element={<Navigate to="/login" replace />}
+                  />
+                  <Route path="/login" element={<Login />} />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/categories"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Categories />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/products"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Products />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/sales"
+                    element={
+                      <ProtectedRoute allowedRoles={["employee"]}>
+                        <Sales />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/staff"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Staff />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Reports />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Settings />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/invoices"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Invoices />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/expenses"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Expenses />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/personnel"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <Personnel />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+                <Toaster />
+                <Sonner />
+              </TooltipProvider>
+            </SidebarProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 };
