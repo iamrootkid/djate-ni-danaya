@@ -44,10 +44,9 @@ const Sales = () => {
           .single();
         
         if (profileData?.role) {
-          const role = profileData.role as "admin" | "employee";
-          setUserRole(role);
+          setUserRole(profileData.role as "admin" | "employee");
           
-          if (role === "admin") {
+          if (profileData.role === "admin") {
             toast({
               title: "Accès restreint",
               description: "Cette page est réservée aux employés",
