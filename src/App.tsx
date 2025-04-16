@@ -19,7 +19,6 @@ import Settings from "./pages/Settings";
 import Invoices from "./pages/Invoices";
 import Expenses from "./pages/Expenses";
 import Personnel from "@/pages/Personnel";
-import { useAuthRefresh } from "@/hooks/use-auth-refresh";
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -33,10 +32,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Add a backoff mechanism for failed requests
-    let retryCount = 0;
-    const maxRetries = 3;
-    
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -47,18 +42,11 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
           return;
         }
 
-        const { data: profile, error } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
           .single();
-
-        if (error && retryCount < maxRetries) {
-          retryCount++;
-          console.log(`Retrying profile fetch (${retryCount}/${maxRetries})`);
-          setTimeout(checkAuth, retryCount * 1000);
-          return;
-        }
 
         setUserRole(profile?.role || null);
         setIsAuthenticated(true);
@@ -115,19 +103,10 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   return <Navigate to="/dashboard" replace />;
 };
 
-// Configure React Query with retry logic
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: (failureCount, error: any) => {
-        // Don't retry on 429 errors (rate limiting)
-        if (error?.message?.includes('429') || 
-            error?.response?.status === 429) {
-          return false;
-        }
-        return failureCount < 2; // retry once for other errors
-      },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retry: 1,
       refetchOnWindowFocus: false,
     },
   },

@@ -25,10 +25,6 @@ export const useLogin = (role: 'admin' | 'employee') => {
         throw new Error(`Ce magasin n'existe pas. Veuillez vérifier l'identifiant du magasin.`);
       }
 
-      // Clear any existing sessions before attempting to sign in
-      // This helps prevent potential token refresh conflicts
-      await supabase.auth.signOut();
-      
       // Then authenticate the user
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: values.email,
