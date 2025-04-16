@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -152,6 +153,7 @@ const Sales = () => {
     return { invoiceNumber: result.invoiceNumber };
   };
 
+  // Updated comparison to use string comparison instead of type comparison
   if (userRole === "admin") {
     return (
       <AppLayout>

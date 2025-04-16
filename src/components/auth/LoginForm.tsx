@@ -23,6 +23,7 @@ interface LoginFormProps {
 export const LoginForm = ({ selectedRole, shopId, onBack, onForgotPassword }: LoginFormProps) => {
   const { loading, handleLogin } = useLogin(selectedRole);
   const [error, setError] = useState<string | null>(null);
+  const [attemptingLogin, setAttemptingLogin] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -34,25 +35,22 @@ export const LoginForm = ({ selectedRole, shopId, onBack, onForgotPassword }: Lo
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    // Clear previous errors
     setError(null);
     
-    // Limit login attempts (simple rate limiting on client-side)
-    const now = Date.now();
-    const lastLoginAttempt = parseInt(localStorage.getItem('lastLoginAttempt') || '0');
-    const loginAttempts = parseInt(localStorage.getItem('loginAttempts') || '0');
-    
-    if (now - lastLoginAttempt < 60000 && loginAttempts >= 5) {
-      setError("Trop de tentatives de connexion. Veuillez réessayer dans une minute.");
+    // Prevent multiple simultaneous login attempts
+    if (attemptingLogin) {
       return;
     }
     
-    localStorage.setItem('lastLoginAttempt', now.toString());
-    localStorage.setItem('loginAttempts', (now - lastLoginAttempt >= 60000 ? 1 : loginAttempts + 1).toString());
+    setAttemptingLogin(true);
     
     try {
       await handleLogin(values, shopId);
     } catch (err: any) {
       setError(err.message || "Une erreur s'est produite lors de la connexion");
+    } finally {
+      setAttemptingLogin(false);
     }
   };
 
@@ -85,7 +83,7 @@ export const LoginForm = ({ selectedRole, shopId, onBack, onForgotPassword }: Lo
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary-dark text-white transition-colors"
-            disabled={loading}
+            disabled={loading || attemptingLogin}
           >
             {loading ? 'Connexion en cours...' : 'Se connecter'}
           </Button>
@@ -94,6 +92,7 @@ export const LoginForm = ({ selectedRole, shopId, onBack, onForgotPassword }: Lo
             variant="outline"
             className="w-full"
             onClick={onBack}
+            disabled={loading || attemptingLogin}
           >
             Retour
           </Button>

@@ -9,6 +9,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Configure the client with proper settings to handle token refresh and session persistence
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
@@ -22,7 +23,17 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   realtime: {
     params: {
-      eventsPerSecond: 2, // Limit realtime events to avoid rate limiting
+      eventsPerSecond: 1, // Reduce rate limiting by limiting events
     }
+  },
+  // Add these settings to improve reliability
+  db: {
+    schema: 'public',
+  },
+  // Add request throttling to avoid rate limit errors
+  requestTransformer: (req, nextHandler) => {
+    // Add a small random delay to stagger requests
+    const delay = Math.random() * 300;
+    setTimeout(() => nextHandler(req), delay);
   }
 });

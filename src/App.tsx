@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
@@ -18,7 +20,6 @@ import Settings from "./pages/Settings";
 import Invoices from "./pages/Invoices";
 import Expenses from "./pages/Expenses";
 import Personnel from "@/pages/Personnel";
-import { useAuth } from "@/contexts/AuthContext";
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
