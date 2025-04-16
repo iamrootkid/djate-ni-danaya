@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Tag, Badge } from "lucide-react";
+import { Tag, Badge as BadgeIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CategoryFilterButtonProps {
@@ -39,9 +39,9 @@ export const CategoryFilterButton = ({
       {!isAll && <Tag className={`${iconSize} mr-1`} />}
       {name}
       {showBadge && id && (
-        <Badge className={`ml-1 ${isMobile ? 'h-4 px-1 text-[8px]' : 'h-5 px-1.5'}`} variant="secondary">
+        <span className={`ml-1 bg-secondary text-secondary-foreground rounded-md ${isMobile ? 'h-4 px-1 text-[8px]' : 'h-5 px-1.5'}`}>
           {id.substring(0, 4)}
-        </Badge>
+        </span>
       )}
     </Button>
   );
