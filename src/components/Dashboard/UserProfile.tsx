@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
 
 export const UserProfile = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -11,27 +12,33 @@ export const UserProfile = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email);
-        
-        // Get user role from profiles table
-        const { data: profileData, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserEmail(user.email);
           
-        if (error) {
-          console.error('Error fetching user role:', error);
-          return;
+          // Get user role from profiles table
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', asUUID(user.id))
+            .maybeSingle();
+            
+          if (error) {
+            console.error('Error fetching user role:', error);
+            return;
+          }
+          
+          const roleValue = safeDataAccess(profileData, 'role');
+          if (roleValue) {
+            setUserRole(roleValue);
+          }
         }
-        
-        if (profileData) {
-          setUserRole(profileData.role);
-        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
       }
     };
+    
     getUser();
   }, []);
 

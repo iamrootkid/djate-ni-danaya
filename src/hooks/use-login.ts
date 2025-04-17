@@ -1,10 +1,11 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LoginFormValues } from "@/components/auth/schemas/loginSchema";
 import { getErrorMessage } from "@/components/auth/utils/authErrorUtils";
+import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
 
 // Add a cache for shopIds to avoid repeated lookups
 const shopCache = new Map<string, boolean>();
@@ -70,6 +71,9 @@ export const useLogin = (role: 'admin' | 'employee') => {
         throw new Error("Authentification échouée: Aucun utilisateur ou session n'a été créé");
       }
 
+      // Fix JWT token issues immediately after login
+      await fixJwtTokenIfNeeded();
+
       // Save the email for remember me
       if (values.rememberMe) {
         localStorage.setItem('rememberedEmail', values.email);
@@ -84,7 +88,7 @@ export const useLogin = (role: 'admin' | 'employee') => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, shop_id')
-        .eq('id', authData.user.id)
+        .eq('id', asUUID(authData.user.id))
         .maybeSingle();
       
       if (profileError) {
@@ -98,17 +102,20 @@ export const useLogin = (role: 'admin' | 'employee') => {
         throw new Error("Profil utilisateur introuvable");
       }
 
-      console.log('User role from profile:', profile.role, 'Expected role:', role);
-      console.log('User shop_id:', profile.shop_id, 'Provided shop_id:', shopId);
+      const userRole = safeDataAccess(profile, 'role');
+      const userShopId = safeDataAccess(profile, 'shop_id');
+      
+      console.log('User role from profile:', userRole, 'Expected role:', role);
+      console.log('User shop_id:', userShopId, 'Provided shop_id:', shopId);
       
       // Verify the user has the correct role - compare as strings
-      if (profile.role !== role) {
+      if (userRole !== role) {
         await supabase.auth.signOut();
         throw new Error(`Authentification échouée: L'utilisateur n'a pas les privilèges ${role}`);
       }
 
       // Verify user's shop_id matches the provided one - string comparison
-      if (profile.shop_id !== shopId) {
+      if (userShopId !== shopId) {
         await supabase.auth.signOut();
         throw new Error(`Authentification échouée: L'utilisateur n'est pas associé à ce magasin`);
       }
@@ -117,7 +124,7 @@ export const useLogin = (role: 'admin' | 'employee') => {
       localStorage.setItem('shopId', shopId);
 
       // Set user role in local storage
-      localStorage.setItem('userRole', profile.role);
+      localStorage.setItem('userRole', userRole);
       
       // Redirect to dashboard or sales based on role
       toast.success(`Connecté en tant que ${role}`);

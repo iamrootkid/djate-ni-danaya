@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,40 +11,61 @@ interface ExpensesStatsProps {
   dateRange: DateRange | undefined;
 }
 
+interface ExpenseData {
+  type: string;
+  amount: number;
+}
+
 export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => {
   const { shopId } = useShopId();
 
   const { data: stats } = useQuery({
     queryKey: ["expenses-stats", filterType, dateRange, shopId],
     queryFn: async () => {
-      let query = supabase
-        .from("expenses")
-        .select("type, amount")
-        .eq('shop_id', shopId);
+      if (!shopId) return null;
+      
+      try {
+        let query = supabase
+          .from("expenses")
+          .select("type, amount")
+          .eq('shop_id', shopId);
 
-      if (filterType !== "all" && dateRange?.from) {
-        if (filterType === "daily") {
-          query = query
-            .gte("date", startOfDay(dateRange.from).toISOString())
-            .lte("date", endOfDay(dateRange.to || dateRange.from).toISOString());
-        } else if (filterType === "monthly") {
-          query = query
-            .gte("date", startOfMonth(dateRange.from).toISOString())
-            .lte("date", endOfMonth(dateRange.to || dateRange.from).toISOString());
+        if (filterType !== "all" && dateRange?.from) {
+          if (filterType === "daily") {
+            query = query
+              .gte("date", startOfDay(dateRange.from).toISOString())
+              .lte("date", endOfDay(dateRange.to || dateRange.from).toISOString());
+          } else if (filterType === "monthly") {
+            query = query
+              .gte("date", startOfMonth(dateRange.from).toISOString())
+              .lte("date", endOfMonth(dateRange.to || dateRange.from).toISOString());
+          }
         }
+
+        const { data: expenses, error } = await query;
+
+        if (error) {
+          console.error("Error fetching expenses:", error);
+          return null;
+        }
+
+        if (!expenses || !Array.isArray(expenses)) {
+          return { total: 0, byType: {} };
+        }
+
+        const total = expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+        const byType = expenses.reduce((acc, curr) => {
+          if (curr.type) {
+            acc[curr.type] = (acc[curr.type] || 0) + (curr.amount || 0);
+          }
+          return acc;
+        }, {} as Record<string, number>);
+
+        return { total, byType };
+      } catch (error) {
+        console.error("Error processing expenses data:", error);
+        return null;
       }
-
-      const { data: expenses } = await query;
-
-      if (!expenses) return null;
-
-      const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
-      const byType = expenses.reduce((acc, curr) => {
-        acc[curr.type] = (acc[curr.type] || 0) + curr.amount;
-        return acc;
-      }, {} as Record<string, number>);
-
-      return { total, byType };
     },
     enabled: !!shopId,
   });
@@ -66,14 +88,14 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {stats?.total?.toLocaleString()} F CFA
+            {stats?.total?.toLocaleString() || "0"} F CFA
           </div>
         </CardContent>
       </Card>
       {stats?.byType && Object.entries(stats.byType).map(([type, amount]) => (
         <Card key={type}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{typeLabels[type]}</CardTitle>
+            <CardTitle className="text-sm font-medium">{typeLabels[type] || type}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

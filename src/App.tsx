@@ -8,7 +8,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, fixJwtTokenIfNeeded, asStringParam } from "@/integrations/supabase/client";
+import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
@@ -34,6 +35,11 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    // Fix JWT token issues on component mount
+    fixJwtTokenIfNeeded();
+  }, []);
+
+  useEffect(() => {
     const checkAuth = async () => {
       try {
         if (authLoading) {
@@ -49,7 +55,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', asUUID(user.id))
           .maybeSingle();
 
         if (error) {
@@ -59,7 +65,8 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
           return;
         }
 
-        setUserRole(profile?.role || null);
+        const userRoleValue = safeDataAccess(profile, 'role');
+        setUserRole(userRoleValue || null);
         setIsAuthenticated(true);
         setLoading(false);
       } catch (error) {
@@ -114,6 +121,11 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  // Fix JWT token issues on app start
+  useEffect(() => {
+    fixJwtTokenIfNeeded();
+  }, []);
+
   return (
     <ThemeProvider attribute="class" defaultTheme="light">
       <QueryClientProvider client={queryClient}>

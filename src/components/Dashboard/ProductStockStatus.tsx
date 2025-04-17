@@ -12,6 +12,24 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { handleQueryResult } from "@/utils/supabaseHelpers";
+
+// Define a proper type for the product data
+interface ProductData {
+  id: string;
+  name: string;
+  stock: number;
+  price: number;
+  categories: { name: string } | null;
+  last_seller_email: string;
+  sale_items?: Array<{
+    sales?: {
+      employee?: {
+        email?: string;
+      } | null;
+    } | null;
+  }> | null;
+}
 
 export const ProductStockStatus = () => {
   const { toast } = useToast();
@@ -23,35 +41,53 @@ export const ProductStockStatus = () => {
     queryKey: ["products-stock", shopId],
     queryFn: async () => {
       if (!shopId) return [];
-      const { data, error } = await supabase
-        .from("products")
-        .select(`
-          id,
-          name,
-          stock,
-          price,
-          categories (
-            name
-          ),
-          sale_items (
-            sales (
-              employee:profiles!sales_employee_id_fkey (
-                email
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select(`
+            id,
+            name,
+            stock,
+            price,
+            categories (
+              name
+            ),
+            sale_items (
+              sales (
+                employee:profiles!sales_employee_id_fkey (
+                  email
+                )
               )
             )
-          )
-        `)
-        .eq("shop_id", shopId)
-        .order("stock", { ascending: true })
-        .limit(5);
-      
-      if (error) throw error;
+          `)
+          .eq("shop_id", shopId)
+          .order("stock", { ascending: true })
+          .limit(5);
+        
+        if (error) throw error;
+        if (!data) return [];
 
-      // Process the data to get the last seller's email
-      return data.map(product => ({
-        ...product,
-        last_seller_email: product.sale_items?.[0]?.sales?.employee?.email || 'N/A'
-      }));
+        // Process the data to get the last seller's email in a type-safe way
+        return data.map(product => {
+          // Safely extract the product data and check for existence of sale_items
+          const processedProduct = {
+            ...product,
+            last_seller_email: 'N/A'
+          };
+
+          // Safely extract the email if it exists
+          if (product.sale_items && 
+              product.sale_items.length > 0 && 
+              product.sale_items[0]?.sales?.employee?.email) {
+            processedProduct.last_seller_email = product.sale_items[0].sales.employee.email;
+          }
+
+          return processedProduct;
+        }) as ProductData[];
+      } catch (error) {
+        console.error("Error fetching product stock:", error);
+        return [];
+      }
     },
     enabled: !!shopId,
   });
@@ -112,7 +148,7 @@ export const ProductStockStatus = () => {
         <CardTitle>Produits à faible stock</CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant="outline">
-            {products?.filter(p => p.stock <= 5).length || 0} produits en alerte
+            {(products?.filter(p => p.stock <= 5).length || 0)} produits en alerte
           </Badge>
           <Button 
             variant="ghost" 
@@ -197,4 +233,4 @@ export const ProductStockStatus = () => {
       </CardContent>
     </Card>
   );
-}
+};

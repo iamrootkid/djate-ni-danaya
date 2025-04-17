@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,31 +34,13 @@ export const AddExpenseDialog = ({ open, onOpenChange }: AddExpenseDialogProps) 
   const { data: employees } = useQuery({
     queryKey: ["employees", shopId],
     queryFn: async () => {
+      if (!shopId) return [];
       console.log("Fetching employees for shop:", shopId);
       
-      // First try staff table
-      const { data: staffData, error: staffError } = await supabase
-        .from("staff")
-        .select(`
-          id,
-          email,
-          first_name,
-          last_name,
-          role
-        `)
-        .eq("shop_id", shopId);
-
-      console.log("Staff data:", staffData, "Error:", staffError);
-
-      if (staffError) {
-        console.error("Error fetching from staff:", staffError);
-      }
-
-      // If no staff data, try profiles
-      if (!staffData || staffData.length === 0) {
-        console.log("No staff data found, trying profiles...");
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
+      try {
+        // First try staff table
+        const { data: staffData, error: staffError } = await supabase
+          .from("staff")
           .select(`
             id,
             email,
@@ -65,20 +48,44 @@ export const AddExpenseDialog = ({ open, onOpenChange }: AddExpenseDialogProps) 
             last_name,
             role
           `)
-          .eq("shop_id", shopId)
-          .not("role", "eq", "admin");
+          .eq("shop_id", shopId);
 
-        console.log("Profile data:", profileData, "Error:", profileError);
+        console.log("Staff data:", staffData, "Error:", staffError);
 
-        if (profileError) {
-          console.error("Error fetching from profiles:", profileError);
-          throw profileError;
+        if (staffError) {
+          console.error("Error fetching from staff:", staffError);
         }
 
-        return profileData || [];
-      }
+        // If no staff data, try profiles
+        if (!staffData || staffData.length === 0) {
+          console.log("No staff data found, trying profiles...");
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select(`
+              id,
+              email,
+              first_name,
+              last_name,
+              role
+            `)
+            .eq("shop_id", shopId)
+            .not("role", "eq", "admin");
 
-      return staffData;
+          console.log("Profile data:", profileData, "Error:", profileError);
+
+          if (profileError) {
+            console.error("Error fetching from profiles:", profileError);
+            return [];
+          }
+
+          return profileData || [];
+        }
+
+        return staffData;
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+        return [];
+      }
     },
     enabled: !!shopId,
   });
@@ -91,14 +98,24 @@ export const AddExpenseDialog = ({ open, onOpenChange }: AddExpenseDialogProps) 
     }
 
     try {
-      const { error } = await supabase.from("expenses").insert({
-        type,
+      // Create a properly typed expense object
+      const expenseData = {
         amount: Number(amount),
         date: date.toISOString(),
         description,
-        employee_id: ["salary", "commission"].includes(type) ? employeeId : null,
         shop_id: shopId,
-      });
+      } as any;
+
+      // Add type and employee_id conditionally
+      if (type) {
+        expenseData.type = type;
+      }
+      
+      if (["salary", "commission"].includes(type) && employeeId) {
+        expenseData.employee_id = employeeId;
+      }
+
+      const { error } = await supabase.from("expenses").insert(expenseData);
 
       if (error) throw error;
 

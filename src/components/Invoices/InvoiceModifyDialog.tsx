@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
@@ -63,7 +64,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
       try {
         const { data, error } = await supabase.rpc('is_admin');
         if (error) throw error;
-        setIsAdmin(data);
+        setIsAdmin(data === true);
       } catch (error) {
         console.error("Error checking admin status:", error);
         setIsAdmin(false);
@@ -89,7 +90,8 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
           
         if (error) throw error;
         
-        if (data.shop_id !== shopId) {
+        const invoiceShopId = safeDataAccess(data, 'shop_id');
+        if (invoiceShopId !== shopId) {
           setVerificationError("Unauthorized: Invoice does not belong to your shop");
           setShopIdVerified(false);
         } else {
@@ -122,7 +124,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
             name
           )
         `)
-        .eq("sale_id", saleId);
+        .eq("sale_id", asUUID(saleId));
 
       if (error) throw error;
 
@@ -138,21 +140,10 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
         setOriginalItems(formattedItems);
         form.setValue("returnedItems", formattedItems);
-      } else {
-        console.error("Invalid data format:", data);
-        toast({
-          title: "Error",
-          description: "Failed to load sale items: Invalid data format",
-          variant: "destructive",
-        });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching sale items:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load sale items",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load sale items" });
     }
   };
 
@@ -173,7 +164,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     if (open && invoice?.sale_id) {
       fetchSaleItems(invoice.sale_id);
       
-      // Calculate the actual current amount based on the invoice status
       const actualAmount = invoice.is_modified && invoice.new_total_amount !== undefined 
         ? invoice.new_total_amount 
         : invoice.sales?.total_amount || 0;
@@ -242,7 +232,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
           : null
       };
 
-      // Use proper typing for the RPC call
       const { data: modificationResult, error: modificationError } = await supabase.rpc(
         'create_invoice_modification' as any,
         modificationData
@@ -253,35 +242,25 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         throw modificationError;
       }
 
-      // Comprehensive invalidation of all dashboard-related queries
       await Promise.all([
-        // Invoice data
         queryClient.invalidateQueries({ queryKey: ['invoices'] }),
         queryClient.invalidateQueries({ queryKey: ['invoice-modifications', invoice.id] }),
-        
-        // Dashboard stats and components
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard_sales'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] }),
         queryClient.invalidateQueries({ queryKey: ['recent-orders'] }),
-        
-        // Stock-related data
         queryClient.invalidateQueries({ queryKey: ['products-stock'] }),
         queryClient.invalidateQueries({ queryKey: ['inventory-report'] }),
         queryClient.invalidateQueries({ queryKey: ['stock-summary'] }),
-        
-        // Sales analytics
         queryClient.invalidateQueries({ queryKey: ['best-selling-products'] }),
-        
-        // Expense data (for returns)
         queryClient.invalidateQueries({ queryKey: ['expenses'] }),
       ]);
-      
+
       toast({
         title: "Success",
         description: `Invoice has been ${values.modType === "return" ? "processed as a return" : "modified"}. Stock and dashboard have been updated.`,
       });
-      
+
       onModified();
       onClose();
     } catch (error: any) {
@@ -332,7 +311,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Modify Invoice

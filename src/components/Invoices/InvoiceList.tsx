@@ -12,11 +12,31 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
+
 interface InvoiceListProps {
   dateFilter: "all" | "daily" | "monthly";
   startDate: Date | null;
   endDate: Date | null;
 }
+
+interface SaleItem {
+  id: string;
+  quantity: number;
+  returned_quantity?: number;
+  price_at_sale: number;
+  product_id: string;
+  products: {
+    name: string;
+  };
+}
+
+interface Sale {
+  total_amount: number;
+  shop_id: string;
+  sale_items: SaleItem[];
+}
+
 interface Invoice {
   id: string;
   invoice_number: string;
@@ -29,21 +49,9 @@ interface Invoice {
   is_modified?: boolean;
   modification_reason?: string;
   new_total_amount?: number;
-  sales: {
-    total_amount: number;
-    shop_id: string;
-    sale_items: Array<{
-      id: string;
-      quantity: number;
-      returned_quantity?: number;
-      price_at_sale: number;
-      product_id: string;
-      products: {
-        name: string;
-      };
-    }>;
-  };
+  sales: Sale;
 }
+
 export const InvoiceList = ({
   dateFilter,
   startDate,
@@ -51,125 +59,44 @@ export const InvoiceList = ({
 }: InvoiceListProps) => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [modifyingInvoice, setModifyingInvoice] = useState<Invoice | null>(null);
-  const {
-    toast
-  } = useToast();
-  const {
-    shopId
-  } = useShopId();
+  const { toast } = useToast();
+  const { shopId } = useShopId();
   const queryClient = useQueryClient();
+
   useEffect(() => {
     if (!shopId) return;
 
-    // Create a channel for both invoice and modification changes
-    const channel = supabase.channel('invoice-and-modifications').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'invoices',
-      filter: `shop_id=eq.${shopId}`
-    }, payload => {
-      console.log('Invoice change detected:', payload);
-      // Invalidate both invoices and dashboard data
-      queryClient.invalidateQueries({
-        queryKey: ['invoices']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['dashboard_invoices']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['dashboard-stats']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['products-stock']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['inventory-report']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['best-selling-products']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['stock-summary']
-      });
+    const channel = supabase.channel('invoice-and-modifications')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'invoices',
+        filter: `shop_id=eq.${shopId}`
+      }, payload => {
+        console.log('Invoice change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard_invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+        queryClient.invalidateQueries({ queryKey: ['products-stock'] });
+        queryClient.invalidateQueries({ queryKey: ['inventory-report'] });
+        queryClient.invalidateQueries({ queryKey: ['best-selling-products'] });
+        queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
 
-      // Show notification for modified invoices
-      if (payload.eventType === 'UPDATE' && payload.new.is_modified && !payload.old.is_modified) {
-        toast({
-          title: "Invoice Modified",
-          description: `Invoice #${payload.new.invoice_number} has been modified.`,
-          duration: 5000
-        });
-      }
-    }).on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'invoice_modifications',
-      filter: `shop_id=eq.${shopId}`
-    }, payload => {
-      console.log('Invoice modification detected:', payload);
-      // Invalidate both invoices and dashboard data
-      queryClient.invalidateQueries({
-        queryKey: ['invoices']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['dashboard_invoices']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['dashboard-stats']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['products-stock']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['inventory-report']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['best-selling-products']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['stock-summary']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['expenses']
-      });
+        if (payload.eventType === 'UPDATE' && payload.new.is_modified && !payload.old.is_modified) {
+          toast({
+            title: "Invoice Modified",
+            description: `Invoice #${payload.new.invoice_number} has been modified.`,
+            duration: 5000
+          });
+        }
+      })
+      .subscribe();
 
-      // Show notification for new modifications
-      if (payload.eventType === 'INSERT') {
-        toast({
-          title: "Invoice Modification Recorded",
-          description: "The invoice has been modified and all related data has been updated.",
-          duration: 5000
-        });
-      }
-    }).on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'products',
-      filter: `shop_id=eq.${shopId}`
-    }, () => {
-      queryClient.invalidateQueries({
-        queryKey: ['products-stock']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['inventory-report']
-      });
-    }).on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'sale_items',
-      filter: `shop_id=eq.${shopId}`
-    }, () => {
-      queryClient.invalidateQueries({
-        queryKey: ['invoices']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['best-selling-products']
-      });
-    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [queryClient, shopId, toast]);
+
   const {
     data: invoices,
     isLoading,
@@ -182,45 +109,44 @@ export const InvoiceList = ({
         return [];
       }
 
-      // Verify the current user has access to this shop
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      if (!user) {
-        console.error("No authenticated user found");
-        return [];
-      }
-      const {
-        data: userProfile,
-        error: profileError
-      } = await supabase.from("profiles").select("shop_id").eq("id", user.id).single();
-      if (profileError || !userProfile || userProfile.shop_id !== shopId) {
-        console.error("User does not have access to this shop:", {
-          userId: user.id,
-          shopId,
-          profileShopId: userProfile?.shop_id
-        });
-        return [];
-      }
-      console.log("Fetching invoices for verified shop:", shopId);
       try {
-        // Check if returned_quantity column exists
-        const {
-          data: columnExists,
-          error: columnError
-        } = await supabase.rpc('check_column_exists', {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error("No authenticated user found");
+          return [];
+        }
+        
+        const { data: userProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("shop_id")
+          .eq("id", asUUID(user.id))
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          return [];
+        }
+        
+        const userShopId = safeDataAccess(userProfile, 'shop_id');
+        if (!userShopId || userShopId !== shopId) {
+          console.error("User does not have access to this shop");
+          return [];
+        }
+        
+        console.log("Fetching invoices for verified shop:", shopId);
+        
+        const { data: columnExists, error: columnError } = await supabase.rpc('check_column_exists', {
           table_name: 'sale_items',
           column_name: 'returned_quantity'
         });
+        
         if (columnError) {
           console.error("Error checking column:", columnError);
-          // Continue but we'll handle missing column later
+          // Continue but handle missing column
         }
 
-        // Create base query
-        let query = supabase.from("invoices").select(`
+        let query = supabase.from("invoices")
+          .select(`
             *,
             sales!inner (
               total_amount,
@@ -236,64 +162,63 @@ export const InvoiceList = ({
                 )
               )
             )
-          `).eq("shop_id", shopId).eq("sales.shop_id", shopId).order("created_at", {
-          ascending: false
-        });
+          `)
+          .eq("shop_id", shopId)
+          .eq("sales.shop_id", shopId)
+          .order("created_at", { ascending: false });
 
-        // Apply date filters
         if (dateFilter === "daily" && startDate) {
-          query = query.gte("created_at", startOfDay(startDate).toISOString()).lte("created_at", endOfDay(startDate).toISOString());
+          query = query
+            .gte("created_at", startOfDay(startDate).toISOString())
+            .lte("created_at", endOfDay(startDate).toISOString());
         } else if (dateFilter === "monthly" && startDate) {
-          query = query.gte("created_at", startOfMonth(startDate).toISOString()).lte("created_at", endOfMonth(startDate).toISOString());
+          query = query
+            .gte("created_at", startOfMonth(startDate).toISOString())
+            .lte("created_at", endOfMonth(startDate).toISOString());
         } else if (startDate && endDate) {
-          query = query.gte("created_at", startOfDay(startDate).toISOString()).lte("created_at", endOfDay(endDate).toISOString());
+          query = query
+            .gte("created_at", startOfDay(startDate).toISOString())
+            .lte("created_at", endOfDay(endDate).toISOString());
         }
-        const {
-          data,
-          error
-        } = await query;
+        
+        const { data, error } = await query;
+        
         if (error) {
           console.error("Error fetching invoices:", error);
           throw error;
         }
+        
         if (!data || data.length === 0) {
           console.log("No invoices found for shop:", shopId);
           return [];
         }
-        console.log("Raw invoice data for shop:", shopId, data);
-        return data.map(invoice => {
-          if (!invoice) return null;
-          const sale = invoice.sales as {
-            total_amount: number;
-            shop_id: string;
-            sale_items: Array<{
-              id: string;
-              quantity: number;
-              returned_quantity?: number;
-              price_at_sale: number;
-              product_id: string;
-              products: {
-                name: string;
-              };
-            }>;
-          };
-
-          // Double check shop ID match
-          if (sale.shop_id !== shopId) {
-            console.warn("Shop ID mismatch:", {
-              invoiceShopId: invoice.shop_id,
-              saleShopId: sale.shop_id,
-              expectedShopId: shopId
-            });
-            return null;
-          }
-
-          // Return the invoice with properly typed properties
-          return {
-            ...invoice,
-            sales: sale
-          } as Invoice;
-        }).filter(Boolean) as Invoice[];
+        
+        return data
+          .filter(invoice => invoice && invoice.sales)
+          .map(invoice => {
+            if (invoice.sales && invoice.sales.shop_id !== shopId) {
+              console.warn("Shop ID mismatch in invoice");
+              return null;
+            }
+            
+            const typedInvoice: Invoice = {
+              id: invoice.id,
+              invoice_number: invoice.invoice_number,
+              customer_name: invoice.customer_name,
+              customer_phone: invoice.customer_phone,
+              created_at: invoice.created_at,
+              updated_at: invoice.updated_at,
+              shop_id: invoice.shop_id,
+              sale_id: invoice.sale_id,
+              is_modified: invoice.is_modified,
+              modification_reason: invoice.modification_reason,
+              new_total_amount: invoice.new_total_amount,
+              sales: invoice.sales as Sale
+            };
+            
+            return typedInvoice;
+          })
+          .filter((invoice): invoice is Invoice => invoice !== null);
       } catch (error) {
         console.error("Error processing invoices:", error);
         return [];
@@ -301,23 +226,27 @@ export const InvoiceList = ({
     },
     enabled: !!shopId
   });
-  const {
-    data: isAdmin
-  } = useQuery({
+
+  const { data: isAdmin } = useQuery({
     queryKey: ["isAdmin"],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.rpc('is_admin');
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase.rpc('is_admin');
+        if (error) throw error;
+        return !!data;
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        return false;
+      }
     }
   });
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
-  return <div className="space-y-4">
+
+  return (
+    <div className="space-y-4">
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -402,11 +331,25 @@ export const InvoiceList = ({
         </CardContent>
       </Card>
 
-      {selectedInvoice && <InvoiceViewDialog open={!!selectedInvoice} onClose={() => setSelectedInvoice(null)} invoice={selectedInvoice} />}
+      {selectedInvoice && (
+        <InvoiceViewDialog 
+          open={!!selectedInvoice} 
+          onClose={() => setSelectedInvoice(null)} 
+          invoice={selectedInvoice} 
+        />
+      )}
 
-      {modifyingInvoice && <InvoiceModifyDialog open={!!modifyingInvoice} onClose={() => setModifyingInvoice(null)} invoice={modifyingInvoice} onModified={() => {
-      refetch();
-      setModifyingInvoice(null);
-    }} />}
-    </div>;
+      {modifyingInvoice && (
+        <InvoiceModifyDialog 
+          open={!!modifyingInvoice} 
+          onClose={() => setModifyingInvoice(null)} 
+          invoice={modifyingInvoice}
+          onModified={() => {
+            refetch();
+            setModifyingInvoice(null);
+          }}
+        />
+      )}
+    </div>
+  );
 };

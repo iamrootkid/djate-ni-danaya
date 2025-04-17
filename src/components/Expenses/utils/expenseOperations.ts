@@ -2,13 +2,21 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ExpenseType } from "@/types/expense";
+import { asUUID } from "@/utils/supabaseHelpers";
+
+interface ExpenseUpdateData {
+  amount: number;
+  description: string;
+  type: ExpenseType;
+}
 
 export const deleteExpense = async (expenseId: string) => {
   try {
+    // Use proper UUID casting for the ID parameter
     const { error } = await supabase
       .from("expenses")
       .delete()
-      .eq("id", expenseId);
+      .eq("id", asUUID(expenseId));
 
     if (error) throw error;
     
@@ -21,17 +29,23 @@ export const deleteExpense = async (expenseId: string) => {
 
 export const updateExpense = async (
   expenseId: string,
-  data: {
-    amount: number;
-    description: string;
-    type: ExpenseType;
-  }
+  data: ExpenseUpdateData
 ) => {
   try {
+    // Cast the expense type correctly for Supabase
+    const updateData: Record<string, any> = {
+      amount: data.amount,
+      description: data.description
+    };
+    // Only add type if it's valid
+    if (data.type) {
+      updateData.type = data.type;
+    }
+
     const { error } = await supabase
       .from("expenses")
-      .update(data)
-      .eq("id", expenseId);
+      .update(updateData)
+      .eq("id", asUUID(expenseId));
 
     if (error) throw error;
     

@@ -37,3 +37,36 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     setTimeout(() => nextHandler(req), delay);
   }
 });
+
+// Helper function to safely handle Supabase queries with proper typing
+export function asStringParam(param: string | number | boolean): string {
+  return param as unknown as string;
+}
+
+/**
+ * Fix for JWT token expiration issues
+ * This ensures we don't have tokens with excessively long expiration times
+ */
+export async function fixJwtTokenIfNeeded() {
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) return;
+    
+    const token = session.session.access_token;
+    if (!token) return;
+    
+    // Parse JWT to check expiration
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expTime = payload.exp * 1000; // Convert to milliseconds
+    const now = Date.now();
+    
+    // If token expires more than 1 hour from now, refresh it
+    // This prevents issues with excessively long expiration times
+    if (expTime - now > 3600000 || expTime < now) {
+      console.log("Refreshing access token to fix expiration time");
+      await supabase.auth.refreshSession();
+    }
+  } catch (e) {
+    console.error("Error checking JWT token:", e);
+  }
+}
