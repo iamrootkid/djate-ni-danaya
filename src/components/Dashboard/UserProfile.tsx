@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { safeGetProfileData } from "@/utils/supabaseHelpers";
+import { safeGetProfileData, filterByUUID } from "@/utils/supabaseHelpers";
 
 export const UserProfile = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -17,11 +17,11 @@ export const UserProfile = () => {
         if (user) {
           setUserEmail(user.email);
           
-          // Get user role from profiles table
+          // Get user role from profiles table using safe UUID filtering
           const { data: profileData, error } = await supabase
             .from('profiles')
             .select('role')
-            .eq('id', user.id)
+            .match(filterByUUID('id', user.id))
             .maybeSingle();
             
           if (error) {

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { useShopId } from "@/hooks/use-shop-id";
-import { safeGet } from "@/utils/supabaseHelpers";
+import { safeGet, filterByUUID } from "@/utils/supabaseHelpers";
 
 interface ExpensesStatsProps {
   filterType: "all" | "daily" | "monthly";
@@ -28,7 +28,7 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
         let query = supabase
           .from("expenses")
           .select("type, amount")
-          .eq('shop_id', shopId);
+          .match(filterByUUID('shop_id', shopId));
 
         if (filterType !== "all" && dateRange?.from) {
           if (filterType === "daily") {
@@ -53,11 +53,17 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
           return { total: 0, byType: {} };
         }
 
-        const total = expenses.reduce((acc, curr) => acc + safeGet(curr, ['amount'], 0), 0);
+        const total = expenses.reduce((acc, curr) => {
+          const amount = safeGet(curr, ['amount'], 0);
+          return acc + amount;
+        }, 0);
+        
         const byType = expenses.reduce((acc, curr) => {
           const type = safeGet(curr, ['type'], '');
+          const amount = safeGet(curr, ['amount'], 0);
+          
           if (type) {
-            acc[type] = (acc[type] || 0) + safeGet(curr, ['amount'], 0);
+            acc[type] = (acc[type] || 0) + amount;
           }
           return acc;
         }, {} as Record<string, number>);

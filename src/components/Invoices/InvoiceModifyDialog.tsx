@@ -18,7 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
+import { asUUID, safeDataAccess, filterByUUID } from "@/utils/supabaseHelpers";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {
@@ -58,7 +58,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
   const [shopIdVerified, setShopIdVerified] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
 
-  // Check if user is admin
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
@@ -76,7 +75,6 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
     }
   }, [open]);
 
-  // Verify shop ID ownership
   useEffect(() => {
     const verifyShopId = async () => {
       if (!shopId || !invoice?.id) return;
@@ -85,7 +83,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         const { data, error } = await supabase
           .from('invoices')
           .select('shop_id')
-          .eq('id', invoice.id)
+          .match(filterByUUID('id', invoice.id))
           .single();
           
         if (error) throw error;
@@ -124,7 +122,7 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
             name
           )
         `)
-        .eq("sale_id", asUUID(saleId));
+        .match(filterByUUID("sale_id", saleId));
 
       if (error) throw error;
 

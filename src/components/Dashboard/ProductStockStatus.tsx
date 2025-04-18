@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { safeGet } from "@/utils/supabaseHelpers";
+import { safeGet, filterByUUID } from "@/utils/supabaseHelpers";
 
 interface ProductData {
   id: string;
@@ -51,7 +51,7 @@ export const ProductStockStatus = () => {
               )
             )
           `)
-          .eq("shop_id", shopId)
+          .match(filterByUUID("shop_id", shopId))
           .order("stock", { ascending: true })
           .limit(5);
         
@@ -65,7 +65,7 @@ export const ProductStockStatus = () => {
           price: safeGet(product, ['price'], 0),
           categories: safeGet(product, ['categories'], null),
           last_seller_email: safeGet(product, ['sale_items', 0, 'sales', 'employee', 'email'], 'N/A')
-        }));
+        })) as ProductData[];
       } catch (error) {
         console.error("Error fetching product stock:", error);
         return [];

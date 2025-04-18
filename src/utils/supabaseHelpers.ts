@@ -23,8 +23,9 @@ export function handleQueryResult<T>(data: T | PostgrestError): T | null {
 }
 
 // Safe type cast for UUIDs (with explicit return type to fix errors)
-export function asUUID(id: string): string {
-  return id;
+export function asUUID(id: string): `${string}-${string}-${string}-${string}-${string}` {
+  // Cast the string to a properly formatted UUID string type
+  return id as `${string}-${string}-${string}-${string}-${string}`;
 }
 
 // Safe data access with error handling
@@ -83,4 +84,29 @@ export function safeGet<T>(
     console.error(`Error accessing path [${path.join('.')}]:`, e);
     return defaultValue;
   }
+}
+
+// Specific helper for safely filtering by ID with proper UUID formatting
+export function filterByUUID(column: string, id: string) {
+  // This creates a filter condition for any column name with proper UUID typing
+  return { [column]: asUUID(id) };
+}
+
+// Helper to safely handle Supabase query conditions with proper typing
+export function eqFilter(column: string, value: string | number | boolean) {
+  // For columns that expect UUIDs, we need to ensure they're properly formatted
+  if (
+    column.toLowerCase().endsWith('_id') || 
+    column.toLowerCase() === 'id'
+  ) {
+    return typeof value === 'string' ? asUUID(value) : value;
+  }
+  
+  return value;
+}
+
+// Helper to safely extract UUID values from objects
+export function getUUID(data: any, key: string): `${string}-${string}-${string}-${string}-${string}` | null {
+  if (!data || !data[key]) return null;
+  return asUUID(data[key]);
 }

@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { safeGet, safeDataAccess } from "@/utils/supabaseHelpers";
+import { safeGet, safeDataAccess, filterByUUID } from "@/utils/supabaseHelpers";
 
 interface InvoiceListProps {
   dateFilter: "all" | "daily" | "monthly";
@@ -120,7 +119,7 @@ export const InvoiceList = ({
         const { data: userProfile, error: profileError } = await supabase
           .from("profiles")
           .select("shop_id")
-          .eq("id", user.id)
+          .match(filterByUUID("id", user.id))
           .single();
         
         if (profileError) {
@@ -164,9 +163,7 @@ export const InvoiceList = ({
               )
             )
           `)
-          .eq("shop_id", shopId)
-          .eq("sales.shop_id", shopId)
-          .order("created_at", { ascending: false });
+          .match(filterByUUID("shop_id", shopId));
 
         if (dateFilter === "daily" && startDate) {
           query = query
@@ -182,6 +179,8 @@ export const InvoiceList = ({
             .lte("created_at", endOfDay(endDate).toISOString());
         }
         
+        query = query.order("created_at", { ascending: false });
+        
         const { data, error } = await query;
         
         if (error) {
@@ -195,14 +194,14 @@ export const InvoiceList = ({
         }
         
         return data
-          .filter(invoice => invoice && invoice.sales)
+          .filter(invoice => invoice && safeGet(invoice, ['sales'], null))
           .map(invoice => {
             if (safeGet(invoice, ['sales', 'shop_id'], '') !== shopId) {
               console.warn("Shop ID mismatch in invoice");
               return null;
             }
             
-            const typedInvoice: Invoice = {
+            return {
               id: safeGet(invoice, ['id'], ''),
               invoice_number: safeGet(invoice, ['invoice_number'], ''),
               customer_name: safeGet(invoice, ['customer_name'], ''),
@@ -216,10 +215,8 @@ export const InvoiceList = ({
               new_total_amount: safeGet(invoice, ['new_total_amount'], undefined),
               sales: safeGet(invoice, ['sales'], { total_amount: 0, sale_items: [], shop_id: '' })
             };
-            
-            return typedInvoice;
           })
-          .filter((invoice): invoice is Invoice => invoice !== null);
+          .filter(Boolean);
       } catch (error) {
         console.error("Error processing invoices:", error);
         return [];

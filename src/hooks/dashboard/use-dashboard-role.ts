@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { filterByUUID, safeDataAccess } from "@/utils/supabaseHelpers";
 
 export const useDashboardRole = () => {
   const [userRole, setUserRole] = useState<"admin" | "employee">("employee");
@@ -13,7 +15,7 @@ export const useDashboardRole = () => {
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
-          .eq("id", user.id)
+          .match(filterByUUID("id", user.id))
           .single();
 
         if (profile?.role) {
@@ -28,4 +30,4 @@ export const useDashboardRole = () => {
   }, []);
 
   return { userRole };
-}; 
+};

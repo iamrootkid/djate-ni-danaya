@@ -8,18 +8,8 @@ import { useEffect, useState } from "react";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
-import { asUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
+import { asUUID, safeGetProfileData, filterByUUID } from "@/utils/supabaseHelpers";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Products from "./pages/Products";
-import Categories from "./pages/Categories";
-import Sales from "./pages/Sales";
-import Staff from "./pages/Staff";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import Invoices from "./pages/Invoices";
-import Expenses from "./pages/Expenses";
-import Personnel from "@/pages/Personnel";
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -53,7 +43,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', user.id)
+          .match(filterByUUID('id', user.id))
           .maybeSingle();
 
         if (error) {
