@@ -9,6 +9,31 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Queue for rate-limiting requests
+const requestQueue: Array<() => Promise<void>> = [];
+let isProcessingQueue = false;
+
+// Process requests from the queue
+async function processQueue() {
+  if (isProcessingQueue || requestQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  try {
+    // Process requests with a delay between them
+    while (requestQueue.length > 0) {
+      const request = requestQueue.shift();
+      if (request) {
+        await request();
+        // Add a small delay between requests to prevent rate limiting
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+  } finally {
+    isProcessingQueue = false;
+  }
+}
+
 // Configure the client with proper settings to handle token refresh and session persistence
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
@@ -32,9 +57,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   // Add request throttling to avoid rate limit errors
   requestTransformer: (req, nextHandler) => {
-    // Add a small random delay to stagger requests
-    const delay = Math.random() * 300;
-    setTimeout(() => nextHandler(req), delay);
+    // Add to queue instead of random delay
+    requestQueue.push(() => new Promise<void>((resolve) => {
+      nextHandler(req);
+      resolve();
+    }));
+    
+    // Start processing the queue if not already
+    setTimeout(() => {
+      processQueue();
+    }, 0);
   }
 });
 
@@ -69,4 +101,40 @@ export async function fixJwtTokenIfNeeded() {
   } catch (e) {
     console.error("Error checking JWT token:", e);
   }
+}
+
+// Rate limiting cache
+const rateLimitCache = new Map<string, { timestamp: number, count: number }>();
+
+/**
+ * Helper to check if a request should be rate limited
+ * @param key Unique identifier for the request type
+ * @param maxRequests Maximum requests allowed per window
+ * @param windowMs Time window in milliseconds
+ * @returns Boolean indicating if the request should be throttled
+ */
+export function shouldRateLimit(key: string, maxRequests = 5, windowMs = 1000): boolean {
+  const now = Date.now();
+  const cacheKey = `rate_limit_${key}`;
+  
+  // Get or initialize cache entry
+  const entry = rateLimitCache.get(cacheKey) || { timestamp: now, count: 0 };
+  
+  // Reset if window has passed
+  if (now - entry.timestamp > windowMs) {
+    entry.timestamp = now;
+    entry.count = 1;
+    rateLimitCache.set(cacheKey, entry);
+    return false;
+  }
+  
+  // Check if limit is exceeded
+  if (entry.count >= maxRequests) {
+    return true;
+  }
+  
+  // Increment counter
+  entry.count++;
+  rateLimitCache.set(cacheKey, entry);
+  return false;
 }

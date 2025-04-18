@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { MobileMenu } from "./MobileMenu";
@@ -5,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { filterByUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
+import { filterByUUID, safeGetProfileData, isValidRole, hasRole } from "@/utils/supabaseHelpers";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -30,7 +31,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         }
         
         const role = safeGetProfileData(data, 'role', 'employee');
-        if (role === 'admin' || role === 'employee') {
+        if (isValidRole(role)) {
           setUserRole(role);
         }
       }

@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, shouldRateLimit } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
@@ -57,25 +57,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // Store request timestamps to implement throttling
-    const requestTimes: number[] = [];
-    const MAX_REQUESTS_PER_MINUTE = 5;
-    const ONE_MINUTE = 60 * 1000;
-
-    const shouldThrottle = () => {
-      const now = Date.now();
-      // Remove timestamps older than 1 minute
-      while (requestTimes.length > 0 && requestTimes[0] < now - ONE_MINUTE) {
-        requestTimes.shift();
-      }
-      // Check if we've made too many requests in the last minute
-      return requestTimes.length >= MAX_REQUESTS_PER_MINUTE;
-    };
-
-    const trackRequest = () => {
-      requestTimes.push(Date.now());
-    };
-
     let mounted = true;
 
     // Set up auth state listener FIRST
@@ -116,14 +97,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // THEN check for existing session (with throttling)
     const getInitialSession = async () => {
       try {
-        if (shouldThrottle()) {
+        if (shouldRateLimit('auth-session', 3, 10000)) {
           console.log("Throttling session check to avoid rate limits");
-          setError(new Error("Too many authentication requests. Please try again later."));
-          setLoading(false);
-          return;
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a second
         }
 
-        trackRequest();
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {

@@ -1,10 +1,11 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, shouldRateLimit } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { safeQueryWithRateLimit } from "@/utils/supabaseHelpers";
 
 // Create a cache for shop IDs to reduce redundant fetches
 type ShopCache = {
@@ -58,40 +59,44 @@ export const useShopId = () => {
       }
 
       console.log("Refreshing shop ID for user:", user.id);
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("shop_id")
-        .eq("id", user.id)
-        .maybeSingle();
+      
+      // Use rate-limited safe query
+      return safeQueryWithRateLimit(`shop-id-refresh-${user.id}`, async () => {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("shop_id")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching shop ID:", error);
-        if (error.code === "406" || error.code === "429") {
-          toast.error("Erreur de connexion au serveur. Veuillez vous reconnecter.");
-          await supabase.auth.signOut();
-          navigate("/login");
+        if (error) {
+          console.error("Error fetching shop ID:", error);
+          if (error.code === "406" || error.code === "429") {
+            toast.error("Erreur de connexion au serveur. Veuillez vous reconnecter.");
+            await supabase.auth.signOut();
+            navigate("/login");
+            return null;
+          }
           return null;
         }
-        return null;
-      }
-      
-      if (!profile?.shop_id) {
-        console.warn("User has no associated shop ID");
-        return null;
-      }
-      
-      // Update local storage with current shop ID and cache
-      console.log("Setting shop ID in localStorage:", profile.shop_id);
-      localStorage.setItem("shopId", profile.shop_id);
-      
-      // Update the cache
-      const cacheData: ShopCache = {
-        id: profile.shop_id,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(SHOP_CACHE_KEY, JSON.stringify(cacheData));
-      
-      return profile.shop_id;
+        
+        if (!profile?.shop_id) {
+          console.warn("User has no associated shop ID");
+          return null;
+        }
+        
+        // Update local storage with current shop ID and cache
+        console.log("Setting shop ID in localStorage:", profile.shop_id);
+        localStorage.setItem("shopId", profile.shop_id);
+        
+        // Update the cache
+        const cacheData: ShopCache = {
+          id: profile.shop_id,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(SHOP_CACHE_KEY, JSON.stringify(cacheData));
+        
+        return profile.shop_id;
+      });
     } catch (error) {
       console.error("Error in refreshShopId:", error);
       return null;

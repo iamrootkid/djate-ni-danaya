@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
+import { supabase, fixJwtTokenIfNeeded, shouldRateLimit } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LoginFormValues } from "@/components/auth/schemas/loginSchema";
 import { getErrorMessage } from "@/components/auth/utils/authErrorUtils";
@@ -18,19 +18,14 @@ export const useLogin = (role: 'admin' | 'employee') => {
     setLoading(true);
     
     try {
-      // Rate limiting check - simple client-side implementation
-      const now = Date.now();
-      const lastLoginAttempt = parseInt(localStorage.getItem('lastLoginAttempt') || '0');
-      const loginAttempts = parseInt(localStorage.getItem('loginAttempts') || '0');
-      const cooldownPeriod = 60000; // 1 minute
-      
-      if (now - lastLoginAttempt < cooldownPeriod && loginAttempts >= 5) {
-        throw new Error(`Trop de tentatives de connexion. Veuillez réessayer dans ${Math.ceil((cooldownPeriod - (now - lastLoginAttempt)) / 1000)} secondes.`);
+      // Rate limiting check - improved implementation
+      if (shouldRateLimit('login', 3, 60000)) { // Max 3 login attempts per minute
+        throw new Error(`Trop de tentatives de connexion. Veuillez réessayer dans quelques minutes.`);
       }
       
-      // Update login attempt tracking
+      // Record login attempt for tracking
+      const now = Date.now();
       localStorage.setItem('lastLoginAttempt', now.toString());
-      localStorage.setItem('loginAttempts', (now - lastLoginAttempt >= cooldownPeriod ? 1 : loginAttempts + 1).toString());
       
       // Check if shop exists - use cache if available to reduce API calls
       let shopExists = shopCache.get(shopId);
@@ -56,6 +51,9 @@ export const useLogin = (role: 'admin' | 'employee') => {
 
       // Clear any existing sessions before login to prevent conflicts
       await supabase.auth.signOut();
+      
+      // Wait before authentication to help with rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Authenticate the user
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -84,6 +82,9 @@ export const useLogin = (role: 'admin' | 'employee') => {
       // Reset login attempts counter on successful login
       localStorage.removeItem('loginAttempts');
 
+      // Wait before checking profile to prevent rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Fetch the user's profile to check their role and shop_id
       const { data: profile, error: profileError } = await supabase
         .from('profiles')

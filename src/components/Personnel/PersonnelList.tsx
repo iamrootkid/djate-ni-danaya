@@ -1,8 +1,12 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button"; 
+import { Pencil, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Database } from "@/types/supabase";
+import { safeQueryWithRateLimit, safeTypeAssert } from "@/utils/supabaseHelpers";
 
 type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
 
@@ -19,14 +23,18 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
     queryFn: async () => {
       if (!shopId) return [];
       
-      const { data, error } = await supabase
-        .from("staff")
-        .select("*")
-        .eq("shop_id", shopId)
-        .order("created_at", { ascending: false });
+      return safeQueryWithRateLimit(`personnel-${shopId}`, async () => {
+        const { data, error } = await supabase
+          .from("staff")
+          .select("*")
+          .eq("shop_id", shopId)
+          .order("created_at", { ascending: false });
+          
+        if (error) throw error;
         
-      if (error) throw error;
-      return data as StaffMember[];
+        // Use type assertion with fallback for safety
+        return safeTypeAssert<StaffMember[]>(data, []);
+      });
     },
     enabled: !!shopId,
   });
