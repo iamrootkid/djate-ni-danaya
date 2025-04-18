@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,26 +55,23 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // Get current user's session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         throw new Error("No authenticated user found");
       }
 
-      // Get user's profile to get the shop ID
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('shop_id')
         .eq('id', session.user.id)
         .single();
 
-      if (profileError || !profile?.shop_id) {
+      if (profileError || !profile) {
         throw new Error("Failed to get shop information");
       }
 
       const shopId = profile.shop_id;
 
-      // Use the built-in Supabase function invoker instead of direct fetch
       const { data: result, error } = await supabase.functions.invoke('create-employee', {
         body: {
           firstName: data.first_name,
@@ -94,14 +90,12 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
         console.error('Edge Function Error:', error);
         let errorMessage = error.message || "Failed to create employee";
         
-        // Try to extract more detailed error from the message if it's JSON
         try {
           const errorData = JSON.parse(error.message);
           if (errorData.error) {
             errorMessage = errorData.error;
           }
         } catch (e) {
-          // If JSON parsing fails, use the original error message
         }
         
         throw new Error(errorMessage);

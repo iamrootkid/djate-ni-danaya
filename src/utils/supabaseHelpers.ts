@@ -1,4 +1,3 @@
-
 import { PostgrestError } from "@supabase/supabase-js";
 import { Database } from "@/integrations/supabase/types";
 
@@ -109,4 +108,20 @@ export function eqFilter(column: string, value: string | number | boolean) {
 export function getUUID(data: any, key: string): `${string}-${string}-${string}-${string}-${string}` | null {
   if (!data || !data[key]) return null;
   return asUUID(data[key]);
+}
+
+// Specific helper for database field matching
+export function matchFilter(column: string, value: string | number | boolean) {
+  return { [column]: value };
+}
+
+// Type guard for user role
+export function isValidRole(role: string): role is "admin" | "employee" {
+  return role === "admin" || role === "employee";
+}
+
+// Safe data access with type assertion
+export function safeGetData<T>(data: any | null | undefined, defaultValue: T): T {
+  if (!data) return defaultValue;
+  return data as T;
 }

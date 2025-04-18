@@ -1,18 +1,8 @@
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Database } from "@/types/supabase";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
 
 type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
 
@@ -23,17 +13,18 @@ interface PersonnelListProps {
 
 export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
   const { shopId } = useShopId();
-
-  const { data: personnel, isLoading } = useQuery({
+  
+  const { data: employees, isLoading } = useQuery({
     queryKey: ["personnel", shopId],
     queryFn: async () => {
       if (!shopId) return [];
+      
       const { data, error } = await supabase
         .from("staff")
         .select("*")
         .eq("shop_id", shopId)
         .order("created_at", { ascending: false });
-
+        
       if (error) throw error;
       return data as StaffMember[];
     },
@@ -44,7 +35,7 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
     return <div>Loading...</div>;
   }
 
-  if (!personnel?.length) {
+  if (!employees?.length) {
     return <div className="text-center text-muted-foreground">No personnel found</div>;
   }
 
@@ -59,7 +50,7 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {personnel.map((member) => (
+        {employees.map((member) => (
           <TableRow key={member.id}>
             <TableCell>{`${member.first_name} ${member.last_name}`}</TableCell>
             <TableCell>{member.email}</TableCell>

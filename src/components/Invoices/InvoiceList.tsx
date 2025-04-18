@@ -239,6 +239,23 @@ export const InvoiceList = ({
     }
   });
 
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", shopId],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   if (isLoading) {
     return <div>Loading...</div>;
   }

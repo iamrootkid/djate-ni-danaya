@@ -51,7 +51,7 @@ export const ProductStockStatus = () => {
               )
             )
           `)
-          .match(filterByUUID("shop_id", shopId))
+          .eq("shop_id", shopId)
           .order("stock", { ascending: true })
           .limit(5);
         
@@ -59,13 +59,13 @@ export const ProductStockStatus = () => {
         if (!data) return [];
 
         return data.map(product => ({
-          id: safeGet(product, ['id'], ''),
-          name: safeGet(product, ['name'], ''),
-          stock: safeGet(product, ['stock'], 0),
-          price: safeGet(product, ['price'], 0),
-          categories: safeGet(product, ['categories'], null),
-          last_seller_email: safeGet(product, ['sale_items', 0, 'sales', 'employee', 'email'], 'N/A')
-        })) as ProductData[];
+          id: product.id || '',
+          name: product.name || '',
+          stock: Number(product.stock) || 0,
+          price: Number(product.price) || 0,
+          categories: product.categories || null,
+          last_seller_email: product.sale_items?.[0]?.sales?.employee?.email || 'N/A'
+        }));
       } catch (error) {
         console.error("Error fetching product stock:", error);
         return [];
