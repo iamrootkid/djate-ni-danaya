@@ -34,7 +34,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Fix JWT token issues on component mount
     fixJwtTokenIfNeeded();
   }, []);
 
@@ -54,7 +53,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', asUUID(user.id))
+          .eq('id', user.id)
           .maybeSingle();
 
         if (error) {
@@ -64,7 +63,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
           return;
         }
 
-        // Use safe helper to get role value
         const role = safeGetProfileData(profile, 'role', 'employee');
         setUserRole(role);
         setIsAuthenticated(true);
@@ -87,7 +85,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
     return <Navigate to="/login" replace />;
   }
 
-  // Special case for the sales route - redirect admins to dashboard
   if (userRole === 'admin' && window.location.pathname === '/sales') {
     return <Navigate to="/dashboard" replace />;
   }
@@ -103,7 +100,6 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        // Don't retry on 401/403 auth errors or 429 rate limit errors
         if (
           error instanceof Error &&
           'status' in (error as any) &&
@@ -115,13 +111,12 @@ const queryClient = new QueryClient({
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
-      staleTime: 60000, // 1 minute
+      staleTime: 60000,
     },
   },
 });
 
 const App = () => {
-  // Fix JWT token issues on app start
   useEffect(() => {
     fixJwtTokenIfNeeded();
   }, []);

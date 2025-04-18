@@ -1,8 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ExpenseType } from "@/types/expense";
-import { asUUID } from "@/utils/supabaseHelpers";
 
 interface ExpenseUpdateData {
   amount: number;
@@ -12,11 +10,11 @@ interface ExpenseUpdateData {
 
 export const deleteExpense = async (expenseId: string) => {
   try {
-    // Use proper UUID casting for the ID parameter
+    // Use proper UUID handling for the ID parameter
     const { error } = await supabase
       .from("expenses")
       .delete()
-      .eq("id", asUUID(expenseId));
+      .eq("id", expenseId);
 
     if (error) throw error;
     
@@ -45,7 +43,7 @@ export const updateExpense = async (
     const { error } = await supabase
       .from("expenses")
       .update(updateData)
-      .eq("id", asUUID(expenseId));
+      .eq("id", expenseId);
 
     if (error) throw error;
     

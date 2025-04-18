@@ -22,9 +22,9 @@ export function handleQueryResult<T>(data: T | PostgrestError): T | null {
   return data;
 }
 
-// Safe type cast for UUIDs to handle string vs UUID type mismatches
-export function asUUID(id: string): unknown {
-  return id as unknown;
+// Safe type cast for UUIDs (with explicit return type to fix errors)
+export function asUUID(id: string): string {
+  return id;
 }
 
 // Safe data access with error handling

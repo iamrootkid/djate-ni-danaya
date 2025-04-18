@@ -1,3 +1,4 @@
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
+import { safeGet, safeDataAccess } from "@/utils/supabaseHelpers";
 
 interface InvoiceListProps {
   dateFilter: "all" | "daily" | "monthly";
@@ -119,7 +120,7 @@ export const InvoiceList = ({
         const { data: userProfile, error: profileError } = await supabase
           .from("profiles")
           .select("shop_id")
-          .eq("id", asUUID(user.id))
+          .eq("id", user.id)
           .single();
         
         if (profileError) {
@@ -196,24 +197,24 @@ export const InvoiceList = ({
         return data
           .filter(invoice => invoice && invoice.sales)
           .map(invoice => {
-            if (invoice.sales && invoice.sales.shop_id !== shopId) {
+            if (safeGet(invoice, ['sales', 'shop_id'], '') !== shopId) {
               console.warn("Shop ID mismatch in invoice");
               return null;
             }
             
             const typedInvoice: Invoice = {
-              id: invoice.id,
-              invoice_number: invoice.invoice_number,
-              customer_name: invoice.customer_name,
-              customer_phone: invoice.customer_phone,
-              created_at: invoice.created_at,
-              updated_at: invoice.updated_at,
-              shop_id: invoice.shop_id,
-              sale_id: invoice.sale_id,
-              is_modified: invoice.is_modified,
-              modification_reason: invoice.modification_reason,
-              new_total_amount: invoice.new_total_amount,
-              sales: invoice.sales as Sale
+              id: safeGet(invoice, ['id'], ''),
+              invoice_number: safeGet(invoice, ['invoice_number'], ''),
+              customer_name: safeGet(invoice, ['customer_name'], ''),
+              customer_phone: safeGet(invoice, ['customer_phone'], undefined),
+              created_at: safeGet(invoice, ['created_at'], ''),
+              updated_at: safeGet(invoice, ['updated_at'], ''),
+              shop_id: safeGet(invoice, ['shop_id'], ''),
+              sale_id: safeGet(invoice, ['sale_id'], ''),
+              is_modified: safeGet(invoice, ['is_modified'], false),
+              modification_reason: safeGet(invoice, ['modification_reason'], undefined),
+              new_total_amount: safeGet(invoice, ['new_total_amount'], undefined),
+              sales: safeGet(invoice, ['sales'], { total_amount: 0, sale_items: [], shop_id: '' })
             };
             
             return typedInvoice;
