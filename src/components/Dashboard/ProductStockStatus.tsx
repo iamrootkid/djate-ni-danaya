@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
@@ -12,9 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { handleQueryResult } from "@/utils/supabaseHelpers";
+import { handleQueryResult, safeGet } from "@/utils/supabaseHelpers";
 
-// Define a proper type for the product data
 interface ProductData {
   id: string;
   name: string;
@@ -22,13 +20,6 @@ interface ProductData {
   price: number;
   categories: { name: string } | null;
   last_seller_email: string;
-  sale_items?: Array<{
-    sales?: {
-      employee?: {
-        email?: string;
-      } | null;
-    } | null;
-  }> | null;
 }
 
 export const ProductStockStatus = () => {
@@ -67,23 +58,23 @@ export const ProductStockStatus = () => {
         if (error) throw error;
         if (!data) return [];
 
-        // Process the data to get the last seller's email in a type-safe way
         return data.map(product => {
-          // Safely extract the product data and check for existence of sale_items
-          const processedProduct = {
-            ...product,
+          const processedProduct: ProductData = {
+            id: product.id || '',
+            name: product.name || '',
+            stock: product.stock || 0,
+            price: product.price || 0,
+            categories: product.categories || null,
             last_seller_email: 'N/A'
           };
 
-          // Safely extract the email if it exists
-          if (product.sale_items && 
-              product.sale_items.length > 0 && 
-              product.sale_items[0]?.sales?.employee?.email) {
-            processedProduct.last_seller_email = product.sale_items[0].sales.employee.email;
+          const email = safeGet(product, ['sale_items', 0, 'sales', 'employee', 'email'], 'N/A');
+          if (email !== 'N/A') {
+            processedProduct.last_seller_email = email;
           }
 
           return processedProduct;
-        }) as ProductData[];
+        });
       } catch (error) {
         console.error("Error fetching product stock:", error);
         return [];
@@ -92,7 +83,6 @@ export const ProductStockStatus = () => {
     enabled: !!shopId,
   });
 
-  // Set up real-time subscription for product stock changes
   useEffect(() => {
     if (!shopId) return;
 
@@ -109,12 +99,10 @@ export const ProductStockStatus = () => {
         (payload) => {
           console.log("Product stock change detected:", payload);
           
-          // Invalidate relevant queries
           queryClient.invalidateQueries({ queryKey: ['products-stock'] });
           queryClient.invalidateQueries({ queryKey: ['inventory-report'] });
           queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
           
-          // Show notification for low stock
           if (payload.eventType === 'UPDATE') {
             const newStock = (payload.new as any).stock;
             const productName = (payload.new as any).name;

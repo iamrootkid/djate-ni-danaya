@@ -33,7 +33,7 @@ export const updateExpense = async (
 ) => {
   try {
     // Cast the expense type correctly for Supabase
-    const updateData: Record<string, any> = {
+    const updateData: any = {
       amount: data.amount,
       description: data.description
     };

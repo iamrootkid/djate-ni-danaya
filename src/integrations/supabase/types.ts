@@ -581,8 +581,8 @@ export type Database = {
       }
       get_stock_summary: {
         Args:
-          | { start_date: string; filter_type: string; shop_id: string }
           | { start_date: string; filter_type: string }
+          | { start_date: string; filter_type: string; shop_id: string }
           | { start_date: string; filter_type: string; shop_id: string }
         Returns: {
           total_income: number

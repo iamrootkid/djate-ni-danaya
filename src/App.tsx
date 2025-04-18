@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,8 +7,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { supabase, fixJwtTokenIfNeeded, asStringParam } from "@/integrations/supabase/client";
-import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
+import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
+import { asUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
@@ -65,8 +64,9 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
           return;
         }
 
-        const userRoleValue = safeDataAccess(profile, 'role');
-        setUserRole(userRoleValue || null);
+        // Use safe helper to get role value
+        const role = safeGetProfileData(profile, 'role', 'employee');
+        setUserRole(role);
         setIsAuthenticated(true);
         setLoading(false);
       } catch (error) {

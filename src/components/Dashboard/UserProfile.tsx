@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
+import { asUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
 
 export const UserProfile = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -29,10 +29,9 @@ export const UserProfile = () => {
             return;
           }
           
-          const roleValue = safeDataAccess(profileData, 'role');
-          if (roleValue) {
-            setUserRole(roleValue);
-          }
+          // Use the safe helper function to extract the role
+          const role = safeGetProfileData(profileData, 'role', 'User');
+          setUserRole(role);
         }
       } catch (err) {
         console.error("Error fetching user data:", err);
