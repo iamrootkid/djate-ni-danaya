@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,18 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
 import { asUUID, safeGetProfileData, filterByUUID } from "@/utils/supabaseHelpers";
+
+// Import all page components
+import Dashboard from "./pages/Dashboard";
+import Categories from "./pages/Categories";
+import Products from "./pages/Products";
+import Sales from "./pages/Sales";
+import Staff from "./pages/Staff";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import Invoices from "./pages/Invoices";
+import Expenses from "./pages/Expenses";
+import Personnel from "./pages/Personnel";
 import Login from "./pages/Login";
 
 const LoadingSpinner = () => (

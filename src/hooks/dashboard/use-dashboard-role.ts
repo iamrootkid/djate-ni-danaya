@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { filterByUUID, safeDataAccess } from "@/utils/supabaseHelpers";
+import { filterByUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
 
 export const useDashboardRole = () => {
   const [userRole, setUserRole] = useState<"admin" | "employee">("employee");
@@ -12,14 +12,20 @@ export const useDashboardRole = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: profile } = await supabase
+        const { data, error } = await supabase
           .from("profiles")
           .select("role")
           .match(filterByUUID("id", user.id))
           .single();
 
-        if (profile?.role) {
-          setUserRole(profile.role as "admin" | "employee");
+        if (error) {
+          console.error("Error fetching user role:", error);
+          return;
+        }
+        
+        const role = safeGetProfileData(data, 'role', 'employee');
+        if (role === 'admin' || role === 'employee') {
+          setUserRole(role as "admin" | "employee");
         }
       } catch (error) {
         console.error("Error fetching user role:", error);

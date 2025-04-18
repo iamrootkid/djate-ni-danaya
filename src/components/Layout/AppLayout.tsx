@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { filterByUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -18,14 +19,20 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     const getRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', session.user.id)
+          .match(filterByUUID('id', session.user.id))
           .single();
         
-        if (data?.role) {
-          setUserRole(data.role as "employee" | "admin");
+        if (error) {
+          console.error("Error fetching user role:", error);
+          return;
+        }
+        
+        const role = safeGetProfileData(data, 'role', 'employee');
+        if (role === 'admin' || role === 'employee') {
+          setUserRole(role);
         }
       }
     };

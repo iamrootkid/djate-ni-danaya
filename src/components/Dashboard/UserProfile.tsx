@@ -18,7 +18,7 @@ export const UserProfile = () => {
           setUserEmail(user.email);
           
           // Get user role from profiles table using safe UUID filtering
-          const { data: profileData, error } = await supabase
+          const { data, error } = await supabase
             .from('profiles')
             .select('role')
             .match(filterByUUID('id', user.id))
@@ -30,7 +30,7 @@ export const UserProfile = () => {
           }
           
           // Use the safe helper function to extract the role
-          const role = safeGetProfileData(profileData, 'role', 'User');
+          const role = safeGetProfileData(data, 'role', 'User');
           setUserRole(role);
         }
       } catch (err) {
