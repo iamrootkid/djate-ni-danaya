@@ -2,9 +2,7 @@
 import { PostgrestError } from "@supabase/supabase-js";
 import { Database } from "@/integrations/supabase/types";
 
-/**
- * Type guard to check if a value is a PostgrestError
- */
+// Type guard to check if a value is a PostgrestError
 export function isPostgrestError(error: unknown): error is PostgrestError {
   return (
     typeof error === "object" && 
@@ -15,9 +13,7 @@ export function isPostgrestError(error: unknown): error is PostgrestError {
   );
 }
 
-/**
- * Helper to safely handle potential query errors in the data
- */
+// Helper to safely handle potential query errors in the data
 export function handleQueryResult<T>(data: T | PostgrestError): T | null {
   if (isPostgrestError(data)) {
     console.error("Query error:", data);
@@ -26,20 +22,12 @@ export function handleQueryResult<T>(data: T | PostgrestError): T | null {
   return data;
 }
 
-/**
- * Safe type cast for UUIDs to handle string vs UUID type mismatches
- * This properly converts a string to the type expected by Supabase filters
- */
-export function asUUID(id: string): any {
-  // We use 'any' here to bypass TypeScript's strict checking
-  // since Supabase's typing expects a specific UUID type
-  return id;
+// Safe type cast for UUIDs to handle string vs UUID type mismatches
+export function asUUID(id: string): unknown {
+  return id as unknown;
 }
 
-/**
- * Safe data access with error handling
- * Helps prevent "property does not exist on type" errors
- */
+// Safe data access with error handling
 export function safeDataAccess<T extends object, K extends keyof T>(
   data: T | PostgrestError | null | undefined, 
   key: K
@@ -50,9 +38,7 @@ export function safeDataAccess<T extends object, K extends keyof T>(
   return data[key];
 }
 
-/**
- * Type-safe way to access string properties from Supabase query results
- */
+// Type-safe way to access string properties from Supabase query results
 export function safeGetString(
   data: any | PostgrestError | null | undefined,
   key: string
@@ -64,9 +50,7 @@ export function safeGetString(
   return typeof value === 'string' ? value : undefined;
 }
 
-/**
- * Safe helper for handling profile data access
- */
+// Safe helper for handling profile data access
 export function safeGetProfileData<T>(
   profile: any | PostgrestError | null | undefined,
   field: string,
@@ -80,10 +64,7 @@ export function safeGetProfileData<T>(
   return value !== undefined && value !== null ? value as T : defaultValue;
 }
 
-/**
- * Safe helper for handling complex nested data structures
- * Particularly useful for Supabase join queries
- */
+// Safe helper for handling complex nested data structures
 export function safeGet<T>(
   obj: any | null | undefined,
   path: string[],

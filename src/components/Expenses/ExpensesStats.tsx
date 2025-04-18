@@ -1,10 +1,10 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { useShopId } from "@/hooks/use-shop-id";
+import { safeGet } from "@/utils/supabaseHelpers";
 
 interface ExpensesStatsProps {
   filterType: "all" | "daily" | "monthly";
@@ -53,10 +53,11 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
           return { total: 0, byType: {} };
         }
 
-        const total = expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+        const total = expenses.reduce((acc, curr) => acc + safeGet(curr, ['amount'], 0), 0);
         const byType = expenses.reduce((acc, curr) => {
-          if (curr.type) {
-            acc[curr.type] = (acc[curr.type] || 0) + (curr.amount || 0);
+          const type = safeGet(curr, ['type'], '');
+          if (type) {
+            acc[type] = (acc[type] || 0) + safeGet(curr, ['amount'], 0);
           }
           return acc;
         }, {} as Record<string, number>);

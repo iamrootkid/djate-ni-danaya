@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertTriangle, AlertCircle, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { handleQueryResult, safeGet } from "@/utils/supabaseHelpers";
+import { safeGet } from "@/utils/supabaseHelpers";
 
 interface ProductData {
   id: string;
@@ -58,23 +58,14 @@ export const ProductStockStatus = () => {
         if (error) throw error;
         if (!data) return [];
 
-        return data.map(product => {
-          const processedProduct: ProductData = {
-            id: product.id || '',
-            name: product.name || '',
-            stock: product.stock || 0,
-            price: product.price || 0,
-            categories: product.categories || null,
-            last_seller_email: 'N/A'
-          };
-
-          const email = safeGet(product, ['sale_items', 0, 'sales', 'employee', 'email'], 'N/A');
-          if (email !== 'N/A') {
-            processedProduct.last_seller_email = email;
-          }
-
-          return processedProduct;
-        });
+        return data.map(product => ({
+          id: safeGet(product, ['id'], ''),
+          name: safeGet(product, ['name'], ''),
+          stock: safeGet(product, ['stock'], 0),
+          price: safeGet(product, ['price'], 0),
+          categories: safeGet(product, ['categories'], null),
+          last_seller_email: safeGet(product, ['sale_items', 0, 'sales', 'employee', 'email'], 'N/A')
+        }));
       } catch (error) {
         console.error("Error fetching product stock:", error);
         return [];
