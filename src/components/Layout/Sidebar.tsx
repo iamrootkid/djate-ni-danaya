@@ -6,47 +6,64 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserProfile } from "@/components/Dashboard/UserProfile";
 
-// Define admin menu items separately from employee items
-const adminMenuItems = [{
-  href: "/dashboard",
-  label: "Tableau de bord",
-  icon: LayoutDashboard
-}, {
-  href: "/categories",
-  label: "Catégories",
-  icon: Tags
-}, {
-  href: "/products",
-  label: "Produits",
-  icon: Package
-}, {
-  href: "/staff",
-  label: "Personnel",
-  icon: Users
-}, {
-  href: "/expenses",
-  label: "Dépenses",
-  icon: DollarSign
-}, {
-  href: "/reports",
-  label: "Rapports",
-  icon: FileBarChart2
-}, {
-  href: "/invoices",
-  label: "Factures",
-  icon: Receipt
-}, {
-  href: "/settings",
-  label: "Paramètres",
-  icon: Settings
-}];
+// Define menu items with role restrictions
+const menuItems = [
+  {
+    href: "/dashboard",
+    label: "Tableau de bord",
+    icon: LayoutDashboard,
+    roles: ["admin"]
+  },
+  {
+    href: "/categories",
+    label: "Catégories",
+    icon: Tags,
+    roles: ["admin"]
+  },
+  {
+    href: "/products",
+    label: "Produits",
+    icon: Package,
+    roles: ["admin"]
+  },
+  {
+    href: "/staff",
+    label: "Personnel",
+    icon: Users,
+    roles: ["admin"]
+  },
+  {
+    href: "/expenses",
+    label: "Dépenses",
+    icon: DollarSign,
+    roles: ["admin"]
+  },
+  {
+    href: "/reports",
+    label: "Rapports",
+    icon: FileBarChart2,
+    roles: ["admin"]
+  },
+  {
+    href: "/invoices",
+    label: "Factures",
+    icon: Receipt,
+    roles: ["admin"]
+  },
+  {
+    href: "/settings",
+    label: "Paramètres",
+    icon: Settings,
+    roles: ["admin"]
+  },
+  {
+    href: "/sales",
+    label: "Ventes",
+    icon: Store,
+    roles: ["employee"]
+  }
+];
 
-// Employee-specific menu items
-const employeeMenuItems = [{
-  href: "/sales",
-  label: "Ventes",
-  icon: Store
-}];
 const Navigation = ({
   userRole
 }: {
@@ -55,58 +72,70 @@ const Navigation = ({
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
-  // Only show admin menu items for admins, and employee items for employees
-  // We ensure that admin users never see the Sales menu item
-  const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
-  return <SidebarMenu>
-      {menuItems.map(({
-      href,
-      label,
-      icon: Icon
-    }) => <SidebarMenuItem key={href}>
-          <SidebarMenuButton asChild isActive={isActive(href)} className={`w-full justify-start transition-colors duration-200 ${isActive(href) ? "bg-primary/10 text-primary font-medium hover:bg-primary/20" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"}`}>
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter(item => item.roles.includes(userRole));
+
+  return (
+    <SidebarMenu>
+      {filteredMenuItems.map(({ href, label, icon: Icon }) => (
+        <SidebarMenuItem key={href}>
+          <SidebarMenuButton
+            asChild
+            isActive={isActive(href)}
+            className={`w-full justify-start transition-colors duration-200 ${
+              isActive(href)
+                ? "bg-primary/10 text-primary font-medium hover:bg-primary/20"
+                : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            }`}
+          >
             <Link to={href} className="flex items-center px-4 py-2.5 space-x-3">
               <Icon className="h-5 w-5" />
               <span className="font-medium">{label}</span>
             </Link>
           </SidebarMenuButton>
-        </SidebarMenuItem>)}
-    </SidebarMenu>;
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
 };
-interface SidebarProps {
-  userRole: "employee" | "admin";
-}
-export const Sidebar = ({
-  userRole
-}: SidebarProps) => {
+
+export const Sidebar = ({ userRole }: { userRole: "employee" | "admin" }) => {
   const navigate = useNavigate();
-  const handleLogout = async () => {
+
+  const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      toast.success("Déconnexion réussie");
       navigate("/login");
+      toast.success("Déconnecté avec succès");
     } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
+      console.error("Error signing out:", error);
       toast.error("Erreur lors de la déconnexion");
     }
   };
-  return <UISidebar className="border-r border-gray-200 bg-white">
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-2xl font-bold text-violet-600">DJATE NI DANAYA</h1>
-      </div>
+
+  return (
+    <UISidebar>
       <SidebarContent className="flex flex-col h-full">
-        <div className="flex-grow">
+        <div className="px-4 py-6">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
+            DJATE NI DANAYA
+          </h1>
+        </div>
+        <div className="flex-1">
           <Navigation userRole={userRole} />
         </div>
-        <div className="p-4 border-t border-gray-200">
-          <div className="mb-4">
-            <UserProfile />
-          </div>
-          <Button variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleLogout}>
-            <LogOut className="mr-2 h-5 w-5" />
+        <div className="p-4 mt-auto">
+          <UserProfile />
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 mt-4"
+            onClick={handleSignOut}
+          >
+            <LogOut className="h-5 w-5 mr-3" />
             Déconnexion
           </Button>
         </div>
       </SidebarContent>
-    </UISidebar>;
+    </UISidebar>
+  );
 };
