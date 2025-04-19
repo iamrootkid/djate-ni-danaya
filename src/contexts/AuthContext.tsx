@@ -1,164 +1,205 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase, shouldRateLimit } from "@/integrations/supabase/client";
+import { supabase, shouldRateLimit, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
-
-type AuthContextType = {
-  session: Session | null;
-  user: User | null;
-  loading: boolean;
-  error: Error | null;
-  signOut: () => Promise<void>;
-};
+import { AuthContextType, AuthUser, LoginCredentials, Role } from "@/types/auth";
+import { hasPermission, isValidRole } from "@/utils/roleManagement";
+import { safeGetProfileData } from "@/utils/supabaseHelpers";
 
 const AuthContext = createContext<AuthContextType>({
-  session: null,
   user: null,
+  isAuthenticated: false,
   loading: true,
   error: null,
-  signOut: async () => {},
+  login: async () => {},
+  logout: async () => {},
+  checkPermission: () => false,
 });
 
-export const useAuth = () => useContext(AuthContext);
-
-// Session cache to reduce redundant fetches
-const SESSION_CACHE_KEY = 'auth_session_cache';
-const SESSION_CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Initialize from cached session if available
-  useEffect(() => {
+  const updateUserState = async (session: Session | null) => {
     try {
-      const cachedSessionData = localStorage.getItem(SESSION_CACHE_KEY);
-      if (cachedSessionData) {
-        const { data, timestamp } = JSON.parse(cachedSessionData);
-        
-        // Only use cache if it's not expired
-        if (Date.now() - timestamp < SESSION_CACHE_EXPIRY) {
-          if (data?.session) {
-            setSession(data.session);
-            setUser(data.session.user);
-          }
-        } else {
-          // Clear expired cache
-          localStorage.removeItem(SESSION_CACHE_KEY);
-        }
+      if (!session?.user) {
+        setUser(null);
+        setIsAuthenticated(false);
+        return;
       }
-    } catch (e) {
-      console.error("Error loading cached session:", e);
-      localStorage.removeItem(SESSION_CACHE_KEY);
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, shop_id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const role = safeGetProfileData(profile, 'role', 'employee');
+      if (!isValidRole(role)) {
+        throw new Error('Invalid role in user profile');
+      }
+
+      const authUser: AuthUser = {
+        id: session.user.id,
+        email: session.user.email!,
+        role: role,
+        shopId: profile.shop_id,
+      };
+
+      setUser(authUser);
+      setIsAuthenticated(true);
+      setError(null);
+    } catch (err) {
+      console.error('Error updating user state:', err);
+      setError(err instanceof Error ? err : new Error('Failed to update user state'));
+      setUser(null);
+      setIsAuthenticated(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    let mounted = true;
+    const initializeAuth = async () => {
+      try {
+        // Fix any JWT token issues
+        await fixJwtTokenIfNeeded();
 
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      if (mounted) {
-        console.log("Auth state changed:", event);
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
         
-        // Handle session in next tick to avoid blocking the main thread
-        setTimeout(() => {
-          if (newSession) {
-            setSession(newSession);
-            setUser(newSession.user);
-            
-            // Cache the session for quicker access
-            try {
-              localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({
-                data: { session: newSession },
-                timestamp: Date.now()
-              }));
-            } catch (e) {
-              console.error("Error caching session:", e);
-            }
-            
-            if (event === 'SIGNED_OUT') {
-              toast.success("Déconnecté avec succès");
-            } else if (event === 'SIGNED_IN') {
-              toast.success("Connecté avec succès");
-            }
-          } else {
-            setSession(null);
-            setUser(null);
-            localStorage.removeItem(SESSION_CACHE_KEY);
-          }
-        }, 0);
+        await updateUserState(session);
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+        setError(err instanceof Error ? err : new Error('Failed to initialize auth'));
+      } finally {
+        setLoading(false);
       }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await updateUserState(session);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsAuthenticated(false);
+        setError(null);
+      }
+      
+      setLoading(false);
     });
 
-    // THEN check for existing session (with throttling)
-    const getInitialSession = async () => {
-      try {
-        if (shouldRateLimit('auth-session', 3, 10000)) {
-          console.log("Throttling session check to avoid rate limits");
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a second
-        }
-
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          throw error;
-        }
-        
-        if (mounted) {
-          setSession(data.session);
-          setUser(data.session?.user ?? null);
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-        if (mounted) {
-          setError(error as Error);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    // Only fetch session if we don't have one from cache
-    if (!session) {
-      getInitialSession();
-    } else {
-      setLoading(false);
-    }
-
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, [session]);
+  }, []);
 
-  const signOut = async () => {
+  const login = async (credentials: LoginCredentials) => {
     try {
+      setLoading(true);
+      setError(null);
+
+      if (shouldRateLimit('login')) {
+        throw new Error('Too many login attempts. Please try again later.');
+      }
+
+      // Clear any existing sessions
       await supabase.auth.signOut();
-      localStorage.removeItem(SESSION_CACHE_KEY);
-      localStorage.removeItem('shopId');
-      localStorage.removeItem('userRole');
-      
-      // Clear any query caches if needed
-      window.location.href = '/login'; // Force a clean reload to login
-    } catch (error) {
-      console.error("Error signing out:", error);
-      setError(error as Error);
+
+      // Authenticate
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (authError) throw authError;
+
+      // Handle remember me
+      if (credentials.rememberMe) {
+        localStorage.setItem('rememberedEmail', credentials.email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
+      // Update user state
+      await updateUserState(authData.session);
+
+      // Verify shop access
+      if (user?.shopId !== credentials.shopId) {
+        await logout();
+        throw new Error('User does not have access to this shop');
+      }
+
+      toast.success('Logged in successfully');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err instanceof Error ? err : new Error('Failed to login'));
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const value = {
-    session,
-    user,
-    loading,
-    error,
-    signOut,
+  const logout = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (shouldRateLimit('logout')) {
+        throw new Error('Please wait before logging out again');
+      }
+
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('shopId');
+      toast.success('Logged out successfully');
+    } catch (err) {
+      console.error('Logout error:', err);
+      setError(err instanceof Error ? err : new Error('Failed to logout'));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  const checkPermission = (permission: string): boolean => {
+    return user ? hasPermission(user.role, permission) : false;
+  };
+
+  return (
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        isAuthenticated, 
+        loading, 
+        error, 
+        login, 
+        logout,
+        checkPermission
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
