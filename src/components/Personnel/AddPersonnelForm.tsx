@@ -71,6 +71,9 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
       }
 
       const shopId = profile.shop_id;
+      if (!shopId) {
+        throw new Error("No shop associated with your account");
+      }
 
       const { data: result, error } = await supabase.functions.invoke('create-employee', {
         body: {
@@ -80,25 +83,28 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
           password: data.password,
           phone: data.phone || null,
           role: "employee",
-          shopId: shopId,
-          isPredefinedUser: false
-        },
-        method: 'POST'
+          shopId: shopId
+        }
       });
 
       if (error) {
-        console.error('Edge Function Error:', error);
-        let errorMessage = error.message || "Failed to create employee";
+        let errorMessage = "Failed to create employee";
         
-        try {
-          const errorData = JSON.parse(error.message);
-          if (errorData.error) {
-            errorMessage = errorData.error;
+        if (error.message) {
+          try {
+            const errorData = JSON.parse(error.message);
+            errorMessage = errorData.error || errorData.details || error.message;
+          } catch (e) {
+            errorMessage = error.message;
           }
-        } catch (e) {
         }
         
-        throw new Error(errorMessage);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return;
       }
 
       toast({
@@ -109,12 +115,12 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
       form.reset();
       setOpen(false);
       onSuccess();
-    } catch (error: any) {
-      console.error('Error in onSubmit:', error);
+    } catch (error) {
+      console.error("Error adding personnel:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to add personnel",
-        variant: "destructive",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
