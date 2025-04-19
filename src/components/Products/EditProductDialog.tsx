@@ -169,17 +169,19 @@ export const EditProductDialog = ({
         }
       }
 
+      const productData = { 
+        name: name.trim(), 
+        description: description.trim() || null, 
+        price: Number(price), 
+        stock: Number(stock),
+        category_id: categoryId || null,
+        image_url: imageUrl,
+        shop_id: shopId
+      };
+
       const { error } = await supabase
         .from("products")
-        .update({ 
-          name: name.trim(), 
-          description: description.trim() || null, 
-          price: Number(price), 
-          stock: Number(stock),
-          category_id: categoryId || null,
-          image_url: imageUrl,
-          shop_id: shopId
-        })
+        .update(productData)
         .eq("id", product.id)
         .eq("shop_id", shopId);
 

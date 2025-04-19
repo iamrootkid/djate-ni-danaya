@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Database } from "@/types/supabase";
-import { safeQueryWithRateLimit, safeTypeAssert } from "@/utils/supabaseHelpers";
+import { safeGet } from "@/utils/supabaseHelpers";
 
 type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
 
@@ -23,7 +23,7 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
     queryFn: async () => {
       if (!shopId) return [];
       
-      return safeQueryWithRateLimit(`personnel-${shopId}`, async () => {
+      try {
         const { data, error } = await supabase
           .from("staff")
           .select("*")
@@ -32,9 +32,22 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
           
         if (error) throw error;
         
-        // Use type assertion with fallback for safety
-        return safeTypeAssert<StaffMember[]>(data, []);
-      });
+        // Process and return the data safely
+        return Array.isArray(data) ? data.map(item => ({
+          id: safeGet(item, ['id'], ''),
+          first_name: safeGet(item, ['first_name'], ''),
+          last_name: safeGet(item, ['last_name'], ''),
+          email: safeGet(item, ['email'], ''),
+          phone: safeGet(item, ['phone'], null),
+          role: safeGet(item, ['role'], 'employee'),
+          shop_id: safeGet(item, ['shop_id'], ''),
+          created_at: safeGet(item, ['created_at'], ''),
+          updated_at: safeGet(item, ['updated_at'], '')
+        })) : [];
+      } catch (error) {
+        console.error("Error fetching personnel:", error);
+        return [];
+      }
     },
     enabled: !!shopId,
   });

@@ -168,17 +168,19 @@ export const AddProductForm = ({ onSuccess }: { onSuccess: () => void }) => {
         }
       }
 
+      const productData = { 
+        name: name.trim(), 
+        description: description.trim() || null, 
+        price: Number(price), 
+        stock: Number(stock),
+        category_id: categoryId || null,
+        image_url: imageUrl,
+        shop_id: shopId
+      };
+
       const { error } = await supabase
         .from("products")
-        .insert([{ 
-          name: name.trim(), 
-          description: description.trim() || null, 
-          price: Number(price), 
-          stock: Number(stock),
-          category_id: categoryId || null,
-          image_url: imageUrl,
-          shop_id: shopId
-        }]);
+        .insert(productData);
 
       if (error) {
         console.error("Error inserting product:", error);

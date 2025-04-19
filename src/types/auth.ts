@@ -1,39 +1,52 @@
+
+/**
+ * Valid user roles in the application
+ */
 export type Role = 'admin' | 'employee';
 
+/**
+ * Authentication user data structure
+ */
 export interface AuthUser {
   id: string;
   email: string;
-  role: Role;
-  shopId: string | null;
+  role?: Role;
+  firstName?: string;
+  lastName?: string;
 }
 
-export interface AuthState {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  loading: boolean;
-  error: Error | null;
+/**
+ * Error type for authentication operations
+ */
+export interface AuthError {
+  message: string;
+  code?: string;
+  status?: number;
 }
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-  shopId: string;
-  rememberMe?: boolean;
+/**
+ * Interface for invoice modification return data
+ */
+export interface ReturnedItem {
+  id: string;
+  name: string;
+  quantity: number;
+  originalQuantity: number;
+  selected: boolean;
+  price: number;
 }
 
-export interface AuthContextType extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => Promise<void>;
-  checkPermission: (permission: string) => boolean;
+/**
+ * Interface for invoice modification data
+ */
+export interface InvoiceModification {
+  id: string;
+  invoice_id: string;
+  modification_type: 'price' | 'return' | 'other';
+  new_amount: number;
+  reason: string;
+  modified_by: string;
+  shop_id: string;
+  created_at: string;
+  returned_items?: ReturnedItem[];
 }
-
-export type Permission = 
-  | 'manage_staff'
-  | 'view_reports'
-  | 'manage_products'
-  | 'manage_categories'
-  | 'manage_settings'
-  | 'view_expenses'
-  | 'manage_invoices'
-  | 'make_sales'
-  | 'view_products'; 

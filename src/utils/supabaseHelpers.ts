@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Role } from '@/types/auth';
 
@@ -110,4 +111,46 @@ export function safeDataAccess<T>(data: any, field: string): T | null {
     return null;
   }
   return data[field] as T;
+}
+
+/**
+ * Rate-limited query with caching to prevent excessive database calls
+ * @param cacheKey Unique key to identify this query
+ * @param queryFn The actual query function to execute
+ */
+export async function safeQueryWithRateLimit<T>(cacheKey: string, queryFn: () => Promise<T>): Promise<T> {
+  // Simple in-memory cache implementation
+  const cache = (window as any).__queryCache = (window as any).__queryCache || {};
+  const now = Date.now();
+  
+  // Check if we have a cached result that's still fresh (less than 30 seconds old)
+  if (cache[cacheKey] && now - cache[cacheKey].timestamp < 30000) {
+    return cache[cacheKey].data;
+  }
+  
+  // Execute the query
+  try {
+    const result = await queryFn();
+    
+    // Store in cache
+    cache[cacheKey] = {
+      timestamp: now,
+      data: result
+    };
+    
+    return result;
+  } catch (error) {
+    console.error(`Error executing query for ${cacheKey}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Type-safe assertion for Supabase query results
+ * @param data The data to assert
+ * @param fallback A fallback value if data is invalid
+ */
+export function safeTypeAssert<T>(data: any, fallback: T): T {
+  if (!data) return fallback;
+  return data as T;
 }
