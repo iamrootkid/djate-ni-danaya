@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
@@ -6,14 +7,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { filterByUUID, safeGetProfileData, isValidRole, hasRole } from "@/utils/supabaseHelpers";
+import { 
+  filterByUUID, 
+  safeGetProfileData, 
+  isValidRole 
+} from "@/utils/supabaseHelpers";
+import { Role } from "@/types/auth";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
-  const [userRole, setUserRole] = useState<"employee" | "admin">("employee");
+  const [userRole, setUserRole] = useState<Role>('employee');
   const navigate = useNavigate();
 
   useEffect(() => {

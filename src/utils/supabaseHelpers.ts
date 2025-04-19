@@ -1,3 +1,45 @@
+import { supabase } from "@/integrations/supabase/client";
+import { Role } from '@/types/auth';
+
+/**
+ * Check if a given role is valid
+ * @param role The role to validate
+ * @returns Boolean indicating if the role is valid
+ */
+export function isValidRole(role: unknown): role is Role {
+  return typeof role === 'string' && (role === 'admin' || role === 'employee');
+}
+
+/**
+ * Check if the current user has a specific role
+ * @param requiredRole The role to check for
+ * @returns Promise<boolean> True if the user has the role, false otherwise
+ */
+export async function hasRole(requiredRole: Role): Promise<boolean> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      return false;
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (error || !profile) {
+      console.error('Error fetching user role:', error);
+      return false;
+    }
+
+    return isValidRole(profile.role) && profile.role === requiredRole;
+  } catch (error) {
+    console.error('Error checking user role:', error);
+    return false;
+  }
+}
 
 /**
  * Helper functions for safely handling Supabase query operations with TypeScript
