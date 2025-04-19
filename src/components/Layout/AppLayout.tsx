@@ -1,5 +1,5 @@
-
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { MobileMenu } from "./MobileMenu";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const [userRole, setUserRole] = useState<"employee" | "admin">("employee");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getRole = async () => {
@@ -33,12 +34,29 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         const role = safeGetProfileData(data, 'role', 'employee');
         if (isValidRole(role)) {
           setUserRole(role);
+          // Redirect to appropriate initial route based on role
+          if (role === 'admin' && window.location.pathname === '/sales') {
+            navigate('/dashboard');
+          } else if (role === 'employee' && window.location.pathname !== '/sales') {
+            navigate('/sales');
+          }
         }
       }
     };
 
     getRole();
-  }, []);
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        getRole();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
