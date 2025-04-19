@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Database } from "@/types/supabase";
 import { safeGet, asUUID } from "@/utils/supabaseHelpers";
+import { safeEq } from "@/utils/safeFilters";
 
 type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
 
@@ -27,7 +28,7 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
         const { data, error } = await supabase
           .from("staff")
           .select("*")
-          .eq("shop_id", shopId ? asUUID(shopId) : '')
+          .eq("shop_id", asUUID(shopId))
           .order("created_at", { ascending: false });
           
         if (error) throw error;
