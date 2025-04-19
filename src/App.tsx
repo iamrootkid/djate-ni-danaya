@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -53,25 +52,49 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
           return;
         }
 
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .match(filterByUUID('id', user.id))
-          .maybeSingle();
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount < maxRetries) {
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('role')
+              .match(filterByUUID('id', user.id))
+              .maybeSingle();
 
-        if (error) {
-          console.error("Error fetching user role:", error);
-          setIsAuthenticated(false);
-          setLoading(false);
-          return;
+            if (error) {
+              console.error(`Error fetching user role (attempt ${retryCount + 1}):`, error);
+              retryCount++;
+              if (retryCount === maxRetries) {
+                setIsAuthenticated(false);
+                setLoading(false);
+                return;
+              }
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+              continue;
+            }
+
+            const role = safeGetProfileData(profile, 'role', 'employee');
+            setUserRole(role);
+            setIsAuthenticated(true);
+            setLoading(false);
+            return;
+          } catch (error) {
+            console.error(`Error in auth check (attempt ${retryCount + 1}):`, error);
+            retryCount++;
+            if (retryCount === maxRetries) {
+              setIsAuthenticated(false);
+              setLoading(false);
+              return;
+            }
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          }
         }
-
-        const role = safeGetProfileData(profile, 'role', 'employee');
-        setUserRole(role);
-        setIsAuthenticated(true);
-        setLoading(false);
       } catch (error) {
-        console.error('Error checking auth status:', error);
+        console.error('Error in auth check:', error);
         setIsAuthenticated(false);
         setLoading(false);
       }
