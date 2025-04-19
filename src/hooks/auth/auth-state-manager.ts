@@ -1,6 +1,7 @@
 
 import { AuthUser } from "@/types/auth";
 import { Dispatch, SetStateAction } from "react";
+import { getErrorMessage } from "@/components/auth/utils/authErrorUtils";
 
 export interface AuthStateManager {
   setUser: Dispatch<SetStateAction<AuthUser | null>>;
@@ -14,7 +15,8 @@ export function updateAuthState(
   error: Error | null = null
 ) {
   if (error) {
-    console.error('Error updating user state:', error);
+    const errorMessage = getErrorMessage(error);
+    console.error('Error updating user state:', errorMessage);
     manager.setError(error);
     manager.setUser(null);
     manager.setIsAuthenticated(false);

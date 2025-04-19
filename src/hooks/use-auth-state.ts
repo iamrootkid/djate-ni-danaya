@@ -4,6 +4,7 @@ import { Session } from "@supabase/supabase-js";
 import { AuthUser } from "@/types/auth";
 import { getUserFromSession } from "./auth/session-manager";
 import { updateAuthState, AuthStateManager } from "./auth/auth-state-manager";
+import { getErrorMessage } from "@/components/auth/utils/authErrorUtils";
 
 export const useAuthState = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -21,7 +22,8 @@ export const useAuthState = () => {
       };
       updateAuthState(stateManager, user);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to update user state');
+      const errorMessage = getErrorMessage(err);
+      const error = new Error(errorMessage);
       const stateManager: AuthStateManager = {
         setUser,
         setIsAuthenticated,
