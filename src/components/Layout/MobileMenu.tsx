@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -17,6 +16,64 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
+// Use the same menu items as the Sidebar
+const menuItems = [
+  {
+    href: "/dashboard",
+    label: "Tableau de bord",
+    icon: LayoutDashboard,
+    roles: ["admin"]
+  },
+  {
+    href: "/categories",
+    label: "Catégories",
+    icon: Tags,
+    roles: ["admin"]
+  },
+  {
+    href: "/products",
+    label: "Produits",
+    icon: Package,
+    roles: ["admin"]
+  },
+  {
+    href: "/staff",
+    label: "Personnel",
+    icon: Users,
+    roles: ["admin"]
+  },
+  {
+    href: "/expenses",
+    label: "Dépenses",
+    icon: DollarSign,
+    roles: ["admin"]
+  },
+  {
+    href: "/reports",
+    label: "Rapports",
+    icon: FileBarChart2,
+    roles: ["admin"]
+  },
+  {
+    href: "/invoices",
+    label: "Factures",
+    icon: Receipt,
+    roles: ["admin"]
+  },
+  {
+    href: "/settings",
+    label: "Paramètres",
+    icon: Settings,
+    roles: ["admin"]
+  },
+  {
+    href: "/sales",
+    label: "Ventes",
+    icon: Store,
+    roles: ["employee"]
+  }
+];
+
 interface MobileMenuProps {
   userRole: "admin" | "employee";
 }
@@ -25,62 +82,8 @@ export const MobileMenu = ({ userRole }: MobileMenuProps) => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  // Admin-specific menu items
-  const adminMenuItems = [
-    {
-      href: "/dashboard",
-      label: "Tableau de bord",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/categories",
-      label: "Catégories",
-      icon: Tags,
-    },
-    {
-      href: "/products",
-      label: "Produits",
-      icon: Package,
-    },
-    {
-      href: "/staff",
-      label: "Personnel",
-      icon: Users,
-    },
-    {
-      href: "/expenses",
-      label: "Dépenses",
-      icon: DollarSign,
-    },
-    {
-      href: "/reports",
-      label: "Rapports",
-      icon: FileBarChart2,
-    },
-    {
-      href: "/invoices",
-      label: "Factures",
-      icon: Receipt,
-    },
-    {
-      href: "/settings",
-      label: "Paramètres",
-      icon: Settings,
-    }
-  ];
-  
-  // Employee-specific menu items
-  const employeeMenuItems = [
-    {
-      href: "/sales",
-      label: "Ventes",
-      icon: Store,
-    }
-  ];
-
-  // Select which menu items to show based on user role
-  // Ensure admin users never see the Sales menu item
-  const menuItems = userRole === 'admin' ? adminMenuItems : employeeMenuItems;
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter(item => item.roles.includes(userRole));
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -95,7 +98,7 @@ export const MobileMenu = ({ userRole }: MobileMenuProps) => {
       </SheetTrigger>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
         <nav className="space-y-4 pt-4">
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
 
