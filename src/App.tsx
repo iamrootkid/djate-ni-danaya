@@ -1,13 +1,29 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
+import { filterByUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
 import Login from "./pages/Login";
+
+// Import all page components
+import Dashboard from "./pages/Dashboard";
+import Categories from "./pages/Categories";
+import Products from "./pages/Products";
+import Sales from "./pages/Sales";
+import Staff from "./pages/Staff";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import Invoices from "./pages/Invoices";
+import Expenses from "./pages/Expenses";
+import Personnel from "./pages/Personnel";
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -22,10 +38,11 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    fixJwtTokenIfNeeded();
-  }, []);
+    // We'll handle auth checks differently to avoid circular dependencies
+    if (!user || authLoading) {
+      return;
+    }
 
-  useEffect(() => {
     const checkAuth = async () => {
       try {
         if (authLoading) {
@@ -46,7 +63,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('role')
-              .match(filterByUUID('id', user.id))
+              .eq('id', user.id)
               .maybeSingle();
 
             if (error) {
@@ -108,6 +125,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   return <Navigate to="/dashboard" replace />;
 };
 
+// Configure React Query client with enhanced error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

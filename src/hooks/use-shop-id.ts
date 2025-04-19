@@ -1,10 +1,11 @@
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase, shouldRateLimit } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { safeQueryWithRateLimit } from "@/utils/supabaseHelpers";
+import { safeGetProfileData } from "@/utils/supabaseHelpers";
 
 // Create a cache for shop IDs to reduce redundant fetches
 type ShopCache = {
@@ -39,7 +40,7 @@ export const useShopId = () => {
   }, [queryClient]);
 
   // Force refresh shop ID from backend rather than cache
-  const refreshShopId = async () => {
+  const refreshShopId = useCallback(async () => {
     try {
       // Check if we should throttle this request (max once per minute)
       const now = Date.now();
@@ -59,8 +60,8 @@ export const useShopId = () => {
 
       console.log("Refreshing shop ID for user:", user.id);
       
-      // Use rate-limited safe query
-      return safeQueryWithRateLimit(`shop-id-refresh-${user.id}`, async () => {
+      // Safely execute the query
+      try {
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("shop_id")
@@ -95,12 +96,15 @@ export const useShopId = () => {
         localStorage.setItem(SHOP_CACHE_KEY, JSON.stringify(cacheData));
         
         return profile.shop_id;
-      });
+      } catch (error) {
+        console.error("Error in shop ID query:", error);
+        return null;
+      }
     } catch (error) {
       console.error("Error in refreshShopId:", error);
       return null;
     }
-  };
+  }, [user, lastRefreshTime, navigate]);
 
   useEffect(() => {
     if (authLoading) {
@@ -184,7 +188,7 @@ export const useShopId = () => {
         supabase.removeChannel(channel);
       }
     };
-  }, [queryClient, user, authLoading]);
+  }, [queryClient, user, authLoading, refreshShopId]);
 
   const { data: shopId, error } = useQuery({
     queryKey: ["shop-id"],

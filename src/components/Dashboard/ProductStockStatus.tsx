@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, AlertCircle, RefreshCw } from "lucide-react";
@@ -58,14 +59,23 @@ export const ProductStockStatus = () => {
         if (error) throw error;
         if (!data) return [];
 
-        return data.map(product => ({
-          id: product.id || '',
-          name: product.name || '',
-          stock: Number(product.stock) || 0,
-          price: Number(product.price) || 0,
-          categories: product.categories || null,
-          last_seller_email: product.sale_items?.[0]?.sales?.employee?.email || 'N/A'
-        }));
+        // Type-safe transformation of data to avoid errors
+        const transformedProducts: ProductData[] = [];
+        
+        for (const item of data) {
+          if (!item) continue;
+          
+          transformedProducts.push({
+            id: item.id || '',
+            name: item.name || '',
+            stock: typeof item.stock === 'number' ? item.stock : 0,
+            price: typeof item.price === 'number' ? item.price : 0,
+            categories: item.categories || null,
+            last_seller_email: item.sale_items?.[0]?.sales?.employee?.email || 'N/A'
+          });
+        }
+
+        return transformedProducts;
       } catch (error) {
         console.error("Error fetching product stock:", error);
         return [];

@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+
+import { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from "react";
 import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -16,14 +17,29 @@ const AuthContext = createContext<AuthContextType>({
   checkPermission: () => false,
 });
 
+// Rate limiter for auth operations
+const rateLimits: Record<string, number> = {};
+
+const shouldRateLimit = (operation: string, timeWindow = 2000): boolean => {
+  const now = Date.now();
+  const lastCall = rateLimits[operation] || 0;
+  
+  if (now - lastCall < timeWindow) {
+    return true;
+  }
+  
+  rateLimits[operation] = now;
+  return false;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [authChangeProcessing, setAuthChangeProcessing] = useState(false);
+  const processingAuthChange = useRef(false);
 
-  const updateUserState = async (session: Session | null) => {
+  const updateUserState = useCallback(async (session: Session | null) => {
     if (!session?.user) {
       setUser(null);
       setIsAuthenticated(false);
@@ -62,31 +78,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setIsAuthenticated(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // This is only called once during initialization
         await fixJwtTokenIfNeeded();
 
+        // Set up the auth state change listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            if (authChangeProcessing) return;
-            setAuthChangeProcessing(true);
-            
-            console.log('Auth state changed:', event);
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-              await updateUserState(session);
-            } else if (event === 'SIGNED_OUT') {
-              setUser(null);
-              setIsAuthenticated(false);
-              setError(null);
+          (event, session) => {
+            // Avoid processing while another auth change is in progress
+            if (processingAuthChange.current) {
+              console.log('Auth change already in progress, skipping');
+              return;
             }
             
-            setAuthChangeProcessing(false);
+            processingAuthChange.current = true;
+            console.log('Auth state changed:', event);
+            
+            // Use setTimeout to prevent potential deadlocks with Supabase client
+            setTimeout(async () => {
+              try {
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                  await updateUserState(session);
+                } else if (event === 'SIGNED_OUT') {
+                  setUser(null);
+                  setIsAuthenticated(false);
+                  setError(null);
+                }
+              } finally {
+                processingAuthChange.current = false;
+              }
+            }, 0);
           }
         );
 
+        // Then get the current session
         const { data: { session } } = await supabase.auth.getSession();
         await updateUserState(session);
         setLoading(false);
@@ -102,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initializeAuth();
-  }, []);
+  }, [updateUserState]);
 
   const login = async (credentials: LoginCredentials) => {
     try {
@@ -131,13 +160,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('rememberedEmail');
       }
 
-      // Update user state
-      await updateUserState(authData.session);
+      // Wait for user state update via auth change listener
+      // This avoids duplicating state update logic
 
       // Verify shop access
-      if (user?.shopId !== credentials.shopId) {
-        await logout();
-        throw new Error('User does not have access to this shop');
+      if (authData.user && credentials.shopId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('shop_id')
+          .eq('id', authData.user.id)
+          .single();
+          
+        if (profile?.shop_id !== credentials.shopId) {
+          await logout();
+          throw new Error('User does not have access to this shop');
+        }
       }
 
       toast.success('Logged in successfully');
@@ -162,9 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
-      setUser(null);
-      setIsAuthenticated(false);
+      // Cleanup will happen via auth state change listener
       localStorage.removeItem('shopId');
+      localStorage.removeItem(SHOP_CACHE_KEY);
       toast.success('Logged out successfully');
     } catch (err) {
       console.error('Logout error:', err);
@@ -203,3 +240,6 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// This const isn't defined elsewhere, so we need to define it here
+const SHOP_CACHE_KEY = 'shop_id_cache';
