@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase, shouldRateLimit } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -105,7 +104,7 @@ export const useShopId = () => {
 
   useEffect(() => {
     if (authLoading) {
-      return; // Wait until auth state is settled
+      return;
     }
 
     if (!user) {
@@ -113,12 +112,19 @@ export const useShopId = () => {
       return;
     }
 
+    let isSubscribed = true;
+
     // Initial refresh when component mounts
-    refreshShopId().then(shopId => {
-      if (shopId) {
+    const initializeShopId = async () => {
+      if (!isSubscribed) return;
+      
+      const shopId = await refreshShopId();
+      if (shopId && isSubscribed) {
         queryClient.setQueryData(["shop-id"], shopId);
       }
-    });
+    };
+
+    initializeShopId();
 
     // Set up PostgreSQL changes listener with error handling
     let retryCount = 0;
@@ -126,6 +132,8 @@ export const useShopId = () => {
     const RETRY_DELAY = 2000;
     
     const setupChannel = () => {
+      if (!isSubscribed) return null;
+      
       try {
         const shopId = localStorage.getItem("shopId");
         if (!shopId) return null;
@@ -170,6 +178,7 @@ export const useShopId = () => {
     const channel = setupChannel();
 
     return () => {
+      isSubscribed = false;
       if (channel) {
         console.log("Removing shop-changes channel");
         supabase.removeChannel(channel);

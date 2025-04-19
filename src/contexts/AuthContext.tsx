@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase, shouldRateLimit, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
+import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { AuthContextType, AuthUser, LoginCredentials, Role } from "@/types/auth";
@@ -21,15 +21,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [authChangeProcessing, setAuthChangeProcessing] = useState(false);
 
   const updateUserState = async (session: Session | null) => {
-    try {
-      if (!session?.user) {
-        setUser(null);
-        setIsAuthenticated(false);
-        return;
-      }
+    if (!session?.user) {
+      setUser(null);
+      setIsAuthenticated(false);
+      return;
+    }
 
+    try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, shop_id')
@@ -66,42 +67,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Fix any JWT token issues
         await fixJwtTokenIfNeeded();
 
-        // Get initial session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (authChangeProcessing) return;
+            setAuthChangeProcessing(true);
+            
+            console.log('Auth state changed:', event);
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              await updateUserState(session);
+            } else if (event === 'SIGNED_OUT') {
+              setUser(null);
+              setIsAuthenticated(false);
+              setError(null);
+            }
+            
+            setAuthChangeProcessing(false);
+          }
+        );
+
+        const { data: { session } } = await supabase.auth.getSession();
         await updateUserState(session);
+        setLoading(false);
+
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (err) {
         console.error('Error initializing auth:', err);
         setError(err instanceof Error ? err : new Error('Failed to initialize auth'));
-      } finally {
         setLoading(false);
       }
     };
 
     initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-      
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await updateUserState(session);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setIsAuthenticated(false);
-        setError(null);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const login = async (credentials: LoginCredentials) => {

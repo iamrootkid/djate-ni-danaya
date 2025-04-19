@@ -4,23 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { supabase, fixJwtTokenIfNeeded } from "@/integrations/supabase/client";
-import { asUUID, safeGetProfileData, filterByUUID } from "@/utils/supabaseHelpers";
-
-// Import all page components
-import Dashboard from "./pages/Dashboard";
-import Categories from "./pages/Categories";
-import Products from "./pages/Products";
-import Sales from "./pages/Sales";
-import Staff from "./pages/Staff";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import Invoices from "./pages/Invoices";
-import Expenses from "./pages/Expenses";
-import Personnel from "./pages/Personnel";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
 
 const LoadingSpinner = () => (
@@ -143,10 +129,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  useEffect(() => {
-    fixJwtTokenIfNeeded();
-  }, []);
-
   return (
     <ThemeProvider attribute="class" defaultTheme="light">
       <QueryClientProvider client={queryClient}>
