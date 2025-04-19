@@ -1,10 +1,9 @@
 
 import { useState, useCallback } from "react";
 import { Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 import { AuthUser } from "@/types/auth";
-import { isValidRole } from "@/utils/roleManagement";
-import { safeGetProfileData } from "@/utils/supabaseHelpers";
+import { getUserFromSession } from "./auth/session-manager";
+import { updateAuthState, AuthStateManager } from "./auth/auth-state-manager";
 
 export const useAuthState = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -13,43 +12,22 @@ export const useAuthState = () => {
   const [error, setError] = useState<Error | null>(null);
 
   const updateUserState = useCallback(async (session: Session | null) => {
-    if (!session?.user) {
-      setUser(null);
-      setIsAuthenticated(false);
-      return;
-    }
-
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, shop_id')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const role = safeGetProfileData(profile, 'role', 'employee');
-      if (!isValidRole(role)) {
-        throw new Error('Invalid role in user profile');
-      }
-
-      const authUser: AuthUser = {
-        id: session.user.id,
-        email: session.user.email!,
-        role: role,
-        shopId: profile.shop_id,
+      const user = await getUserFromSession(session);
+      const stateManager: AuthStateManager = {
+        setUser,
+        setIsAuthenticated,
+        setError
       };
-
-      setUser(authUser);
-      setIsAuthenticated(true);
-      setError(null);
+      updateAuthState(stateManager, user);
     } catch (err) {
-      console.error('Error updating user state:', err);
-      setError(err instanceof Error ? err : new Error('Failed to update user state'));
-      setUser(null);
-      setIsAuthenticated(false);
+      const error = err instanceof Error ? err : new Error('Failed to update user state');
+      const stateManager: AuthStateManager = {
+        setUser,
+        setIsAuthenticated,
+        setError
+      };
+      updateAuthState(stateManager, null, error);
     }
   }, []);
 
