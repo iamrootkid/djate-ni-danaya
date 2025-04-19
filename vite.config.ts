@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "0.0.0.0", // Allow connections from all hosts
+    host: "0.0.0.0",
     port: 8080,
     strictPort: true,
     hmr: {
@@ -25,13 +25,13 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    outDir: 'dist', // Ensure the output directory is set to 'dist'
+    outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: mode === 'development',
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false, // Keep console logs for debugging
+        drop_console: mode === 'production',
         drop_debugger: true
       }
     }
