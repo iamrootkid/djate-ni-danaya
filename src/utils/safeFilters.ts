@@ -1,14 +1,14 @@
 
 import { PostgrestFilterBuilder } from "@supabase/supabase-js";
-import { Database } from "@/integrations/supabase/types";
+import { Database } from "@/types/supabase";
 import { asUUID } from "@/utils/supabaseHelpers";
 
 // Type-safe filter utility for .eq() operations on UUID fields
 export function safeEq<T extends keyof Database["public"]["Tables"]>(
-  query: PostgrestFilterBuilder<Database["public"]["Tables"][T]>,
+  query: PostgrestFilterBuilder<any>,
   column: string, 
   value: string | null
-): PostgrestFilterBuilder<Database["public"]["Tables"][T]> {
+): PostgrestFilterBuilder<any> {
   if (!value) {
     return query;
   }
@@ -23,9 +23,9 @@ export function safeEq<T extends keyof Database["public"]["Tables"]>(
 
 // Type-safe filter utility for shop_id specifically
 export function filterByShopId<T extends keyof Database["public"]["Tables"]>(
-  query: PostgrestFilterBuilder<Database["public"]["Tables"][T]>,
+  query: PostgrestFilterBuilder<any>,
   shopId: string | null
-): PostgrestFilterBuilder<Database["public"]["Tables"][T]> {
+): PostgrestFilterBuilder<any> {
   if (!shopId) {
     return query;
   }
@@ -35,9 +35,9 @@ export function filterByShopId<T extends keyof Database["public"]["Tables"]>(
 
 // Type-safe filter utility for matching multiple columns
 export function safeMatch<T extends keyof Database["public"]["Tables"]>(
-  query: PostgrestFilterBuilder<Database["public"]["Tables"][T]>,
+  query: PostgrestFilterBuilder<any>,
   filters: Record<string, string | null>
-): PostgrestFilterBuilder<Database["public"]["Tables"][T]> {
+): PostgrestFilterBuilder<any> {
   // Filter out null/undefined values
   const validFilters: Record<string, string> = {};
   
@@ -57,4 +57,23 @@ export function safeMatch<T extends keyof Database["public"]["Tables"]>(
   }
   
   return query.match(validFilters);
+}
+
+// Helper to create a type-safe insert object for a table
+export function safeInsert<T extends keyof Database["public"]["Tables"]>(
+  data: Record<string, any>
+): Record<string, any> {
+  const validData: Record<string, any> = {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== null && value !== undefined) {
+      if (key.toLowerCase().includes('id') && typeof value === 'string') {
+        validData[key] = asUUID(value);
+      } else {
+        validData[key] = value;
+      }
+    }
+  }
+  
+  return validData;
 }

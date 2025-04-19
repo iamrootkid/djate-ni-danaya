@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Role } from '@/types/auth';
+import { PostgrestError } from "@supabase/supabase-js";
+import { Database } from "@/types/supabase";
 
 /**
  * Check if a given role is valid
@@ -55,6 +57,14 @@ export function asUUID(value: string): string {
 }
 
 /**
+ * Type guard to check if an object is a PostgrestError
+ * @param obj Object to check
+ */
+export function isPostgrestError(obj: any): obj is PostgrestError {
+  return obj && typeof obj === 'object' && 'code' in obj && 'message' in obj;
+}
+
+/**
  * Create a safe filter object for the `.match()` method with UUID handling
  * @param field The field name to filter on
  * @param value The value to match
@@ -99,6 +109,22 @@ export function safeGetProfileData<T>(data: any, field: string, defaultValue: T)
     return defaultValue;
   }
   return data[field] as T;
+}
+
+/**
+ * Type-safe handler for query data that might be an error
+ * @param data The data object from query result
+ * @param transformer Function to transform data if it's not an error
+ */
+export function handleQueryResult<T, R>(
+  data: T | PostgrestError, 
+  transformer: (validData: T) => R
+): R | null {
+  if (isPostgrestError(data)) {
+    console.error("Error in query result:", data);
+    return null;
+  }
+  return transformer(data);
 }
 
 /**
@@ -153,4 +179,28 @@ export async function safeQueryWithRateLimit<T>(cacheKey: string, queryFn: () =>
 export function safeTypeAssert<T>(data: any, fallback: T): T {
   if (!data) return fallback;
   return data as T;
+}
+
+/**
+ * Safely perform Supabase match query with error handling for TypeScript
+ * @param table The Supabase table to query
+ * @param field The field to match on
+ * @param value The value to match
+ */
+export function safeMatchQuery<T extends keyof Database['public']['Tables']>(
+  table: T,
+  field: string,
+  value: string
+) {
+  return supabase
+    .from(table as string)
+    .select('*')
+    .eq(field, isUUIDField(field) ? asUUID(value) : value);
+}
+
+/**
+ * Check if a field is likely a UUID field based on naming convention
+ */
+function isUUIDField(field: string): boolean {
+  return field.toLowerCase().endsWith('_id');
 }

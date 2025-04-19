@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Database } from "@/types/supabase";
-import { safeGet } from "@/utils/supabaseHelpers";
+import { safeGet, asUUID } from "@/utils/supabaseHelpers";
 
 type StaffMember = Database["public"]["Tables"]["staff"]["Row"];
 
@@ -27,7 +27,7 @@ export const PersonnelList = ({ onEdit, onDelete }: PersonnelListProps) => {
         const { data, error } = await supabase
           .from("staff")
           .select("*")
-          .eq("shop_id", shopId)
+          .eq("shop_id", shopId ? asUUID(shopId) : '')
           .order("created_at", { ascending: false });
           
         if (error) throw error;

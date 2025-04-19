@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ProductForm } from "./ProductForm";
 import { useShopId } from "@/hooks/use-shop-id";
+import { asUUID, safeGet } from "@/utils/supabaseHelpers";
+import { safeInsert } from "@/utils/safeFilters";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -40,7 +42,7 @@ export const EditProductDialog = ({
       const { data, error } = await supabase
         .from("categories")
         .select("id, name")
-        .eq("shop_id", shopId);
+        .eq("shop_id", shopId ? asUUID(shopId) : '');
       if (error) throw error;
       return data;
     },
@@ -151,7 +153,6 @@ export const EditProductDialog = ({
       let imageUrl = product.image_url;
 
       if (image) {
-        // Delete old image if it exists
         if (product.image_url) {
           await deleteOldImage(product.image_url);
         }
@@ -176,14 +177,14 @@ export const EditProductDialog = ({
         stock: Number(stock),
         category_id: categoryId || null,
         image_url: imageUrl,
-        shop_id: shopId
+        shop_id: shopId ? asUUID(shopId) : null
       };
 
       const { error } = await supabase
         .from("products")
-        .update(productData)
-        .eq("id", product.id)
-        .eq("shop_id", shopId);
+        .update(safeInsert(productData))
+        .eq("id", asUUID(product.id))
+        .eq("shop_id", asUUID(shopId));
 
       if (error) {
         console.error("Error updating product:", error);

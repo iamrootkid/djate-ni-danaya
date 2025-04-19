@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { asUUID, safeGetProfileData } from "@/utils/supabaseHelpers";
 
 const formSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -63,14 +64,14 @@ export const AddPersonnelForm = ({ onSuccess }: AddPersonnelFormProps) => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('shop_id')
-        .eq('id', session.user.id)
+        .eq('id', asUUID(session.user.id))
         .single();
 
       if (profileError || !profile) {
         throw new Error("Failed to get shop information");
       }
 
-      const shopId = profile.shop_id;
+      const shopId = safeGetProfileData(profile, 'shop_id', null);
       if (!shopId) {
         throw new Error("No shop associated with your account");
       }
