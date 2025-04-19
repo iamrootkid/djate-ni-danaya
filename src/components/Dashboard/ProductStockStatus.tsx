@@ -66,12 +66,12 @@ export const ProductStockStatus = () => {
           if (!item) continue;
           
           transformedProducts.push({
-            id: item.id || '',
-            name: item.name || '',
-            stock: typeof item.stock === 'number' ? item.stock : 0,
-            price: typeof item.price === 'number' ? item.price : 0,
-            categories: item.categories || null,
-            last_seller_email: item.sale_items?.[0]?.sales?.employee?.email || 'N/A'
+            id: safeGet(item, ['id'], ''),
+            name: safeGet(item, ['name'], ''),
+            stock: typeof safeGet(item, ['stock'], 0) === 'number' ? safeGet(item, ['stock'], 0) : 0,
+            price: typeof safeGet(item, ['price'], 0) === 'number' ? safeGet(item, ['price'], 0) : 0,
+            categories: safeGet(item, ['categories'], null),
+            last_seller_email: safeGet(item, ['sale_items', 0, 'sales', 'employee', 'email'], 'N/A')
           });
         }
 

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -63,7 +62,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('role')
-              .eq('id', user.id)
+              .match(filterByUUID('id', user.id))
               .maybeSingle();
 
             if (error) {
@@ -125,7 +124,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   return <Navigate to="/dashboard" replace />;
 };
 
-// Configure React Query client with enhanced error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
