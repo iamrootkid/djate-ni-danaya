@@ -37,10 +37,7 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       external: [
-        '@rollup/rollup-linux-x64-gnu',
-        '@rollup/rollup-darwin-x64',
-        '@rollup/rollup-darwin-arm64',
-        '@rollup/rollup-win32-x64-msvc'
+        /^@rollup\/rollup-(linux|darwin|win32)-.*/
       ],
       output: {
         manualChunks: {
@@ -110,10 +107,7 @@ export default defineConfig(({ mode }) => ({
       'date-fns'
     ],
     exclude: [
-      '@rollup/rollup-linux-x64-gnu',
-      '@rollup/rollup-darwin-x64',
-      '@rollup/rollup-darwin-arm64',
-      '@rollup/rollup-win32-x64-msvc'
+      /^@rollup\/rollup-(linux|darwin|win32)-.*/
     ]
   },
   // Adding Vite-specific options to further distinguish from Next.js
