@@ -36,6 +36,12 @@ export default defineConfig(({ mode }) => ({
       }
     },
     rollupOptions: {
+      external: [
+        '@rollup/rollup-linux-x64-gnu',
+        '@rollup/rollup-darwin-x64',
+        '@rollup/rollup-darwin-arm64',
+        '@rollup/rollup-win32-x64-msvc'
+      ],
       output: {
         manualChunks: {
           'vendor': [
@@ -102,6 +108,12 @@ export default defineConfig(({ mode }) => ({
       'lucide-react',
       'zod',
       'date-fns'
+    ],
+    exclude: [
+      '@rollup/rollup-linux-x64-gnu',
+      '@rollup/rollup-darwin-x64',
+      '@rollup/rollup-darwin-arm64',
+      '@rollup/rollup-win32-x64-msvc'
     ]
   },
   // Adding Vite-specific options to further distinguish from Next.js
