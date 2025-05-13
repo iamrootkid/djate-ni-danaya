@@ -1,0 +1,6 @@
+{
+  "enable": true,
+  "lint": true,
+  "unstable": true,
+  "path": "deno"
+} 
