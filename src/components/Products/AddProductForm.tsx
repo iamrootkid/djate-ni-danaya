@@ -190,9 +190,9 @@ export const AddProductForm = () => {
 
           {/* Price */}
           <div className="space-y-2">
-            <Label htmlFor="price">Price *</Label>
+            <Label htmlFor="price">Prix *</Label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5">$</span>
+              <span className="absolute left-3 top-2.5">F CFA</span>
               <Input
                 id="price"
                 value={price}
@@ -201,7 +201,7 @@ export const AddProductForm = () => {
                 type="number"
                 step="0.01"
                 min="0"
-                className="pl-8"
+                className="pl-16"
                 required
                 disabled={isSubmitting}
               />

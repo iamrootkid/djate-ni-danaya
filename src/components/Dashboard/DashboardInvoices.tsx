@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InvoiceTable } from "./InvoiceTable";
 import { useDashboardInvoices } from "@/hooks/invoices/use-dashboard-invoices";
@@ -28,6 +27,7 @@ interface DashboardInvoicesProps {
 }
 
 export const DashboardInvoices = ({ dateFilter, startDate, className }: DashboardInvoicesProps) => {
+  console.log('DashboardInvoices render:', { dateFilter, startDate });
   const { data: invoiceResults, isLoading, error } = useDashboardInvoices(dateFilter, startDate);
   
   // Process and validate invoice data

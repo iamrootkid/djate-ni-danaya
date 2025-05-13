@@ -1,6 +1,6 @@
-
 import { useState, useCallback } from "react";
 import { DateFilter } from "@/types/invoice";
+import { subDays } from "date-fns";
 
 export const useDashboardFilters = (onFilterChange?: () => void) => {
   const [dateFilter, setDateFilter] = useState<DateFilter>("daily");
@@ -10,8 +10,10 @@ export const useDashboardFilters = (onFilterChange?: () => void) => {
   const handleFilterChange = useCallback((filter: DateFilter) => {
     setIsLoading(true);
     setDateFilter(filter);
-    
-    // Only trigger the callback if provided
+    if (filter === "yesterday") {
+      setStartDate(subDays(new Date(), 1));
+    }
+    // For other filters, do not change startDate (user can pick)
     if (onFilterChange) {
       onFilterChange();
     }
