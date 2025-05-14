@@ -60,10 +60,14 @@ const Dashboard = () => {
           sales: salesError || false,
         }}
         filters={filters}
+        // Pass the real filter values and handlers here:
+        dateFilter={dateFilter}
+        startDate={startDate}
+        handleFilterChange={handleFilterChange}
+        setStartDate={setStartDate}
       />
       <Toaster />
     </AppLayout>
   );
 };
-
 export default Dashboard;
