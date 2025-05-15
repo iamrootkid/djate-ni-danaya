@@ -30,7 +30,7 @@ export const UserProfile = () => {
           }
           
           // Use safe data access
-          if (data) {
+          if (data && typeof data === 'object' && 'role' in data) {
             const role = data.role || 'User';
             setUserRole(role);
           }

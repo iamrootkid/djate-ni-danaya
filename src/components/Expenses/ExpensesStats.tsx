@@ -23,7 +23,6 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
     queryKey: ["expenses-stats", filterType, dateRange, shopId],
     queryFn: async () => {
       if (!shopId) return null;
-      
       try {
         let query = supabase
           .from("expenses")
@@ -53,20 +52,24 @@ export const ExpensesStats = ({ filterType, dateRange }: ExpensesStatsProps) => 
           return { total: 0, byType: {} };
         }
 
-        const total = expenses.reduce((acc, curr) => {
-          const amount = safeGet(curr, ['amount'], 0);
-          return acc + amount;
-        }, 0);
-        
-        const byType = expenses.reduce((acc, curr) => {
-          const type = safeGet(curr, ['type'], '');
-          const amount = safeGet(curr, ['amount'], 0);
-          
+        // Defensive get functions (may be a row or an error, so check each)
+        function getAmount(row: any) {
+          return typeof row === "object" && row !== null && "amount" in row && typeof row.amount === "number" ? row.amount : 0;
+        }
+        function getType(row: any) {
+          return typeof row === "object" && row !== null && "type" in row && typeof row.type === "string" ? row.type : "";
+        }
+
+        const total = expenses.reduce((acc, curr) => acc + getAmount(curr), 0);
+
+        const byType = expenses.reduce((acc: Record<string, number>, curr) => {
+          const type = getType(curr);
+          const amount = getAmount(curr);
           if (type) {
             acc[type] = (acc[type] || 0) + amount;
           }
           return acc;
-        }, {} as Record<string, number>);
+        }, {});
 
         return { total, byType };
       } catch (error) {

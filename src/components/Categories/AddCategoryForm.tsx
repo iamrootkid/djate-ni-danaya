@@ -1,142 +1,103 @@
-
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Category } from "@/types/inventory";
-import { useToast, CustomToastProps } from "@/hooks/use-toast";
+import { createCategory } from "./utils/categoryOperations";
+import { useToast } from "@/hooks/use-toast";
 import { useShopId } from "@/hooks/use-shop-id";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-
-const categorySchema = z.object({
-  name: z.string().min(2, {
-    message: "Category name must be at least 2 characters.",
-  }),
-  description: z.string().optional(),
-});
-
-type CategoryFormValues = z.infer<typeof categorySchema>;
+import { Category } from "@/types/category";
 
 interface AddCategoryFormProps {
-  onCategoryAdded?: (category: Category) => void;
-  onSuccess?: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function AddCategoryForm({ onCategoryAdded, onSuccess }: AddCategoryFormProps) {
+// This function returns single result or null
+function getCategoryResult(data: any): Category | null {
+  if (!data || typeof data !== "object") return null;
+  // Defensive check: basic fields
+  if ("id" in data && "name" in data && "shop_id" in data) return data as Category;
+  return null;
+}
+
+export const AddCategoryForm = ({
+  open,
+  onOpenChange,
+}: AddCategoryFormProps) => {
   const { toast } = useToast();
   const { shopId } = useShopId();
-  const queryClient = useQueryClient();
 
-  const form = useForm<CategoryFormValues>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: {
-      name: "",
-      description: "",
-    },
-  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
 
-  const { mutate: createCategory, isPending } = useMutation({
-    mutationFn: async (values: CategoryFormValues) => {
-      if (!shopId) {
-        throw new Error("Shop ID not found");
-      }
-
-      const { data, error } = await supabase
-        .from("categories")
-        .insert({
-          name: values.name,
-          description: values.description,
-          shop_id: shopId
-        } as any)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as Category;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Catégorie ajoutée",
-        description: `La catégorie ${data.name} a été ajoutée avec succès.`,
-      } as CustomToastProps);
-      
-      queryClient.invalidateQueries({ queryKey: ["categories", shopId] });
-      form.reset();
-
-      if (onCategoryAdded && data) {
-        onCategoryAdded(data as Category);
-      }
-      
-      if (onSuccess) {
-        onSuccess();
-      }
-    },
-    onError: (error: any) => {
+  const onSubmit = async (data: any) => {
+    if (!shopId) {
       toast({
         title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de l'ajout de la catégorie.",
+        description: "Boutique non trouvée. Veuillez contacter le support.",
         variant: "destructive",
-      } as CustomToastProps);
-    },
-  });
+      });
+      return;
+    }
 
-  const handleSubmit = async (values: CategoryFormValues) => {
-    createCategory(values);
+    const result = await createCategory({ ...data, shop_id: shopId });
+    const cat = getCategoryResult(result);
+
+    if (!cat) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la catégorie.",
+        variant: "destructive"
+      });
+      return;
+    }
+    toast({
+      title: "Catégorie ajoutée",
+      description: `La catégorie "${cat.name}" a été ajoutée.`,
+      variant: "default"
+    });
+
+    onOpenChange(false);
+    reset();
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nom de la catégorie</FormLabel>
-              <FormControl>
-                <Input placeholder="Nom" {...field} />
-              </FormControl>
-              <FormDescription>
-                Ce sera le nom visible de votre catégorie.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Input placeholder="Description" {...field} />
-              </FormControl>
-              <FormDescription>
-                Décrivez votre catégorie.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Ajout..." : "Ajouter"}
-        </Button>
-      </form>
-    </Form>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Ajouter une catégorie</DialogTitle>
+          <DialogDescription>
+            Ajouter une nouvelle catégorie à votre boutique
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nom</Label>
+            <Input
+              id="name"
+              placeholder="Nom de la catégorie"
+              className="col-span-3"
+              {...register("name", { required: "Le nom est requis" })}
+            />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name.message}</p>
+            )}
+          </div>
+          <Button type="submit">Ajouter</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
-}
+};

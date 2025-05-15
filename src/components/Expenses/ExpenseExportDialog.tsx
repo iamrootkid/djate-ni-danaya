@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -25,14 +24,14 @@ export const ExpenseExportDialog = ({
       toast({
         title: "Export réussi",
         description: `Le fichier a été téléchargé avec succès.`,
-      } as CustomToastProps);
+      });
     } catch (error) {
       console.error("Error exporting expenses:", error);
       toast({
         title: "Erreur d'export",
         description: "Une erreur s'est produite lors de l'export des dépenses.",
         variant: "destructive",
-      } as CustomToastProps);
+      });
     }
   };
 
