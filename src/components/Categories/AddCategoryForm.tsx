@@ -45,8 +45,7 @@ export const AddCategoryForm = ({
   const onSubmit = async (data: any) => {
     if (!shopId) {
       toast({
-        title: "Erreur",
-        description: "Boutique non trouvée. Veuillez contacter le support.",
+        title: "Erreur: Boutique non trouvée. Veuillez contacter le support.",
         variant: "destructive",
       });
       return;
@@ -57,15 +56,13 @@ export const AddCategoryForm = ({
 
     if (!cat) {
       toast({
-        title: "Erreur",
-        description: "Impossible d'ajouter la catégorie.",
+        title: "Impossible d'ajouter la catégorie.",
         variant: "destructive"
       });
       return;
     }
     toast({
-      title: "Catégorie ajoutée",
-      description: `La catégorie "${cat.name}" a été ajoutée.`,
+      title: `La catégorie "${cat.name}" a été ajoutée.`,
       variant: "default"
     });
 
@@ -92,7 +89,7 @@ export const AddCategoryForm = ({
               {...register("name", { required: "Le nom est requis" })}
             />
             {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
+              <p className="text-sm text-red-500">{String(errors.name.message)}</p>
             )}
           </div>
           <Button type="submit">Ajouter</Button>

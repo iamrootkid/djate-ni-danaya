@@ -84,12 +84,12 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         const { data, error } = await supabase
           .from('invoices')
           .select('shop_id')
-          .match(filterByUUID('id', invoice.id))
+          .match({ id: invoice.id }) // FIX: use plain object
           .single();
           
         if (error) throw error;
         
-        const invoiceShopId = safeDataAccess(data, 'shop_id');
+        const invoiceShopId = data?.shop_id;
         if (invoiceShopId !== shopId) {
           setVerificationError("Unauthorized: Invoice does not belong to your shop");
           setShopIdVerified(false);

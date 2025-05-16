@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -79,14 +78,14 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
               continue;
             }
 
-            if (profile) {
+            if (profile && typeof profile === "object" && "role" in profile) {
               const role = profile.role || 'employee';
               setUserRole(role);
               setIsAuthenticated(true);
               setLoading(false);
               return;
             } else {
-              console.error("No profile found for user");
+              console.error("No profile found for user or profile missing role");
               setIsAuthenticated(false);
               setLoading(false);
               return;

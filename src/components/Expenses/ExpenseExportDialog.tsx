@@ -22,14 +22,12 @@ export const ExpenseExportDialog = ({
       exportExpenseToCsv(expense);
       onClose();
       toast({
-        title: "Export réussi",
-        description: `Le fichier a été téléchargé avec succès.`,
+        title: "Export réussi - Le fichier a été téléchargé avec succès.",
       });
     } catch (error) {
       console.error("Error exporting expenses:", error);
       toast({
-        title: "Erreur d'export",
-        description: "Une erreur s'est produite lors de l'export des dépenses.",
+        title: "Erreur d'export - Une erreur s'est produite lors de l'export des dépenses.",
         variant: "destructive",
       });
     }

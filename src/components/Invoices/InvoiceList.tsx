@@ -1,4 +1,3 @@
-
 import { useInvoiceList } from "@/hooks/use-invoice-list";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -49,7 +48,10 @@ export const InvoiceList = ({ dateFilter, startDate, endDate }: InvoiceListProps
                 invoices.map(invoice => (
                   <InvoiceRow
                     key={invoice.id}
-                    invoice={invoice}
+                    invoice={{
+                      ...invoice,
+                      is_modified: invoice.is_modified ?? false // Ensure present
+                    }}
                     isAdmin={isAdmin}
                     onView={setSelectedInvoice}
                     onModify={setModifyingInvoice}
