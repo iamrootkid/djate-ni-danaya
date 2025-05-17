@@ -12,16 +12,28 @@ interface ProductStockStatusProps {
 export const ProductStockStatus = ({ limit = 5 }: ProductStockStatusProps) => {
   const { useShopQuery } = useShopData();
 
-  const { data: products, isLoading } = useShopQuery(
+  // Removed 'order' and fixed props
+  const { data: rawProducts, isLoading } = useShopQuery(
     ["products-stock"],
     "products",
     {
-      select: "id, name, stock, price, stock_quantity",
-      order: "stock_quantity",
+      select: "id, name, stock, stock_quantity, price",
       limit,
       enabled: true,
     }
   );
+
+  // Filter out query errors and keep only valid products
+  const products = Array.isArray(rawProducts)
+    ? rawProducts.filter(
+        (item) =>
+          item &&
+          typeof item === "object" &&
+          !("code" in item) &&
+          typeof item.id === "string" &&
+          typeof item.name === "string"
+      )
+    : [];
 
   const getStockStatus = (stock: number) => {
     if (stock <= 0) {
@@ -68,22 +80,24 @@ export const ProductStockStatus = ({ limit = 5 }: ProductStockStatusProps) => {
                     </TableCell>
                   </TableRow>
                 ))
-            ) : products && products.length > 0 ? (
+            ) : products.length > 0 ? (
               products.map((item, idx) => {
-                if (
-                  !item ||
-                  typeof item !== "object" ||
-                  "code" in item // covers SelectQueryError
-                ) {
-                  return null;
-                }
-                
-                const stock = item.stock_quantity ?? item.stock ?? 0;
-                
+                // "stock" is the expected field but check stock_quantity for safety
+                const stock =
+                  typeof item.stock === "number"
+                    ? item.stock
+                    : typeof item.stock_quantity === "number"
+                    ? item.stock_quantity
+                    : 0;
+
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.price?.toLocaleString()} F CFA</TableCell>
+                    <TableCell>
+                      {typeof item.price === "number"
+                        ? item.price.toLocaleString() + " F CFA"
+                        : "-"}
+                    </TableCell>
                     <TableCell>{stock}</TableCell>
                     <TableCell>{getStockStatus(stock)}</TableCell>
                   </TableRow>
