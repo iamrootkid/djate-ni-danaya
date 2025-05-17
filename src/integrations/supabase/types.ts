@@ -15,7 +15,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
-          shop_id: string | null
+          shop_id: string
           updated_at: string
         }
         Insert: {
@@ -23,7 +23,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
-          shop_id?: string | null
+          shop_id: string
           updated_at?: string
         }
         Update: {
@@ -31,12 +31,56 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
-          shop_id?: string | null
+          shop_id?: string
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "categories_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          loyalty_points: number | null
+          phone: string | null
+          shop_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          loyalty_points?: number | null
+          phone?: string | null
+          shop_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          loyalty_points?: number | null
+          phone?: string | null
+          shop_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
@@ -77,6 +121,7 @@ export type Database = {
           employee_id: string | null
           id: string
           shop_id: string | null
+          supplier_id: string | null
           type: Database["public"]["Enums"]["expense_type"]
           updated_at: string
         }
@@ -88,6 +133,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           shop_id?: string | null
+          supplier_id?: string | null
           type: Database["public"]["Enums"]["expense_type"]
           updated_at?: string
         }
@@ -99,6 +145,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           shop_id?: string | null
+          supplier_id?: string | null
           type?: Database["public"]["Enums"]["expense_type"]
           updated_at?: string
         }
@@ -115,6 +162,13 @@ export type Database = {
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -230,6 +284,51 @@ export type Database = {
           },
         ]
       }
+      loyalty_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          customer_id: string
+          id: string
+          points: number | null
+          related_sale_id: string | null
+          shop_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          points?: number | null
+          related_sale_id?: string | null
+          shop_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          points?: number | null
+          related_sale_id?: string | null
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_activities_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_activities_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category_id: string | null
@@ -239,7 +338,7 @@ export type Database = {
           image_url: string | null
           name: string
           price: number
-          shop_id: string | null
+          shop_id: string
           stock: number
           stock_quantity: number | null
           updated_at: string
@@ -252,7 +351,7 @@ export type Database = {
           image_url?: string | null
           name: string
           price?: number
-          shop_id?: string | null
+          shop_id: string
           stock?: number
           stock_quantity?: number | null
           updated_at?: string
@@ -265,7 +364,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           price?: number
-          shop_id?: string | null
+          shop_id?: string
           stock?: number
           stock_quantity?: number | null
           updated_at?: string
@@ -321,6 +420,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_tokens: {
+        Row: {
+          created_at: string | null
+          id: string
+          shop_id: string | null
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          shop_id?: string | null
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          shop_id?: string | null
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
@@ -533,6 +664,105 @@ export type Database = {
           },
         ]
       }
+      suppliers: {
+        Row: {
+          contact_info: string | null
+          created_at: string | null
+          id: string
+          name: string
+          shop_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          shop_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          shop_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_presence: {
+        Row: {
+          id: string
+          last_active: string | null
+          shop_id: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_active?: string | null
+          shop_id?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_active?: string | null
+          shop_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_presence_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          shop_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          shop_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          shop_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -613,6 +843,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "manager" | "employee" | "cashier" | "warehouse"
       expense_type:
         | "salary"
         | "commission"
@@ -736,6 +967,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "manager", "employee", "cashier", "warehouse"],
       expense_type: [
         "salary",
         "commission",
