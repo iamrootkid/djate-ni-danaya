@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "noImplicitAny": true,
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react",
+    "allowImportingTsExtensions": true,
+    "lib": ["esnext", "dom"]
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
+} 
