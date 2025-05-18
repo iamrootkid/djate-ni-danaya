@@ -62,8 +62,10 @@ const Products = () => {
   function isProduct(p: any): p is Product {
     return p && typeof p === 'object' && 'id' in p && 'name' in p;
   }
-  const products = (productsRaw || []).filter(isProduct);
-  const filteredProducts = products.filter(
+  // First, filter out only valid products
+  const validProducts: Product[] = ((productsRaw || []) as any[]).filter(isProduct);
+  // Then, apply the search filter
+  const filteredProducts: Product[] = validProducts.filter(
     (product) => {
       const productName = product.name.toLowerCase();
       const categoryName = product.categories?.name?.toLowerCase() || "";
@@ -137,7 +139,7 @@ const Products = () => {
         </div>
         <div className="flex-1 space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-3xl font-bold tracking-tight">Products</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Produits</h2>
             <Button onClick={() => setAddDialogOpen(true)}>
               Ajouter produit
             </Button>
@@ -148,7 +150,7 @@ const Products = () => {
             {/* Sticky Header */}
             <div className="sticky top-0 z-20 bg-white dark:bg-[#18181b] pb-2">
               <div className="px-4 pt-4 pb-2">
-                <h2 className="text-2xl font-bold tracking-tight">Products</h2>
+                <h2 className="text-2xl font-bold tracking-tight">Produits</h2>
               </div>
               <div className="flex items-center bg-[#f2f2f7] rounded-lg mx-4 mb-2 px-2">
                 <Search className="w-5 h-5 text-[#888]" />
@@ -184,7 +186,7 @@ const Products = () => {
               ) : filteredProducts.length === 0 ? (
                 <div className="text-center text-[#888] py-6">Aucun produit trouvé</div>
               ) : (
-                filteredProducts.map(product => (
+                filteredProducts.map((product) => (
                   <div key={product.id} className="min-w-[220px] bg-white rounded-xl shadow-sm p-3 flex flex-col mr-2">
                     <div className="w-full h-28 bg-gray-100 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
                       {product.image_url ? (
@@ -253,7 +255,7 @@ const Products = () => {
                   </div>
                 ) : (
                   <ProductGrid
-                    products={filteredProducts || []}
+                    products={filteredProducts as Product[]}
                     onEdit={(product) => {
                       setSelectedProduct(product);
                       setEditDialogOpen(true);
