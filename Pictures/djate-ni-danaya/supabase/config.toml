@@ -1,5 +1,0 @@
-
-project_id = "vfrutnkohrviouttwsnu"
-
-[functions.personnel-api]
-verify_jwt = false
