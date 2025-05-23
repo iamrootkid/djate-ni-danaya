@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockSummary as StockSummaryType } from "@/integrations/supabase/types/functions";
 import { ArrowUp, ArrowDown, DollarSign, Banknote, RefreshCw } from "lucide-react";
@@ -22,7 +21,7 @@ interface StockSummaryProps {
 export const StockSummary = ({ startDate, dateFilter, userRole }: StockSummaryProps) => {
   // Convert 'all' to 'daily' when using useStockSummary
   const stockSummaryFilter = dateFilter === 'all' ? 'daily' : (dateFilter as 'daily' | 'monthly' | 'yesterday');
-  const { data: summary, isLoading, refetch } = useStockSummary(startDate, stockSummaryFilter);
+  const { data: summary, isLoading, error, refetch } = useStockSummary(startDate, stockSummaryFilter);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const { shopId } = useShopId();
@@ -116,6 +115,26 @@ export const StockSummary = ({ startDate, dateFilter, userRole }: StockSummaryPr
     }
   };
 
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Résumé des stocks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-red-600 font-semibold">
+            Erreur lors de la récupération du résumé de stock.<br />
+            {error.message}
+          </div>
+          <div className="text-xs text-muted-foreground mt-2">
+            Si le message mentionne "Could not choose the best candidate function",<br />
+            veuillez demander à l'administrateur de la base de données de supprimer les fonctions dupliquées dans Supabase.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -152,32 +171,32 @@ export const StockSummary = ({ startDate, dateFilter, userRole }: StockSummaryPr
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2 p-3 bg-card rounded-lg">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-green-500" />
-              <p className="text-sm font-medium">Revenu total</p>
+              <p className="text-sm font-medium text-card-foreground">Revenu total</p>
             </div>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-xl sm:text-2xl font-bold text-green-600">
               {(summary?.total_income || 0).toLocaleString()} F CFA
             </p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 bg-card rounded-lg">
             <div className="flex items-center gap-2">
               <Banknote className="h-4 w-4 text-red-500" />
-              <p className="text-sm font-medium">Dépenses totales</p>
+              <p className="text-sm font-medium text-card-foreground">Dépenses totales</p>
             </div>
-            <p className="text-2xl font-bold text-red-600">
+            <p className="text-xl sm:text-2xl font-bold text-red-600">
               {(summary?.total_expenses || 0).toLocaleString()} F CFA
             </p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 bg-card rounded-lg">
             <div className="flex items-center gap-2">
               <ArrowUp className="h-4 w-4 text-blue-500" />
-              <p className="text-sm font-medium">Stock entrant</p>
+              <p className="text-sm font-medium text-card-foreground">Stock entrant</p>
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">
                 {summary?.stock_in || 0} unités
               </p>
               {summary && 'recent_returns' in summary && summary.recent_returns && summary.recent_returns > 0 ? (
@@ -187,13 +206,13 @@ export const StockSummary = ({ startDate, dateFilter, userRole }: StockSummaryPr
               ) : null}
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 bg-card rounded-lg">
             <div className="flex items-center gap-2">
               <ArrowDown className="h-4 w-4 text-orange-500" />
-              <p className="text-sm font-medium">Stock sortant</p>
+              <p className="text-sm font-medium text-card-foreground">Stock sortant</p>
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-orange-600">
+              <p className="text-xl sm:text-2xl font-bold text-orange-600">
                 {summary?.stock_out || 0} unités
               </p>
               <Badge variant={isStockIncreasing ? "success" : "destructive"} className="ml-2">

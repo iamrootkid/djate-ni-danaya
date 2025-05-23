@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
@@ -31,8 +30,6 @@ export const StaffHeader = ({ onSuccess }: StaffHeaderProps) => {
 
   return (
     <div className="flex justify-between items-center">
-      <h2 className="text-3xl font-bold tracking-tight">Staff Management</h2>
-      
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
           <Button>

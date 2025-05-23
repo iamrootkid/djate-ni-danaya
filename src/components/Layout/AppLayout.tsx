@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
@@ -63,7 +62,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar userRole={userRole} />
       <MobileMenu userRole={userRole} />
-      <main className="flex-1 overflow-x-hidden">
+      <main className="flex-1">
         <div className="sticky top-0 z-10 bg-white shadow-sm md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-3">

@@ -26,107 +26,55 @@ export const DashboardCards = ({ stats }: DashboardCardsProps) => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",").replace(/,/g, " ");
   };
 
-  // Mobile view content
-  const MobileContent = () => (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-4 w-full">
-      <div className="bg-card text-card-foreground rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <Package className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="text-2xl font-bold mb-2">{stats.products}</div>
-        <div className="text-sm text-muted-foreground mb-1">Produits</div>
-        <div className="text-xs text-muted-foreground">Produits en stock</div>
-      </div>
-
-      <div className="bg-card text-card-foreground rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <DollarSign className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="text-2xl font-bold mb-2">{formatNumber(stats.sales)} F CFA</div>
-        <div className="text-sm text-muted-foreground mb-1">Ventes</div>
-        <div className="text-xs text-muted-foreground">Total des ventes</div>
-      </div>
-
-      <div className="bg-card text-card-foreground rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <Users className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="text-2xl font-bold mb-2">{stats.staff}</div>
-        <div className="text-sm text-muted-foreground mb-1">Personnel</div>
-        <div className="text-xs text-muted-foreground">Employés actifs</div>
-      </div>
-
-      <div className="bg-card text-card-foreground rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <Banknote className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="text-2xl font-bold mb-2">{formatNumber(stats.expenses.total)} F CFA</div>
-        <div className="text-sm text-muted-foreground mb-1">Dépenses</div>
-        <div className="text-xs text-muted-foreground">Total des dépenses</div>
-      </div>
-    </div>
-  );
-
-  // Desktop view content
-  const DesktopContent = () => (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+  return (
+    <div className="grid gap-4 grid-cols-2">
+      <Card className="bg-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Produits</CardTitle>
+          <CardTitle className="text-sm font-medium text-card-foreground">Produits</CardTitle>
           <Package className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.products}</div>
+          <div className="text-xl sm:text-2xl font-bold text-card-foreground">{stats.products}</div>
           <p className="text-xs text-muted-foreground">
             Produits en stock
           </p>
         </CardContent>
       </Card>
-      <Card className="bg-card dark:bg-card">
+
+      <Card className="bg-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Ventes</CardTitle>
+          <CardTitle className="text-sm font-medium text-card-foreground">Ventes</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatNumber(stats.sales)} F CFA</div>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Total des ventes
-            </p>
-            <Badge className={cn(
-              "text-xs", 
-              isProfitable ? "bg-green-500 text-white" : "bg-destructive text-destructive-foreground"
-            )}>
-              {profit > 0 ? "+" : ""}{formatNumber(profit)} F CFA
-            </Badge>
-          </div>
+          <div className="text-xl sm:text-2xl font-bold text-card-foreground">{formatNumber(stats.sales)} F CFA</div>
+          <p className="text-xs text-muted-foreground">
+            Total des ventes
+          </p>
         </CardContent>
       </Card>
-      <Card>
+
+      <Card className="bg-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Personnel</CardTitle>
+          <CardTitle className="text-sm font-medium text-card-foreground">Personnel</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.staff}</div>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Employés actifs
-            </p>
-            <Badge className="text-xs bg-secondary text-secondary-foreground">
-              {Math.floor((stats.products || 0) / (stats.staff || 1))} produits/emp
-            </Badge>
-          </div>
+          <div className="text-xl sm:text-2xl font-bold text-card-foreground">{stats.staff}</div>
+          <p className="text-xs text-muted-foreground">
+            Employés actifs
+          </p>
         </CardContent>
       </Card>
-      <Card>
+
+      <Card className="bg-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Dépenses</CardTitle>
+          <CardTitle className="text-sm font-medium text-card-foreground">Dépenses</CardTitle>
           <Banknote className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatNumber(stats.expenses.total)} F CFA</div>
-          <div className="flex items-center justify-between">
+          <div className="text-xl sm:text-2xl font-bold text-card-foreground">{formatNumber(stats.expenses.total)} F CFA</div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
               Total des dépenses
             </p>
@@ -137,16 +85,5 @@ export const DashboardCards = ({ stats }: DashboardCardsProps) => {
         </CardContent>
       </Card>
     </div>
-  );
-
-  return (
-    <>
-      <div className="md:hidden">
-        <MobileContent />
-      </div>
-      <div className="hidden md:block">
-        <DesktopContent />
-      </div>
-    </>
   );
 };

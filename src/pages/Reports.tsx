@@ -17,6 +17,8 @@ import { FinancialReport } from "@/components/Reports/FinancialReport";
 import { FileBarChart2, Download } from "lucide-react";
 import { useShopId } from "@/hooks/use-shop-id";
 import { useQueryClient } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Card, CardContent } from "@/components/ui/card";
 
 type ExportData = {
   [key: string]: string | number;
@@ -33,6 +35,7 @@ const Reports = () => {
   const { data: salesData } = useSalesReport(dateRange);
   const { shopId } = useShopId();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!shopId) return;
@@ -206,60 +209,39 @@ const Reports = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <FileBarChart2 className="h-6 w-6 text-primary" />
-            <h2 className="text-3xl font-bold tracking-tight">Rapports</h2>
-          </div>
-          <div className="flex gap-4">
-            <Select value={reportType} onValueChange={(value) => {
-              setReportType(value);
-              setActiveTab(value);
-            }}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Sélectionner le type de rapport" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales">Rapport des ventes</SelectItem>
-                <SelectItem value="performance">Performance du personnel</SelectItem>
-                <SelectItem value="inventory">État des stocks</SelectItem>
-                <SelectItem value="financial">Rapport financier</SelectItem>
-              </SelectContent>
-            </Select>
-            <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-            <Button onClick={handleExportData} className="flex gap-2">
-              <Download className="h-4 w-4" />
-              Exporter
-            </Button>
-          </div>
+      <div className={isMobile ? "space-y-4 p-2" : "space-y-6"}>
+        <Card className={isMobile ? "bg-white dark:bg-[#18181b] rounded-xl shadow-sm" : undefined}>
+          <CardContent className={isMobile ? "p-4" : "p-6"}>
+            <div className={isMobile ? "flex flex-col gap-4" : "flex justify-between items-center"}>
+              <div className={isMobile ? "w-full" : undefined}>
+                <h2 className="tracking-tight mx-0 my-0 text-2xl font-extrabold text-foreground">Rapports</h2>
+              </div>
+              <div className={isMobile ? "w-full flex flex-col gap-2" : "flex items-center gap-4"}>
+                <DatePickerWithRange value={dateRange} onChange={setDateRange} className={isMobile ? "w-full" : undefined} />
+                <Select value={reportType} onValueChange={setReportType}>
+                  <SelectTrigger className={isMobile ? "w-full" : undefined}>
+                    <SelectValue placeholder="Type de rapport" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sales">Ventes</SelectItem>
+                    <SelectItem value="performance">Performance</SelectItem>
+                    <SelectItem value="inventory">Inventaire</SelectItem>
+                    <SelectItem value="financial">Financier</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleExportData} className={isMobile ? "w-full" : undefined}>
+                  <Download className="h-4 w-4 mr-2" /> Exporter
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <div className={isMobile ? "space-y-4" : undefined}>
+          {reportType === "sales" && <SalesReport dateRange={dateRange} />}
+          {reportType === "performance" && <PerformanceReport dateRange={dateRange} />}
+          {reportType === "inventory" && <InventoryReport dateRange={dateRange} />}
+          {reportType === "financial" && <FinancialReport dateRange={dateRange} />}
         </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="sales">Ventes</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="inventory">Inventaire</TabsTrigger>
-            <TabsTrigger value="financial">Financier</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="sales" className="space-y-6 mt-6">
-            <SalesReport dateRange={dateRange} />
-            <SalesSummary dateRange={dateRange} />
-          </TabsContent>
-          
-          <TabsContent value="performance" className="mt-6">
-            <PerformanceReport />
-          </TabsContent>
-          
-          <TabsContent value="inventory" className="mt-6">
-            <InventoryReport />
-          </TabsContent>
-          
-          <TabsContent value="financial" className="mt-6">
-            <FinancialReport dateRange={dateRange} />
-          </TabsContent>
-        </Tabs>
       </div>
     </AppLayout>
   );

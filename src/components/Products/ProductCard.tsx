@@ -1,16 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Package, Tag, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductCardProps {
   product: any;
   onEdit: (product: any) => void;
   onDelete: (product: any) => void;
+  maxStock?: number;
 }
 
-export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
+export const ProductCard = ({ product, onEdit, onDelete, maxStock = 1 }: ProductCardProps) => {
   const handleDelete = async () => {
     try {
       if (product.image_url) {
@@ -33,51 +35,92 @@ export const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => 
     }
   };
 
+  const getStockStatus = (stock: number) => {
+    if (stock === 0) return { label: "Rupture", variant: "destructive" as const };
+    if (stock < 5) return { label: "Stock bas", variant: "warning" as const };
+    return { label: "En stock", variant: "success" as const };
+  };
+
+  const stockStatus = getStockStatus(product.stock);
+
+  // Remove proportional bar logic
+  let barColor = 'bg-green-500';
+  let stockLabel = 'En stock';
+  if (product.stock === 0) {
+    barColor = 'bg-red-500';
+    stockLabel = 'Rupture';
+  } else if (product.stock < 5) {
+    barColor = 'bg-yellow-400';
+    stockLabel = 'Stock bas';
+  }
+
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-lg">
-      <div className="aspect-square relative bg-gray-100">
+    <Card className="group overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02]">
+      <div className="aspect-square relative bg-muted overflow-hidden">
         {product.image_url ? (
           <img
             src={product.image_url}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-            {product.name}
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+            <Package className="w-12 h-12 opacity-50" />
           </div>
         )}
       </div>
-      <CardContent className="p-4 md:p-4 flex flex-col gap-2 md:gap-2">
+      <CardContent className="p-3 sm:p-4">
         <div className="space-y-2">
-          <h3 className="font-semibold text-lg md:text-lg text-[#222] dark:text-white truncate">{product.name}</h3>
-          <div className="text-sm text-gray-500 dark:text-[#aaa]">
+          <div>
+            <h3 className="font-semibold text-base sm:text-lg text-card-foreground truncate mb-1">{product.name}</h3>
             {product.categories?.name && (
-              <div>Catégorie: {product.categories.name}</div>
+              <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                <Tag className="w-3 h-3 mr-1" />
+                <span className="truncate">{product.categories.name}</span>
+              </div>
             )}
-            {product.description && <div>{product.description}</div>}
           </div>
-          <div className="text-sm flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-            <div>Prix: <span className="font-semibold">{product.price.toLocaleString()} F CFA</span></div>
-            <div className="text-red-500">Stock: {product.stock}</div>
+          {product.description && (
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+          )}
+          <div className="flex items-center justify-between pt-2">
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-card-foreground">
+                {product.price.toLocaleString()} F CFA
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-primary hover:text-primary-foreground"
+                onClick={() => onEdit(product)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-destructive hover:text-destructive-foreground"
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="p-3 md:p-2 rounded-lg md:rounded"
-              onClick={() => onEdit(product)}
-            >
-              <Pencil className="h-5 w-5 md:h-4 md:w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="p-3 md:p-2 rounded-lg md:rounded"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
-            </Button>
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Stock: {product.stock} unités</span>
+            </div>
+            <div className="w-full h-6 relative">
+              <div className="absolute inset-0 w-full h-6 bg-gray-200 rounded-full" />
+              <div
+                className={`h-6 rounded-full flex items-center justify-center font-semibold text-xs text-white ${barColor}`}
+                style={{ width: '100%', position: 'relative', zIndex: 1 }}
+              >
+                {stockLabel}
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>

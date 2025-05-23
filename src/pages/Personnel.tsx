@@ -8,6 +8,9 @@ import { PersonnelList } from "@/components/Personnel/PersonnelList";
 import { AddPersonnelForm } from "@/components/Personnel/AddPersonnelForm";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Database } from "@/types/supabase";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type PersonnelMember = Database["public"]["Tables"]["staff"]["Row"];
 
@@ -26,6 +29,7 @@ const Personnel = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { shopId } = useShopId();
+  const isMobile = useIsMobile();
 
   const handleDelete = async () => {
     if (!selectedPersonnel || !shopId) return;
@@ -40,7 +44,7 @@ const Personnel = () => {
 
       toast({
         title: "Success",
-        description: "Personnel deleted successfully",
+        content: "Personnel deleted successfully",
       });
       
       queryClient.invalidateQueries({ queryKey: ["personnel", shopId] });
@@ -49,7 +53,7 @@ const Personnel = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete personnel",
+        content: error.message || "Failed to delete personnel",
         variant: "destructive",
       });
     }
@@ -59,22 +63,24 @@ const Personnel = () => {
     if (!selectedPersonnel || !shopId) return;
 
     try {
+      const updateData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        phone: data.phone,
+        ...(data.password && { password_hash: data.password }),
+      } as any;
+
       const { error } = await supabase
         .from("staff")
-        .update({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          phone: data.phone,
-          ...(data.password && { password_hash: data.password }),
-        })
+        .update(updateData)
         .match({ id: selectedPersonnel.id, shop_id: shopId });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Personnel updated successfully",
+        content: "Personnel updated successfully",
       });
       
       queryClient.invalidateQueries({ queryKey: ["personnel", shopId] });
@@ -83,7 +89,7 @@ const Personnel = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update personnel",
+        content: error.message || "Failed to update personnel",
         variant: "destructive",
       });
     }
@@ -101,13 +107,23 @@ const Personnel = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Personnel Management</h1>
-          <AddPersonnelForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ["personnel", shopId] })} />
-        </div>
-        <Card>
-          <CardContent className="pt-6">
+      <div className={isMobile ? "space-y-4 p-2 flex flex-col items-center" : "space-y-6 flex flex-col items-center"}>
+        <Card className={isMobile ? "bg-white dark:bg-[#18181b] rounded-xl shadow-sm w-full max-w-md mx-auto" : "bg-white dark:bg-[#18181b] rounded-xl shadow-sm w-full max-w-2xl mx-auto"}>
+          <CardContent className={isMobile ? "p-4" : undefined}>
+            <div className={isMobile ? "flex flex-col gap-4" : "flex justify-between items-center"}>
+              <h1 className="text-2xl font-bold text-foreground">Personnel Management</h1>
+              <Button 
+                onClick={() => setEditDialogOpen(true)}
+                className={isMobile ? "w-full bg-[#a18afc] hover:bg-[#a18afc]/90 text-white font-semibold px-4 py-2 rounded-xl flex items-center gap-2" : "bg-[#a18afc] hover:bg-[#a18afc]/90 text-white font-semibold px-4 py-2 rounded-xl flex items-center gap-2"}
+              >
+                <Plus className="h-5 w-5" />
+                Add Personnel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={isMobile ? "bg-white dark:bg-[#18181b] rounded-xl shadow-sm w-full max-w-md mx-auto" : "bg-white dark:bg-[#18181b] rounded-xl shadow-sm w-full max-w-2xl mx-auto"}>
+          <CardContent className="p-0">
             <PersonnelList
               onEdit={(personnel) => {
                 setSelectedPersonnel(personnel);

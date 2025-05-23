@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, UserRound, UserPlus, AlertCircle } from "lucide-react";
@@ -39,7 +38,7 @@ export const StaffList = () => {
       throw error;
     }
 
-    return asAny<StaffItem[]>(data);
+    return asAny(data);
   }, [shopId]);
 
   const { data: staff, isLoading, error } = useQuery({

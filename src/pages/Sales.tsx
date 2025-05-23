@@ -185,7 +185,7 @@ const Sales = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-4">
+      <div className={isMobile ? "space-y-4 p-2" : "space-y-4"}>
         <SalesHeader 
           cartTotal={cartTotal}
           cartEmpty={cart.length === 0}
@@ -196,11 +196,11 @@ const Sales = () => {
         />
 
         <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
-          <Card className={`${isMobile ? 'mb-4' : ''}`}>
-            <CardHeader className={`${isMobile ? 'py-3 px-4' : ''}`}>
-              <CardTitle className={`${isMobile ? 'text-lg' : ''}`}>Produits</CardTitle>
+          <Card className={isMobile ? 'mb-4' : ''}>
+            <CardHeader className={isMobile ? 'py-3 px-4' : ''}>
+              <CardTitle className={isMobile ? 'text-lg' : ''}>Produits</CardTitle>
             </CardHeader>
-            <CardContent className={`${isMobile ? 'p-3' : ''}`}>
+            <CardContent className={isMobile ? 'p-3' : ''}>
               <div className="relative mb-3">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -226,10 +226,10 @@ const Sales = () => {
           </Card>
 
           <Card>
-            <CardHeader className={`${isMobile ? 'py-3 px-4' : ''}`}>
-              <CardTitle className={`${isMobile ? 'text-lg' : ''}`}>Panier</CardTitle>
+            <CardHeader className={isMobile ? 'py-3 px-4' : ''}>
+              <CardTitle className={isMobile ? 'text-lg' : ''}>Panier</CardTitle>
             </CardHeader>
-            <CardContent className={`${isMobile ? 'p-3' : ''}`}>
+            <CardContent className={isMobile ? 'p-3' : ''}>
               <CartSummary
                 cart={cart}
                 updateQuantity={updateQuantity}

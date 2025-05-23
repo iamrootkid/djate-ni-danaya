@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,7 +41,7 @@ const Staff = () => {
 
       toast({
         title: "Success",
-        description: "Employee deleted successfully",
+        content: "Employee deleted successfully",
       });
       
       queryClient.invalidateQueries({ queryKey: ["staff", shopId] });
@@ -51,7 +50,7 @@ const Staff = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete employee",
+        content: error.message || "Failed to delete employee",
         variant: "destructive",
       });
     }
@@ -61,22 +60,25 @@ const Staff = () => {
     if (!selectedEmployee || !shopId) return;
 
     try {
+      const updateData: any = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        phone: data.phone,
+      };
+      if (data.password) {
+        updateData.password_hash = data.password;
+      }
       const { error } = await supabase
         .from("staff")
-        .update({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          phone: data.phone,
-          ...(data.password && { password_hash: data.password }),
-        })
+        .update(updateData)
         .match({ id: selectedEmployee.id, shop_id: shopId });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Employee updated successfully",
+        content: "Employee updated successfully",
       });
       
       queryClient.invalidateQueries({ queryKey: ["staff", shopId] });
@@ -85,7 +87,7 @@ const Staff = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update employee",
+        content: error.message || "Failed to update employee",
         variant: "destructive",
       });
     }
@@ -109,7 +111,10 @@ const Staff = () => {
         <Card>
           <CardContent className="pt-6">
             <EnhancedStaffList 
-              onEdit={setSelectedEmployee}
+              onEdit={(employee) => {
+                setSelectedEmployee(employee);
+                setEditDialogOpen(true);
+              }}
               onDelete={(employee) => {
                 setSelectedEmployee(employee);
                 setDeleteDialogOpen(true);
