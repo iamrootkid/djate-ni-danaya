@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { DashboardContent } from "@/components/Dashboard/DashboardContent";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +13,6 @@ const Dashboard = () => {
     dateFilter,
     startDate,
     stats,
-    recentOrders,
     handleFilterChange,
     setStartDate,
     invalidateAllDashboardQueries,
@@ -60,9 +58,9 @@ const Dashboard = () => {
           sales: salesError || false,
         }}
         filters={filters}
-        // Pass the real filter values and handlers here:
         dateFilter={dateFilter}
         startDate={startDate}
+        shopId={shopId}
         handleFilterChange={handleFilterChange}
         setStartDate={setStartDate}
       />

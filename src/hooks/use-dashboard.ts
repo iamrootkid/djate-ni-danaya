@@ -1,9 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
-import { useRecentOrders } from "@/hooks/use-recent-orders";
 import { useDashboardSubscriptions } from "@/hooks/dashboard/use-dashboard-subscriptions";
 import { useDashboardFilters } from "@/hooks/dashboard/use-dashboard-filters";
 import { useDashboardRole } from "@/hooks/dashboard/use-dashboard-role";
@@ -33,11 +31,10 @@ export const useDashboard = () => {
   
   // Load data in parallel with proper suspense handling
   const { data: stats, isLoading: statsLoading } = useDashboardStats(dateFilter || 'daily', startDate || new Date());
-  const { data: recentOrders, isLoading: ordersLoading } = useRecentOrders(dateFilter || 'daily', startDate || new Date());
   
   // Update loading state based on query states
   useEffect(() => {
-    const isCurrentlyLoading = statsLoading || ordersLoading;
+    const isCurrentlyLoading = statsLoading;
     
     if (isCurrentlyLoading) {
       setIsLoading(true);
@@ -46,7 +43,7 @@ export const useDashboard = () => {
       const timer = setTimeout(() => setIsLoading(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [statsLoading, ordersLoading, setIsLoading]);
+  }, [statsLoading, setIsLoading]);
   
   return {
     shopId,
@@ -60,10 +57,9 @@ export const useDashboard = () => {
       growth: "0%",
       expenses: { total: 0, stock: 0 }
     },
-    recentOrders,
     handleFilterChange,
     setStartDate,
     invalidateAllDashboardQueries,
-    isLoading: filtersLoading || statsLoading || ordersLoading
+    isLoading: filtersLoading || statsLoading
   };
 };

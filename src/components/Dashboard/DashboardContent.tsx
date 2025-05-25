@@ -1,13 +1,14 @@
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { DashboardCards } from "@/components/Dashboard/DashboardCards";
 import { DashboardInvoices } from "@/components/Dashboard/DashboardInvoices";
-import { RecentOrders } from "@/components/Dashboard/RecentOrders";
-import { StockSummary } from "@/components/Dashboard/StockSummary";
 import { ProductStockStatus } from "@/components/Dashboard/ProductStockStatus";
 import { DateFilter, UserRole } from "@/types/invoice";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Order } from "@/types/order";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useDashboardSales } from "@/hooks/use-dashboard-sales";
+import { FiTrendingUp } from "react-icons/fi";
 
 interface FiltersType {
   statsPeriod: DateFilter;
@@ -37,9 +38,69 @@ interface DashboardContentProps {
   filters: FiltersType;
   dateFilter: DateFilter;
   startDate: Date;
+  shopId: string;
   handleFilterChange: (filter: DateFilter) => void;
   setStartDate: (date: Date) => void;
 }
+
+const SalesOverview = ({ dateFilter, startDate, shopId }: { dateFilter: DateFilter; startDate: Date; shopId: string }) => {
+  const { data: salesData, isLoading } = useDashboardSales(dateFilter, startDate);
+
+  const chartData = salesData?.map(sale => ({
+    date: sale.date,
+    total: sale.total
+  })) || [];
+
+  // Calculate total sales
+  const totalSales = chartData.reduce((sum, item) => sum + (item.total || 0), 0);
+
+  return (
+    <Card className="h-full p-4">
+      <CardHeader>
+        <CardTitle>Aperçu des ventes</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4">
+          <span className="text-muted-foreground text-sm">Total ventes:</span>
+          <span
+            className="inline-flex items-center ml-2 px-4 py-2 rounded-xl shadow-lg bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-white text-3xl font-extrabold tracking-tight animate-pulse"
+            style={{
+              boxShadow: '0 4px 24px 0 rgba(124,58,237,0.25), 0 1.5px 4px 0 rgba(255,193,7,0.10)'
+            }}
+          >
+            <FiTrendingUp className="mr-2 text-4xl drop-shadow-lg" />
+            {totalSales.toLocaleString()} F CFA
+          </span>
+        </div>
+        <div className="w-full" style={{ minHeight: 350 }}>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-[350px]">Chargement...</div>
+          ) : !chartData || chartData.length === 0 ? (
+            <div className="flex justify-center items-center h-[350px]">Aucune donnée de vente disponible</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 50, bottom: 30 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" tick={{ fontSize: 13 }} />
+                <YAxis 
+                  tickFormatter={(value) => value.toLocaleString() + ' F'}
+                />
+                <Tooltip 
+                  formatter={(value: number) => `${value.toLocaleString()} F CFA`}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                <Bar dataKey="total" fill="#7C3AED" name="Montant total" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export const DashboardContent = ({
   stats,
@@ -51,6 +112,7 @@ export const DashboardContent = ({
   filters,
   dateFilter,
   startDate,
+  shopId,
   handleFilterChange,
   setStartDate,
 }: DashboardContentProps) => {
@@ -91,22 +153,21 @@ export const DashboardContent = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <StockSummary
+      {/* Stack Aperçu des ventes above Produits à faible stock */}
+      <div className="grid grid-cols-1 gap-6">
+        <SalesOverview
           dateFilter={dateFilter}
           startDate={startDate}
-          userRole={userRole}
+          shopId={shopId}
         />
         <ProductStockStatus />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6">
         <DashboardInvoices 
           dateFilter={dateFilter} 
           startDate={startDate}
-          className="lg:col-span-3"
         />
-        <RecentOrders orders={[]} />
       </div>
     </div>
   );

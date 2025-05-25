@@ -6,6 +6,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useShopId } from "@/hooks/use-shop-id";
 
 type Product = Database['public']['Tables']['products']['Row'];
 
@@ -16,13 +17,21 @@ interface ProductStockStatusProps {
 export const ProductStockStatus = ({ limit = 10 }: ProductStockStatusProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { shopId } = useShopId();
 
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!shopId) {
+        console.error("No shop ID available for fetching products");
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('products')
           .select('*')
+          .eq('shop_id', shopId)
           .order('stock', { ascending: true })
           .limit(limit);
 
@@ -38,7 +47,7 @@ export const ProductStockStatus = ({ limit = 10 }: ProductStockStatusProps) => {
     };
 
     fetchProducts();
-  }, [limit]);
+  }, [limit, shopId]);
 
   const getStockStatus = (stock: number) => {
     if (stock <= 0) {
