@@ -77,7 +77,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                 </Button>
               </SidebarTrigger>
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-                Store Manager
+                DJATE NI DANAYA
               </h1>
             </div>
           </div>
