@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoleSelection } from "@/components/auth/RoleSelection";
@@ -38,7 +39,7 @@ const Login = () => {
             </p>
           ) : (
             <p className="text-center text-gray-500">
-              Veuillez entrer l'identifiant de votre magasin
+              Veuillez entrer le code PIN de votre magasin
             </p>
           )}
         </CardHeader>

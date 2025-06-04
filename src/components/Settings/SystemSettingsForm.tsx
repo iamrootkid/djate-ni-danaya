@@ -3,10 +3,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useShopId } from "@/hooks/use-shop-id";
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SystemSettingsFormProps {
   invoicePrefix: string;
@@ -31,25 +33,89 @@ export const SystemSettingsForm = ({
 }: SystemSettingsFormProps) => {
   const { shopId } = useShopId();
   const [copied, setCopied] = useState(false);
+  const [shopPin, setShopPin] = useState<string>("");
+  const [regenerating, setRegenerating] = useState(false);
+
+  useEffect(() => {
+    // Charger le PIN du magasin depuis localStorage ou depuis la base de données
+    const storedPin = localStorage.getItem('shopPin');
+    if (storedPin) {
+      setShopPin(storedPin);
+    } else if (shopId) {
+      // Si pas de PIN stocké, le récupérer depuis la base de données
+      fetchShopPin();
+    }
+  }, [shopId]);
+
+  const fetchShopPin = async () => {
+    if (!shopId) return;
+    
+    try {
+      const { data: shopData, error } = await supabase
+        .from('shops')
+        .select('pin_code')
+        .eq('id', shopId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (shopData?.pin_code) {
+        setShopPin(shopData.pin_code);
+        localStorage.setItem('shopPin', shopData.pin_code);
+      }
+    } catch (error) {
+      console.error('Error fetching shop PIN:', error);
+    }
+  };
 
   const copyToClipboard = () => {
-    if (shopId) {
-      navigator.clipboard.writeText(shopId);
+    if (shopPin) {
+      navigator.clipboard.writeText(shopPin);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const regeneratePin = async () => {
+    if (!shopId) return;
+    
+    setRegenerating(true);
+    try {
+      // Générer un nouveau PIN via la fonction RPC
+      const { data: newPin, error } = await supabase
+        .rpc('generate_unique_pin_code');
+      
+      if (error) throw error;
+      
+      // Mettre à jour le PIN dans la base de données
+      const { error: updateError } = await supabase
+        .from('shops')
+        .update({ pin_code: newPin })
+        .eq('id', shopId);
+      
+      if (updateError) throw updateError;
+      
+      setShopPin(newPin);
+      localStorage.setItem('shopPin', newPin);
+      toast.success('Nouveau code PIN généré avec succès');
+    } catch (error: any) {
+      console.error('Error regenerating PIN:', error);
+      toast.error('Erreur lors de la génération du nouveau code PIN');
+    } finally {
+      setRegenerating(false);
     }
   };
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="shop-id">Shop ID</Label>
+        <Label htmlFor="shop-pin">Code PIN du magasin</Label>
         <div className="flex items-center space-x-2">
           <Input 
-            id="shop-id" 
-            value={shopId || 'Loading...'} 
+            id="shop-pin" 
+            value={shopPin || 'Chargement...'} 
             readOnly
-            className="font-mono text-sm bg-muted"
+            className="font-mono text-lg bg-muted text-center tracking-widest"
           />
           <TooltipProvider>
             <Tooltip open={copied} onOpenChange={setCopied}>
@@ -58,19 +124,36 @@ export const SystemSettingsForm = ({
                   variant="outline"
                   size="icon"
                   onClick={copyToClipboard}
-                  disabled={!shopId}
+                  disabled={!shopPin}
                 >
                   <CopyIcon className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{copied ? 'Copied!' : 'Copy to clipboard'}</p>
+                <p>{copied ? 'Copié!' : 'Copier'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={regeneratePin}
+                  disabled={!shopId || regenerating}
+                >
+                  <RefreshCw className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Générer un nouveau code PIN</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
         <p className="text-sm text-muted-foreground">
-          This is your shop's unique identifier. You'll need this when logging in.
+          Ce code PIN à 6 chiffres identifie votre magasin. Partagez-le avec vos employés pour qu'ils puissent se connecter.
         </p>
       </div>
 

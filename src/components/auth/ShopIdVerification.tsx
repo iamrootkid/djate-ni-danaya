@@ -17,13 +17,14 @@ import {
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { isQueryError, safeSingleResult, asParam } from "@/utils/safeFilters";
 
-const shopIdSchema = z.object({
-  shopId: z.string().uuid("L'identifiant du magasin doit être un UUID valide").min(1, "L'identifiant du magasin est requis"),
+const shopPinSchema = z.object({
+  pinCode: z.string()
+    .length(6, "Le code PIN doit contenir exactement 6 chiffres")
+    .regex(/^\d{6}$/, "Le code PIN doit contenir uniquement des chiffres"),
 });
 
-type ShopIdValues = z.infer<typeof shopIdSchema>;
+type ShopPinValues = z.infer<typeof shopPinSchema>;
 
 interface ShopIdVerificationProps {
   onVerified: (verified: boolean, shopId: string) => void;
@@ -38,45 +39,49 @@ export const ShopIdVerification = ({
 }: ShopIdVerificationProps) => {
   const [error, setError] = useState<string | null>(null);
   
-  const form = useForm<ShopIdValues>({
-    resolver: zodResolver(shopIdSchema),
+  const form = useForm<ShopPinValues>({
+    resolver: zodResolver(shopPinSchema),
     defaultValues: {
-      shopId: "",
+      pinCode: "",
     },
   });
 
-  const verifyShopId = async (values: ShopIdValues) => {
+  const verifyShopPin = async (values: ShopPinValues) => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log(`Verifying shop ID: ${values.shopId}`);
+      console.log(`Verifying shop PIN: ${values.pinCode}`);
       
-      const { data: shopData, error } = await supabase
-        .from('shops')
-        .select('id, name')
-        .eq('id', asParam(values.shopId))
-        .limit(1)
-        .maybeSingle();
+      // Utiliser la fonction RPC pour obtenir l'UUID du magasin à partir du PIN
+      const { data: shopUuid, error } = await supabase
+        .rpc('get_shop_id_by_pin', { pin_code_param: values.pinCode });
       
-      console.log("Shop query response:", { data: shopData, error });
+      console.log("Shop query response:", { data: shopUuid, error });
       
       if (error) {
         throw new Error(`Erreur lors de la vérification du magasin: ${error.message}`);
       }
       
-      if (!shopData || isQueryError(shopData)) {
-        throw new Error("Magasin non trouvé. Veuillez vérifier l'identifiant du magasin.");
+      if (!shopUuid) {
+        throw new Error("Code PIN invalide. Veuillez vérifier votre code PIN.");
       }
       
-      const shop = safeSingleResult<{id: string, name: string}>(shopData);
-      if (!shop?.name) {
-        throw new Error("Données du magasin invalides");
+      // Vérifier que le magasin existe et récupérer son nom
+      const { data: shopData, error: shopError } = await supabase
+        .from('shops')
+        .select('id, name')
+        .eq('id', shopUuid)
+        .single();
+      
+      if (shopError || !shopData) {
+        throw new Error("Magasin non trouvé.");
       }
       
-      toast.success(`Magasin vérifié: ${shop.name}`);
-      localStorage.setItem('shopId', values.shopId);
-      onVerified(true, values.shopId);
+      toast.success(`Magasin vérifié: ${shopData.name}`);
+      localStorage.setItem('shopId', shopUuid);
+      localStorage.setItem('shopPin', values.pinCode); // Stocker aussi le PIN pour l'affichage
+      onVerified(true, shopUuid);
     } catch (error: any) {
       console.error("Shop verification error:", error);
       setError(error.message || "Erreur lors de la vérification");
@@ -89,7 +94,7 @@ export const ShopIdVerification = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(verifyShopId)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(verifyShopPin)} className="space-y-4">
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -98,14 +103,19 @@ export const ShopIdVerification = ({
         )}
         <FormField
           control={form.control}
-          name="shopId"
+          name="pinCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Identifiant du magasin</FormLabel>
+              <FormLabel>Code PIN du magasin</FormLabel>
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="Ex: 123e4567-e89b-12d3-a456-426614174000"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="123456"
+                  className="text-center text-lg tracking-widest"
                 />
               </FormControl>
               <FormMessage />
