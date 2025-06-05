@@ -1,14 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { ShopManagement } from "@/components/SuperAdmin/ShopManagement";
 import { UserManagement } from "@/components/SuperAdmin/UserManagement";
 import { GlobalStats } from "@/components/SuperAdmin/GlobalStats";
 import { SystemSettings } from "@/components/SuperAdmin/SystemSettings";
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 const SuperAdmin = () => {
@@ -20,42 +20,29 @@ const SuperAdmin = () => {
     checkSuperAdminAccess();
   }, []);
 
-  const checkSuperAdminAccess = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        navigate('/login');
-        return;
-      }
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-
-      if (error || !profile || profile.role !== 'super_admin') {
-        toast.error('Accès refusé: Privilèges Super Admin requis');
-        navigate('/dashboard');
-        return;
-      }
-
+  const checkSuperAdminAccess = () => {
+    const superAdminAuth = localStorage.getItem('superAdminAuth');
+    
+    if (superAdminAuth === 'true') {
       setIsAuthorized(true);
-    } catch (error) {
-      console.error('Error checking super admin access:', error);
-      toast.error('Erreur lors de la vérification des accès');
-      navigate('/dashboard');
-    } finally {
-      setLoading(false);
+    } else {
+      toast.error('Accès refusé: Authentification Super Admin requise');
+      navigate('/super-admin-login');
     }
+    setLoading(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('superAdminAuth');
+    toast.success('Déconnexion réussie');
+    navigate('/super-admin-login');
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Vérification des accès...</p>
         </div>
       </div>
@@ -69,13 +56,23 @@ const SuperAdmin = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Administration Système
-          </h1>
-          <p className="text-gray-600">
-            Gestion globale des magasins, utilisateurs et paramètres système
-          </p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Administration Système
+            </h1>
+            <p className="text-gray-600">
+              Gestion globale des magasins, utilisateurs et paramètres système
+            </p>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Déconnexion
+          </Button>
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">

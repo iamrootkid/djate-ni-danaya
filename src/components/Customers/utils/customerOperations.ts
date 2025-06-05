@@ -90,3 +90,7 @@ export const deleteCustomer = async (id: string): Promise<void> => {
     throw error;
   }
 };
+
+// Legacy exports for backward compatibility
+export const getCustomers = fetchCustomers;
+export const addCustomer = createCustomer;

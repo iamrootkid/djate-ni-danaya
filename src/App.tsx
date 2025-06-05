@@ -17,6 +17,7 @@ import Invoices from "@/pages/Invoices";
 import Settings from "@/pages/Settings";
 import Sales from "@/pages/Sales";
 import SuperAdmin from "@/pages/SuperAdmin";
+import SuperAdminLogin from "@/pages/SuperAdminLogin";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/super-admin-login" element={<SuperAdminLogin />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route
                   path="/*"

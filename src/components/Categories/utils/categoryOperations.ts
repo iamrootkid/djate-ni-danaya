@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 export interface Category {
   id: string;
@@ -20,7 +19,7 @@ export const fetchCategories = async (shopId: string): Promise<Category[]> => {
       .order('name');
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Category[];
   } catch (error: any) {
     console.error('Error fetching categories:', error);
     throw error;
@@ -38,14 +37,7 @@ export const createCategory = async (categoryData: Omit<Category, 'id' | 'create
     if (error) throw error;
     if (!data) throw new Error('No data returned from insert');
     
-    return {
-      id: data.id,
-      name: data.name,
-      shop_id: data.shop_id,
-      description: data.description,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-    };
+    return data as Category;
   } catch (error: any) {
     console.error('Error creating category:', error);
     throw error;

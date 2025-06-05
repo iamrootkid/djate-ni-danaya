@@ -1,12 +1,14 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { RoleSelection } from "@/components/auth/RoleSelection";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { ShopIdVerification } from "@/components/auth/ShopIdVerification";
-import { CreateSuperAdminButton } from "@/components/auth/CreateSuperAdminButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -15,6 +17,7 @@ const Login = () => {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [shopId, setShopId] = useState<string | null>(null);
   const [showShopIdForm, setShowShopIdForm] = useState(true);
+  const navigate = useNavigate();
 
   const handleRoleSelect = (role: 'admin' | 'employee') => {
     setSelectedRole(role);
@@ -84,7 +87,18 @@ const Login = () => {
               <p className="text-center text-gray-500 text-sm">
                 Administration système globale
               </p>
-              <CreateSuperAdminButton />
+              <div className="flex flex-col space-y-3">
+                <Button
+                  onClick={() => navigate('/super-admin-login')}
+                  className="w-full bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  Accès Super Admin
+                </Button>
+                <p className="text-xs text-center text-gray-500">
+                  Code PIN par défaut: <code className="bg-gray-100 px-1 rounded">123456</code>
+                </p>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
