@@ -630,6 +630,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_user_to_shop: {
+        Args: {
+          user_id_param: string
+          shop_id_param: string
+          role_param: string
+        }
+        Returns: boolean
+      }
       check_column_exists: {
         Args: { table_name: string; column_name: string }
         Returns: boolean
@@ -662,6 +670,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_shop_super_admin: {
+        Args: { shop_name: string; shop_address?: string }
+        Returns: {
+          id: string
+          name: string
+          address: string
+          pin_code: string
+          created_at: string
+        }[]
+      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -669,6 +687,33 @@ export type Database = {
       generate_unique_pin_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_all_shops: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+          address: string
+          pin_code: string
+          created_at: string
+          updated_at: string
+          owner_id: string
+          total_sales: number
+          total_revenue: number
+        }[]
+      }
+      get_all_users_with_shops: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          email: string
+          first_name: string
+          last_name: string
+          role: string
+          shop_id: string
+          shop_name: string
+          created_at: string
+        }[]
       }
       get_best_selling_products: {
         Args:
@@ -707,13 +752,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       update_product_stock: {
         Args: { product_id: string; quantity: number; shop_id: string }
         Returns: undefined
       }
     }
     Enums: {
-      app_role: "admin" | "manager" | "employee" | "cashier" | "warehouse"
+      app_role:
+        | "admin"
+        | "manager"
+        | "employee"
+        | "cashier"
+        | "warehouse"
+        | "super_admin"
       expense_type:
         | "salary"
         | "commission"
@@ -837,7 +892,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "employee", "cashier", "warehouse"],
+      app_role: [
+        "admin",
+        "manager",
+        "employee",
+        "cashier",
+        "warehouse",
+        "super_admin",
+      ],
       expense_type: [
         "salary",
         "commission",

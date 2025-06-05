@@ -8,7 +8,44 @@ export interface RoleConfig {
   menuItems: string[];
 }
 
-export const ROLE_CONFIGS: Record<Role, RoleConfig> = {
+export const ROLE_CONFIGS: Record<Role | 'super_admin', RoleConfig> = {
+  super_admin: {
+    allowedRoutes: [
+      '/super-admin',
+      '/dashboard',
+      '/categories',
+      '/products',
+      '/staff',
+      '/expenses',
+      '/reports',
+      '/invoices',
+      '/settings'
+    ],
+    defaultRoute: '/super-admin',
+    permissions: [
+      'manage_all_shops',
+      'manage_all_users',
+      'system_admin',
+      'manage_staff',
+      'view_reports',
+      'manage_products',
+      'manage_categories',
+      'manage_settings',
+      'view_expenses',
+      'manage_invoices'
+    ],
+    menuItems: [
+      'super-admin',
+      'dashboard',
+      'categories',
+      'products',
+      'staff',
+      'expenses',
+      'reports',
+      'invoices',
+      'settings'
+    ]
+  },
   admin: {
     allowedRoutes: [
       '/dashboard',
@@ -49,41 +86,42 @@ export const ROLE_CONFIGS: Record<Role, RoleConfig> = {
   }
 };
 
-export function hasPermission(userRole: Role | null, permission: string): boolean {
+export function hasPermission(userRole: Role | 'super_admin' | null, permission: string): boolean {
   if (!userRole) return false;
-  return ROLE_CONFIGS[userRole].permissions.includes(permission);
+  return ROLE_CONFIGS[userRole]?.permissions.includes(permission) || false;
 }
 
-export function canAccessRoute(userRole: Role | null, route: string): boolean {
+export function canAccessRoute(userRole: Role | 'super_admin' | null, route: string): boolean {
   if (!userRole) return false;
-  return ROLE_CONFIGS[userRole].allowedRoutes.includes(route);
+  return ROLE_CONFIGS[userRole]?.allowedRoutes.includes(route) || false;
 }
 
-export function getDefaultRoute(userRole: Role | null): string {
+export function getDefaultRoute(userRole: Role | 'super_admin' | null): string {
   if (!userRole) return '/login';
-  return ROLE_CONFIGS[userRole].defaultRoute;
+  return ROLE_CONFIGS[userRole]?.defaultRoute || '/login';
 }
 
-export function getMenuItems(userRole: Role | null): string[] {
+export function getMenuItems(userRole: Role | 'super_admin' | null): string[] {
   if (!userRole) return [];
-  return ROLE_CONFIGS[userRole].menuItems;
+  return ROLE_CONFIGS[userRole]?.menuItems || [];
 }
 
-export function isValidRole(role: unknown): role is Role {
-  return typeof role === 'string' && (role === 'admin' || role === 'employee');
+export function isValidRole(role: unknown): role is Role | 'super_admin' {
+  return typeof role === 'string' && (role === 'admin' || role === 'employee' || role === 'super_admin');
 }
 
 export const ROLES = {
+  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   MANAGER: 'manager',
   EMPLOYEE: 'employee'
 } as const;
 
-export type Role = typeof ROLES[keyof typeof ROLES];
+export type ExtendedRole = typeof ROLES[keyof typeof ROLES];
 
-// Renamed to avoid duplication with the function above
-export const checkRoleHierarchy = (userRole: Role, requiredRole: Role): boolean => {
+export const checkRoleHierarchy = (userRole: ExtendedRole, requiredRole: ExtendedRole): boolean => {
   const roleHierarchy = {
+    [ROLES.SUPER_ADMIN]: 4,
     [ROLES.ADMIN]: 3,
     [ROLES.MANAGER]: 2,
     [ROLES.EMPLOYEE]: 1
