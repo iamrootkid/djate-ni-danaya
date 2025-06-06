@@ -32,7 +32,7 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
   
   const { data, error } = await supabase
     .from('categories')
-    .insert(category)
+    .insert(category as any)
     .select()
     .single();
 
@@ -49,7 +49,7 @@ export const updateCategory = async (id: string, updates: Partial<Omit<Category,
   
   const { data, error } = await supabase
     .from('categories')
-    .update(updates)
+    .update(updates as any)
     .eq('id', id)
     .select()
     .single();

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Categories from "@/pages/Categories";
@@ -36,20 +37,22 @@ function App() {
                 <Route
                   path="/*"
                   element={
-                    <AppLayout>
-                      <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/categories" element={<Categories />} />
-                        <Route path="/products" element={<Products />} />
-                        <Route path="/staff" element={<Staff />} />
-                        <Route path="/expenses" element={<Expenses />} />
-                        <Route path="/reports" element={<Reports />} />
-                        <Route path="/invoices" element={<Invoices />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/sales" element={<Sales />} />
-                      </Routes>
-                    </AppLayout>
+                    <SidebarProvider>
+                      <AppLayout>
+                        <Routes>
+                          <Route path="/" element={<Dashboard />} />
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/categories" element={<Categories />} />
+                          <Route path="/products" element={<Products />} />
+                          <Route path="/staff" element={<Staff />} />
+                          <Route path="/expenses" element={<Expenses />} />
+                          <Route path="/reports" element={<Reports />} />
+                          <Route path="/invoices" element={<Invoices />} />
+                          <Route path="/settings" element={<Settings />} />
+                          <Route path="/sales" element={<Sales />} />
+                        </Routes>
+                      </AppLayout>
+                    </SidebarProvider>
                   }
                 />
               </Routes>

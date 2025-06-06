@@ -59,7 +59,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen w-full bg-gray-100">
       <Sidebar userRole={userRole} />
       <MobileMenu userRole={userRole} />
       <main className="flex-1">
