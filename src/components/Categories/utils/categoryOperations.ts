@@ -1,93 +1,68 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
-
-type CategoryRow = Database['public']['Tables']['categories']['Row'];
-type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
-type CategoryUpdate = Database['public']['Tables']['categories']['Update'];
-
-export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  shop_id: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Category } from "@/types/category";
 
 export const fetchCategories = async (shopId: string): Promise<Category[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('shop_id', shopId)
-      .order('name');
+  console.log('Fetching categories for shop:', shopId);
+  
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('shop_id', shopId)
+    .order('name');
 
-    if (error) throw error;
-    return (data || []) as Category[];
-  } catch (error: any) {
+  if (error) {
     console.error('Error fetching categories:', error);
     throw error;
   }
+
+  return (data || []) as Category[];
 };
 
-export const createCategory = async (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> => {
-  try {
-    const insertData: CategoryInsert = {
-      name: categoryData.name,
-      description: categoryData.description || null,
-      shop_id: categoryData.shop_id
-    };
+export const createCategory = async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> => {
+  console.log('Creating category:', category);
+  
+  const { data, error } = await supabase
+    .from('categories')
+    .insert(category)
+    .select()
+    .single();
 
-    const { data, error } = await supabase
-      .from('categories')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (error) throw error;
-    if (!data) throw new Error('No data returned from insert');
-    
-    return data as Category;
-  } catch (error: any) {
+  if (error) {
     console.error('Error creating category:', error);
     throw error;
   }
+
+  return data as Category;
 };
 
 export const updateCategory = async (id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>): Promise<Category> => {
-  try {
-    const updateData: CategoryUpdate = {
-      name: updates.name,
-      description: updates.description
-    };
+  console.log('Updating category:', id, updates);
+  
+  const { data, error } = await supabase
+    .from('categories')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
 
-    const { data, error } = await supabase
-      .from('categories')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    if (!data) throw new Error('No data returned from update');
-    
-    return data as Category;
-  } catch (error: any) {
+  if (error) {
     console.error('Error updating category:', error);
     throw error;
   }
+
+  return data as Category;
 };
 
 export const deleteCategory = async (id: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', id);
+  console.log('Deleting category:', id);
+  
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id);
 
-    if (error) throw error;
-  } catch (error: any) {
+  if (error) {
     console.error('Error deleting category:', error);
     throw error;
   }
