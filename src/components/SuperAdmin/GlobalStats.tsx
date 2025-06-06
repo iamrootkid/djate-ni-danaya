@@ -17,19 +17,42 @@ interface ShopStats {
 }
 
 export const GlobalStats = () => {
-  const { data: shopsData, isLoading } = useQuery({
+  const { data: shopsData, isLoading, error } = useQuery({
     queryKey: ['super-admin-shops'],
     queryFn: async () => {
+      console.log('Fetching shops data for super admin...');
       const { data, error } = await supabase.rpc('get_all_shops');
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching shops:', error);
+        throw error;
+      }
+      console.log('Shops data received:', data);
       return data as ShopStats[];
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const totalShops = shopsData?.length || 0;
-  const totalRevenue = shopsData?.reduce((sum, shop) => sum + Number(shop.total_revenue), 0) || 0;
-  const totalSales = shopsData?.reduce((sum, shop) => sum + Number(shop.total_sales), 0) || 0;
+  const totalRevenue = shopsData?.reduce((sum, shop) => sum + Number(shop.total_revenue || 0), 0) || 0;
+  const totalSales = shopsData?.reduce((sum, shop) => sum + Number(shop.total_sales || 0), 0) || 0;
   const averageRevenuePerShop = totalShops > 0 ? totalRevenue / totalShops : 0;
+
+  if (error) {
+    console.error('Error loading shop data:', error);
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">
+            <p>Erreur lors du chargement des données</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {error instanceof Error ? error.message : 'Erreur inconnue'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -97,7 +120,7 @@ export const GlobalStats = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{averageRevenuePerShop.toLocaleString()} FCFA</div>
+            <div className="text-2xl font-bold">{Math.round(averageRevenuePerShop).toLocaleString()} FCFA</div>
             <p className="text-xs text-muted-foreground">
               Par magasin
             </p>
@@ -110,21 +133,29 @@ export const GlobalStats = () => {
           <CardTitle>Performance des Magasins</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {shopsData?.map((shop) => (
-              <div key={shop.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <h3 className="font-semibold">{shop.name}</h3>
-                  <p className="text-sm text-gray-600">{shop.address || 'Adresse non spécifiée'}</p>
-                  <p className="text-xs text-gray-500">PIN: {shop.pin_code}</p>
+          {totalShops === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Store className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>Aucun magasin trouvé dans le système</p>
+              <p className="text-sm mt-2">Créez votre premier magasin dans l'onglet "Magasins"</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {shopsData?.map((shop) => (
+                <div key={shop.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h3 className="font-semibold">{shop.name}</h3>
+                    <p className="text-sm text-gray-600">{shop.address || 'Adresse non spécifiée'}</p>
+                    <p className="text-xs text-gray-500">PIN: {shop.pin_code}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{Number(shop.total_revenue || 0).toLocaleString()} FCFA</p>
+                    <p className="text-sm text-gray-600">{shop.total_sales || 0} ventes</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold">{Number(shop.total_revenue).toLocaleString()} FCFA</p>
-                  <p className="text-sm text-gray-600">{shop.total_sales} ventes</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

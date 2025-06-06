@@ -1,5 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type CategoryRow = Database['public']['Tables']['categories']['Row'];
+type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
+type CategoryUpdate = Database['public']['Tables']['categories']['Update'];
 
 export interface Category {
   id: string;
@@ -28,9 +33,15 @@ export const fetchCategories = async (shopId: string): Promise<Category[]> => {
 
 export const createCategory = async (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> => {
   try {
+    const insertData: CategoryInsert = {
+      name: categoryData.name,
+      description: categoryData.description || null,
+      shop_id: categoryData.shop_id
+    };
+
     const { data, error } = await supabase
       .from('categories')
-      .insert(categoryData)
+      .insert(insertData)
       .select()
       .single();
 
@@ -46,9 +57,14 @@ export const createCategory = async (categoryData: Omit<Category, 'id' | 'create
 
 export const updateCategory = async (id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>): Promise<Category> => {
   try {
+    const updateData: CategoryUpdate = {
+      name: updates.name,
+      description: updates.description
+    };
+
     const { data, error } = await supabase
       .from('categories')
-      .update(updates)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

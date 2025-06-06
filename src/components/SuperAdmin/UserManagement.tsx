@@ -2,8 +2,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserPlus, Settings } from "lucide-react";
@@ -11,6 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface User {
   user_id: string;
@@ -36,22 +35,36 @@ export const UserManagement = () => {
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading: usersLoading } = useQuery({
+  const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['super-admin-users'],
     queryFn: async () => {
+      console.log('Fetching users...');
       const { data, error } = await supabase.rpc('get_all_users_with_shops');
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
+      console.log('Users fetched:', data);
       return data as User[];
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  const { data: shops } = useQuery({
+  const { data: shops, error: shopsError } = useQuery({
     queryKey: ['super-admin-shops-list'],
     queryFn: async () => {
+      console.log('Fetching shops for user assignment...');
       const { data, error } = await supabase.rpc('get_all_shops');
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching shops for assignment:', error);
+        throw error;
+      }
+      console.log('Shops for assignment fetched:', data);
       return data as Shop[];
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const handleAssignUser = async () => {
@@ -62,14 +75,19 @@ export const UserManagement = () => {
 
     setLoading(true);
     try {
+      console.log('Assigning user:', { selectedUser, selectedShop, selectedRole });
       const { data, error } = await supabase.rpc('assign_user_to_shop', {
         user_id_param: selectedUser,
         shop_id_param: selectedShop,
         role_param: selectedRole,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error assigning user:', error);
+        throw error;
+      }
 
+      console.log('User assigned successfully:', data);
       toast.success('Utilisateur assigné avec succès');
       setSelectedUser('');
       setSelectedShop('');
@@ -96,6 +114,32 @@ export const UserManagement = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (usersError || shopsError) {
+    const error = usersError || shopsError;
+    console.error('Error in UserManagement:', error);
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">
+            <p>Erreur lors du chargement des données utilisateurs</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {error instanceof Error ? error.message : 'Erreur inconnue'}
+            </p>
+            <Button 
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['super-admin-users'] });
+                queryClient.invalidateQueries({ queryKey: ['super-admin-shops-list'] });
+              }}
+              className="mt-4"
+            >
+              Réessayer
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const unassignedUsers = users?.filter(user => !user.shop_id) || [];
   const assignedUsers = users?.filter(user => user.shop_id) || [];
@@ -125,7 +169,7 @@ export const UserManagement = () => {
         
         <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" disabled={unassignedUsers.length === 0}>
               <UserPlus className="h-4 w-4" />
               Assigner Utilisateur
             </Button>
@@ -230,22 +274,30 @@ export const UserManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {assignedUsers.map((user) => (
-              <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">{user.first_name} {user.last_name}</p>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                  <p className="text-xs text-gray-500">Magasin: {user.shop_name}</p>
+          {assignedUsers.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>Aucun utilisateur assigné</p>
+              <p className="text-sm mt-2">Les utilisateurs assignés apparaîtront ici</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {assignedUsers.map((user) => (
+                <div key={user.user_id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{user.first_name} {user.last_name}</p>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <p className="text-xs text-gray-500">Magasin: {user.shop_name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={getRoleBadgeColor(user.role)}>
+                      {user.role}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={getRoleBadgeColor(user.role)}>
-                    {user.role}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -29,13 +29,20 @@ export const ShopManagement = () => {
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: shops, isLoading } = useQuery({
+  const { data: shops, isLoading, error } = useQuery({
     queryKey: ['super-admin-shops'],
     queryFn: async () => {
+      console.log('Fetching shops for management...');
       const { data, error } = await supabase.rpc('get_all_shops');
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching shops:', error);
+        throw error;
+      }
+      console.log('Shops fetched:', data);
       return data as Shop[];
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const handleCreateShop = async () => {
@@ -46,13 +53,18 @@ export const ShopManagement = () => {
 
     setLoading(true);
     try {
+      console.log('Creating shop:', newShop);
       const { data, error } = await supabase.rpc('create_shop_super_admin', {
         shop_name: newShop.name,
         shop_address: newShop.address || null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating shop:', error);
+        throw error;
+      }
 
+      console.log('Shop created successfully:', data);
       toast.success('Magasin créé avec succès');
       setNewShop({ name: '', address: '' });
       setIsCreateDialogOpen(false);
@@ -71,13 +83,18 @@ export const ShopManagement = () => {
     }
 
     try {
+      console.log('Deleting shop:', shopId);
       const { error } = await supabase
         .from('shops')
         .delete()
         .eq('id', shopId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting shop:', error);
+        throw error;
+      }
 
+      console.log('Shop deleted successfully');
       toast.success('Magasin supprimé avec succès');
       queryClient.invalidateQueries({ queryKey: ['super-admin-shops'] });
     } catch (error: any) {
@@ -85,6 +102,28 @@ export const ShopManagement = () => {
       toast.error(error.message || 'Erreur lors de la suppression du magasin');
     }
   };
+
+  if (error) {
+    console.error('Error in ShopManagement:', error);
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">
+            <p>Erreur lors du chargement des magasins</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {error instanceof Error ? error.message : 'Erreur inconnue'}
+            </p>
+            <Button 
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['super-admin-shops'] })}
+              className="mt-4"
+            >
+              Réessayer
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -157,53 +196,67 @@ export const ShopManagement = () => {
       </div>
 
       <div className="grid gap-4">
-        {shops?.map((shop) => (
-          <Card key={shop.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Store className="h-5 w-5 text-primary" />
-                  <div>
-                    <CardTitle className="text-lg">{shop.name}</CardTitle>
-                    <p className="text-sm text-gray-600">{shop.address || 'Adresse non spécifiée'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDeleteShop(shop.id, shop.name)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Code PIN</p>
-                  <p className="font-mono font-semibold">{shop.pin_code}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Ventes</p>
-                  <p className="font-semibold">{shop.total_sales}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Revenus</p>
-                  <p className="font-semibold">{Number(shop.total_revenue).toLocaleString()} FCFA</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Créé le</p>
-                  <p className="text-sm">{new Date(shop.created_at).toLocaleDateString()}</p>
-                </div>
-              </div>
+        {shops && shops.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Store className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-semibold mb-2">Aucun magasin</h3>
+              <p className="text-gray-600 mb-4">Créez votre premier magasin pour commencer</p>
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Créer un magasin
+              </Button>
             </CardContent>
           </Card>
-        ))}
+        ) : (
+          shops?.map((shop) => (
+            <Card key={shop.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Store className="h-5 w-5 text-primary" />
+                    <div>
+                      <CardTitle className="text-lg">{shop.name}</CardTitle>
+                      <p className="text-sm text-gray-600">{shop.address || 'Adresse non spécifiée'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDeleteShop(shop.id, shop.name)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Code PIN</p>
+                    <p className="font-mono font-semibold">{shop.pin_code}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Ventes</p>
+                    <p className="font-semibold">{shop.total_sales || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Revenus</p>
+                    <p className="font-semibold">{Number(shop.total_revenue || 0).toLocaleString()} FCFA</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Créé le</p>
+                    <p className="text-sm">{new Date(shop.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

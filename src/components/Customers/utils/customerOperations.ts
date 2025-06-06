@@ -1,5 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type CustomerRow = Database['public']['Tables']['customers']['Row'];
+type CustomerInsert = Database['public']['Tables']['customers']['Insert'];
+type CustomerUpdate = Database['public']['Tables']['customers']['Update'];
 
 export interface Customer {
   id: string;
@@ -42,9 +47,18 @@ export const fetchCustomers = async (shopId: string): Promise<Customer[]> => {
 
 export const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>): Promise<Customer> => {
   try {
+    const insertData: CustomerInsert = {
+      shop_id: customerData.shop_id,
+      first_name: customerData.first_name,
+      last_name: customerData.last_name,
+      email: customerData.email,
+      phone: customerData.phone,
+      loyalty_points: customerData.loyalty_points || 0
+    };
+
     const { data, error } = await supabase
       .from('customers')
-      .insert(customerData)
+      .insert(insertData)
       .select()
       .single();
 
@@ -60,9 +74,17 @@ export const createCustomer = async (customerData: Omit<Customer, 'id' | 'create
 
 export const updateCustomer = async (id: string, updates: Partial<Omit<Customer, 'id' | 'created_at' | 'updated_at'>>): Promise<Customer> => {
   try {
+    const updateData: CustomerUpdate = {
+      first_name: updates.first_name,
+      last_name: updates.last_name,
+      email: updates.email,
+      phone: updates.phone,
+      loyalty_points: updates.loyalty_points
+    };
+
     const { data, error } = await supabase
       .from('customers')
-      .update(updates)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
