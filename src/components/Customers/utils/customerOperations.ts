@@ -8,7 +8,7 @@ export interface Customer {
   email?: string;
   phone?: string;
   shop_id: string;
-  loyalty_points?: number;
+  loyalty_points: number;
   created_at: string;
   updated_at: string;
 }
@@ -27,7 +27,17 @@ export const fetchCustomers = async (shopId: string): Promise<Customer[]> => {
     throw error;
   }
 
-  return (data || []) as Customer[];
+  return (data || []).map(item => ({
+    id: item.id,
+    first_name: item.first_name,
+    last_name: item.last_name,
+    email: item.email,
+    phone: item.phone,
+    shop_id: item.shop_id,
+    loyalty_points: item.loyalty_points || 0,
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+  }));
 };
 
 export const getCustomers = fetchCustomers; // Alias for backward compatibility
@@ -37,7 +47,14 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
   
   const { data, error } = await supabase
     .from('customers')
-    .insert(customer as any)
+    .insert({
+      first_name: customer.first_name,
+      last_name: customer.last_name,
+      email: customer.email,
+      phone: customer.phone,
+      shop_id: customer.shop_id,
+      loyalty_points: customer.loyalty_points || 0,
+    })
     .select()
     .single();
 
@@ -46,7 +63,17 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
     throw error;
   }
 
-  return data as Customer;
+  return {
+    id: data.id,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    email: data.email,
+    phone: data.phone,
+    shop_id: data.shop_id,
+    loyalty_points: data.loyalty_points || 0,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 };
 
 export const addCustomer = createCustomer; // Alias for backward compatibility
@@ -59,7 +86,14 @@ export const updateCustomer = async (
   
   const { data, error } = await supabase
     .from('customers')
-    .update(updates as any)
+    .update({
+      first_name: updates.first_name,
+      last_name: updates.last_name,
+      email: updates.email,
+      phone: updates.phone,
+      shop_id: updates.shop_id,
+      loyalty_points: updates.loyalty_points,
+    })
     .eq('id', id)
     .select()
     .single();
@@ -69,7 +103,17 @@ export const updateCustomer = async (
     throw error;
   }
 
-  return data as Customer;
+  return {
+    id: data.id,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    email: data.email,
+    phone: data.phone,
+    shop_id: data.shop_id,
+    loyalty_points: data.loyalty_points || 0,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 };
 
 export const deleteCustomer = async (id: string): Promise<void> => {

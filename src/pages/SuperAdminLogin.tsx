@@ -20,7 +20,37 @@ const SuperAdminLogin = () => {
 
   const createSuperAdminUser = async () => {
     try {
-      // Create super admin user with auth
+      console.log('Attempting to create/sign in super admin...');
+      
+      // Try to sign in with existing credentials first
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: 'superadmin@system.local',
+        password: 'SuperAdmin123!@#'
+      });
+
+      if (!signInError && signInData.user) {
+        console.log('Super admin signed in successfully');
+        
+        // Update profile to ensure super admin role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: signInData.user.id,
+            email: 'superadmin@system.local',
+            first_name: 'Super',
+            last_name: 'Admin',
+            role: 'super_admin'
+          });
+
+        if (profileError) {
+          console.error('Profile error:', profileError);
+        }
+        
+        return true;
+      }
+
+      // If sign in failed, try to create the account
+      console.log('Creating new super admin account...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: 'superadmin@system.local',
         password: 'SuperAdmin123!@#',
@@ -34,32 +64,25 @@ const SuperAdminLogin = () => {
       });
 
       if (authError) {
-        console.log('Auth user might already exist, trying to sign in...');
-        
-        // Try to sign in with existing credentials
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: 'superadmin@system.local',
-          password: 'SuperAdmin123!@#'
-        });
-
-        if (signInError) {
-          throw signInError;
-        }
+        console.error('Auth creation error:', authError);
+        throw authError;
       }
 
-      // Update profile to ensure super admin role
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: (await supabase.auth.getUser()).data.user?.id,
-          email: 'superadmin@system.local',
-          first_name: 'Super',
-          last_name: 'Admin',
-          role: 'super_admin'
-        });
+      if (authData.user) {
+        // Update profile with super admin role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            email: 'superadmin@system.local',
+            first_name: 'Super',
+            last_name: 'Admin',
+            role: 'super_admin'
+          });
 
-      if (profileError) {
-        console.error('Profile error:', profileError);
+        if (profileError) {
+          console.error('Profile error:', profileError);
+        }
       }
 
       return true;
@@ -83,7 +106,7 @@ const SuperAdminLogin = () => {
           toast.success("Accès Super Admin autorisé");
           navigate('/super-admin');
         } else {
-          toast.error("Erreur lors de la création du compte Super Admin");
+          toast.error("Erreur lors de l'authentification Super Admin");
         }
       } else {
         toast.error("Code PIN incorrect");
