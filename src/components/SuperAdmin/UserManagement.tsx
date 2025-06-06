@@ -39,15 +39,49 @@ export const UserManagement = () => {
     queryKey: ['super-admin-users'],
     queryFn: async () => {
       console.log('Fetching users...');
-      const { data, error } = await supabase.rpc('get_all_users_with_shops');
-      if (error) {
-        console.error('Error fetching users:', error);
-        throw error;
+      
+      // Try RPC first, fallback to direct query
+      try {
+        const { data, error } = await supabase.rpc('get_all_users_with_shops');
+        if (error) throw error;
+        console.log('Users fetched via RPC:', data);
+        return data as User[];
+      } catch (rpcError) {
+        console.log('RPC failed, using direct query');
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select(`
+            id,
+            email,
+            first_name,
+            last_name,
+            role,
+            shop_id,
+            created_at
+          `);
+          
+        if (profilesError) throw profilesError;
+
+        const { data: shopsData } = await supabase
+          .from('shops')
+          .select('id, name');
+
+        const usersWithShops = (profilesData || []).map(profile => ({
+          user_id: profile.id,
+          email: profile.email,
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          role: profile.role,
+          shop_id: profile.shop_id,
+          shop_name: shopsData?.find(shop => shop.id === profile.shop_id)?.name || '',
+          created_at: profile.created_at
+        }));
+
+        return usersWithShops as User[];
       }
-      console.log('Users fetched:', data);
-      return data as User[];
     },
-    retry: 3,
+    retry: 1,
     retryDelay: 1000,
   });
 
@@ -55,15 +89,19 @@ export const UserManagement = () => {
     queryKey: ['super-admin-shops-list'],
     queryFn: async () => {
       console.log('Fetching shops for user assignment...');
-      const { data, error } = await supabase.rpc('get_all_shops');
-      if (error) {
-        console.error('Error fetching shops for assignment:', error);
-        throw error;
-      }
+      
+      // Direct query for shops
+      const { data, error } = await supabase
+        .from('shops')
+        .select('id, name')
+        .order('name');
+        
+      if (error) throw error;
+      
       console.log('Shops for assignment fetched:', data);
       return data as Shop[];
     },
-    retry: 3,
+    retry: 1,
     retryDelay: 1000,
   });
 
@@ -76,18 +114,47 @@ export const UserManagement = () => {
     setLoading(true);
     try {
       console.log('Assigning user:', { selectedUser, selectedShop, selectedRole });
-      const { data, error } = await supabase.rpc('assign_user_to_shop', {
-        user_id_param: selectedUser,
-        shop_id_param: selectedShop,
-        role_param: selectedRole,
-      });
+      
+      // Try RPC first, fallback to direct update
+      try {
+        const { data, error } = await supabase.rpc('assign_user_to_shop', {
+          user_id_param: selectedUser,
+          shop_id_param: selectedShop,
+          role_param: selectedRole,
+        });
 
-      if (error) {
-        console.error('Error assigning user:', error);
-        throw error;
+        if (error) throw error;
+        console.log('User assigned via RPC:', data);
+      } catch (rpcError) {
+        console.log('RPC failed, using direct update');
+        
+        // Update profiles table directly
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            shop_id: selectedShop,
+            role: selectedRole,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedUser);
+
+        if (profileError) throw profileError;
+
+        // Update or insert into staff table
+        const { error: staffError } = await supabase
+          .from('staff')
+          .upsert({
+            id: selectedUser,
+            shop_id: selectedShop,
+            role: selectedRole,
+            updated_at: new Date().toISOString()
+          });
+
+        if (staffError) {
+          console.log('Staff update failed (non-critical):', staffError);
+        }
       }
 
-      console.log('User assigned successfully:', data);
       toast.success('Utilisateur assigné avec succès');
       setSelectedUser('');
       setSelectedShop('');

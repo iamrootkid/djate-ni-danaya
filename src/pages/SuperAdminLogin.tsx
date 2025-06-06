@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const SuperAdminLogin = () => {
   const [pinCode, setPinCode] = useState("");
@@ -17,21 +18,83 @@ const SuperAdminLogin = () => {
   // Default Super Admin PIN - in production this should be configurable
   const SUPER_ADMIN_PIN = "123456";
 
-  const handleLogin = (e: React.FormEvent) => {
+  const createSuperAdminUser = async () => {
+    try {
+      // Create super admin user with auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: 'superadmin@system.local',
+        password: 'SuperAdmin123!@#',
+        options: {
+          data: {
+            first_name: 'Super',
+            last_name: 'Admin',
+            role: 'super_admin'
+          }
+        }
+      });
+
+      if (authError) {
+        console.log('Auth user might already exist, trying to sign in...');
+        
+        // Try to sign in with existing credentials
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: 'superadmin@system.local',
+          password: 'SuperAdmin123!@#'
+        });
+
+        if (signInError) {
+          throw signInError;
+        }
+      }
+
+      // Update profile to ensure super admin role
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: (await supabase.auth.getUser()).data.user?.id,
+          email: 'superadmin@system.local',
+          first_name: 'Super',
+          last_name: 'Admin',
+          role: 'super_admin'
+        });
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error creating/signing in super admin:', error);
+      return false;
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    try {
       if (pinCode === SUPER_ADMIN_PIN) {
-        localStorage.setItem('superAdminAuth', 'true');
-        toast.success("Accès Super Admin autorisé");
-        navigate('/super-admin');
+        // Create or sign in super admin user
+        const success = await createSuperAdminUser();
+        
+        if (success) {
+          localStorage.setItem('superAdminAuth', 'true');
+          toast.success("Accès Super Admin autorisé");
+          navigate('/super-admin');
+        } else {
+          toast.error("Erreur lors de la création du compte Super Admin");
+        }
       } else {
         toast.error("Code PIN incorrect");
         setPinCode("");
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error("Erreur lors de la connexion");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -80,7 +143,7 @@ const SuperAdminLogin = () => {
               className="w-full bg-purple-600 hover:bg-purple-700"
               disabled={loading || pinCode.length === 0}
             >
-              {loading ? "Vérification..." : "Accéder au Dashboard"}
+              {loading ? "Connexion..." : "Accéder au Dashboard"}
             </Button>
           </form>
 

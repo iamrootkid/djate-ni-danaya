@@ -21,15 +21,49 @@ export const GlobalStats = () => {
     queryKey: ['super-admin-shops'],
     queryFn: async () => {
       console.log('Fetching shops data for super admin...');
-      const { data, error } = await supabase.rpc('get_all_shops');
-      if (error) {
-        console.error('Error fetching shops:', error);
-        throw error;
+      
+      // Try calling the RPC function, but if it fails, fall back to direct query
+      try {
+        const { data, error } = await supabase.rpc('get_all_shops');
+        if (error) {
+          console.log('RPC failed, trying direct query...', error);
+          throw error;
+        }
+        console.log('Shops data received via RPC:', data);
+        return data as ShopStats[];
+      } catch (rpcError) {
+        console.log('RPC failed, using direct query as fallback');
+        
+        // Fallback to direct query
+        const { data: shopsResult, error: shopsError } = await supabase
+          .from('shops')
+          .select('*');
+          
+        if (shopsError) {
+          console.error('Direct shops query failed:', shopsError);
+          throw shopsError;
+        }
+
+        // Get sales data separately
+        const { data: salesData } = await supabase
+          .from('sales')
+          .select('shop_id, total_amount');
+
+        // Combine the data
+        const shopsWithStats = (shopsResult || []).map(shop => {
+          const shopSales = salesData?.filter(sale => sale.shop_id === shop.id) || [];
+          return {
+            ...shop,
+            total_sales: shopSales.length,
+            total_revenue: shopSales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0)
+          };
+        });
+
+        console.log('Shops data received via direct query:', shopsWithStats);
+        return shopsWithStats as ShopStats[];
       }
-      console.log('Shops data received:', data);
-      return data as ShopStats[];
     },
-    retry: 3,
+    retry: 1,
     retryDelay: 1000,
   });
 

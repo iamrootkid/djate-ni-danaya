@@ -33,17 +33,46 @@ export const ShopManagement = () => {
     queryKey: ['super-admin-shops'],
     queryFn: async () => {
       console.log('Fetching shops for management...');
-      const { data, error } = await supabase.rpc('get_all_shops');
-      if (error) {
-        console.error('Error fetching shops:', error);
-        throw error;
+      
+      // Try RPC first, fallback to direct query
+      try {
+        const { data, error } = await supabase.rpc('get_all_shops');
+        if (error) throw error;
+        console.log('Shops fetched via RPC:', data);
+        return data as Shop[];
+      } catch (rpcError) {
+        console.log('RPC failed, using direct query');
+        
+        const { data: shopsResult, error: shopsError } = await supabase
+          .from('shops')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (shopsError) throw shopsError;
+
+        const { data: salesData } = await supabase
+          .from('sales')
+          .select('shop_id, total_amount');
+
+        const shopsWithStats = (shopsResult || []).map(shop => {
+          const shopSales = salesData?.filter(sale => sale.shop_id === shop.id) || [];
+          return {
+            ...shop,
+            total_sales: shopSales.length,
+            total_revenue: shopSales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0)
+          };
+        });
+
+        return shopsWithStats as Shop[];
       }
-      console.log('Shops fetched:', data);
-      return data as Shop[];
     },
-    retry: 3,
+    retry: 1,
     retryDelay: 1000,
   });
+
+  const generatePinCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
 
   const handleCreateShop = async () => {
     if (!newShop.name.trim()) {
@@ -54,17 +83,33 @@ export const ShopManagement = () => {
     setLoading(true);
     try {
       console.log('Creating shop:', newShop);
-      const { data, error } = await supabase.rpc('create_shop_super_admin', {
-        shop_name: newShop.name,
-        shop_address: newShop.address || null,
-      });
+      
+      // Try RPC first, fallback to direct insert
+      try {
+        const { data, error } = await supabase.rpc('create_shop_super_admin', {
+          shop_name: newShop.name,
+          shop_address: newShop.address || null,
+        });
 
-      if (error) {
-        console.error('Error creating shop:', error);
-        throw error;
+        if (error) throw error;
+        console.log('Shop created via RPC:', data);
+      } catch (rpcError) {
+        console.log('RPC failed, using direct insert');
+        
+        const { data, error } = await supabase
+          .from('shops')
+          .insert({
+            name: newShop.name,
+            address: newShop.address || null,
+            pin_code: generatePinCode()
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        console.log('Shop created via direct insert:', data);
       }
 
-      console.log('Shop created successfully:', data);
       toast.success('Magasin créé avec succès');
       setNewShop({ name: '', address: '' });
       setIsCreateDialogOpen(false);
@@ -89,10 +134,7 @@ export const ShopManagement = () => {
         .delete()
         .eq('id', shopId);
 
-      if (error) {
-        console.error('Error deleting shop:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log('Shop deleted successfully');
       toast.success('Magasin supprimé avec succès');
