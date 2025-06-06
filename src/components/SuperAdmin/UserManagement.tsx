@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { AddPersonnelForm } from "./AddPersonnelForm";
 
 interface User {
   user_id: string;
@@ -40,7 +40,6 @@ export const UserManagement = () => {
     queryFn: async () => {
       console.log('Fetching users...');
       
-      // Try RPC first, fallback to direct query
       try {
         const { data, error } = await supabase.rpc('get_all_users_with_shops');
         if (error) throw error;
@@ -90,7 +89,6 @@ export const UserManagement = () => {
     queryFn: async () => {
       console.log('Fetching shops for user assignment...');
       
-      // Direct query for shops
       const { data, error } = await supabase
         .from('shops')
         .select('id, name')
@@ -115,7 +113,6 @@ export const UserManagement = () => {
     try {
       console.log('Assigning user:', { selectedUser, selectedShop, selectedRole });
       
-      // Try RPC first, fallback to direct update
       try {
         const { data, error } = await supabase.rpc('assign_user_to_shop', {
           user_id_param: selectedUser,
@@ -128,7 +125,6 @@ export const UserManagement = () => {
       } catch (rpcError) {
         console.log('RPC failed, using direct update');
         
-        // Update profiles table directly
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
@@ -140,7 +136,6 @@ export const UserManagement = () => {
 
         if (profileError) throw profileError;
 
-        // Update or insert into staff table
         const { error: staffError } = await supabase
           .from('staff')
           .upsert({
@@ -234,77 +229,81 @@ export const UserManagement = () => {
           <p className="text-gray-600">Assigner des rôles et gérer les accès par magasin</p>
         </div>
         
-        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2" disabled={unassignedUsers.length === 0}>
-              <UserPlus className="h-4 w-4" />
-              Assigner Utilisateur
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assigner un utilisateur à un magasin</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="user-select">Utilisateur</Label>
-                <Select value={selectedUser} onValueChange={setSelectedUser}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un utilisateur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unassignedUsers.map((user) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.email} ({user.first_name} {user.last_name})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="shop-select">Magasin</Label>
-                <Select value={selectedShop} onValueChange={setSelectedShop}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un magasin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shops?.map((shop) => (
-                      <SelectItem key={shop.id} value={shop.id}>
-                        {shop.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="flex gap-2">
+          <AddPersonnelForm shops={shops || []} />
+          
+          <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2" disabled={unassignedUsers.length === 0}>
+                <UserPlus className="h-4 w-4" />
+                Assigner Utilisateur
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Assigner un utilisateur à un magasin</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="user-select">Utilisateur</Label>
+                  <Select value={selectedUser} onValueChange={setSelectedUser}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un utilisateur" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unassignedUsers.map((user) => (
+                        <SelectItem key={user.user_id} value={user.user_id}>
+                          {user.email} ({user.first_name} {user.last_name})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="shop-select">Magasin</Label>
+                  <Select value={selectedShop} onValueChange={setSelectedShop}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un magasin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {shops?.map((shop) => (
+                        <SelectItem key={shop.id} value={shop.id}>
+                          {shop.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <Label htmlFor="role-select">Rôle</Label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un rôle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrateur</SelectItem>
-                    <SelectItem value="employee">Employé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label htmlFor="role-select">Rôle</Label>
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un rôle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrateur</SelectItem>
+                      <SelectItem value="employee">Employé</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsAssignDialogOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button onClick={handleAssignUser} disabled={loading}>
-                  {loading ? 'Attribution...' : 'Assigner'}
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAssignDialogOpen(false)}
+                  >
+                    Annuler
+                  </Button>
+                  <Button onClick={handleAssignUser} disabled={loading}>
+                    {loading ? 'Attribution...' : 'Assigner'}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {unassignedUsers.length > 0 && (

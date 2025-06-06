@@ -1,6 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Category } from "@/types/category";
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  shop_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export const fetchCategories = async (shopId: string): Promise<Category[]> => {
   console.log('Fetching categories for shop:', shopId);

@@ -1,6 +1,17 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Customer } from "@/types/customer";
+
+export interface Customer {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  shop_id: string;
+  loyalty_points?: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export const fetchCustomers = async (shopId: string): Promise<Customer[]> => {
   console.log('Fetching customers for shop:', shopId);
@@ -19,6 +30,8 @@ export const fetchCustomers = async (shopId: string): Promise<Customer[]> => {
   return (data || []) as Customer[];
 };
 
+export const getCustomers = fetchCustomers; // Alias for backward compatibility
+
 export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>): Promise<Customer> => {
   console.log('Creating customer:', customer);
   
@@ -35,6 +48,8 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
 
   return data as Customer;
 };
+
+export const addCustomer = createCustomer; // Alias for backward compatibility
 
 export const updateCustomer = async (
   id: string, 
