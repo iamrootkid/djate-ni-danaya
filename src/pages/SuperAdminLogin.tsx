@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,16 +15,18 @@ const SuperAdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Super Admin PIN - changed to 1280 for easier access
+  // Super Admin PIN - set to 1280 for easy access
   const SUPER_ADMIN_PIN = "1280";
 
   const createSuperAdminUser = async () => {
     try {
       console.log('Attempting to create/sign in super admin...');
       
-      // Use a valid email format instead of .local domain
       const superAdminEmail = 'superadmin@example.com';
       const superAdminPassword = 'SuperAdmin123!@#';
+      
+      // First, clear any existing session
+      await supabase.auth.signOut();
       
       // Try to sign in with existing credentials first
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -69,15 +72,25 @@ const SuperAdminLogin = () => {
       if (authError) {
         console.error('Auth creation error:', authError);
         
-        // If user already exists, try to sign in
-        if (authError.message.includes('already registered')) {
-          console.log('User already exists, attempting sign in...');
+        // If user already exists, try to sign in again
+        if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
+          console.log('User already exists, attempting sign in again...');
           const { data: retrySignIn, error: retryError } = await supabase.auth.signInWithPassword({
             email: superAdminEmail,
             password: superAdminPassword
           });
           
           if (!retryError && retrySignIn.user) {
+            // Update profile
+            await supabase
+              .from('profiles')
+              .upsert({
+                id: retrySignIn.user.id,
+                email: superAdminEmail,
+                first_name: 'Super',
+                last_name: 'Admin',
+                role: 'super_admin'
+              });
             return true;
           }
         }

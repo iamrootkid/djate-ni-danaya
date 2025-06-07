@@ -47,14 +47,14 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
   
   const { data, error } = await supabase
     .from('customers')
-    .insert([{
+    .insert({
       first_name: customer.first_name,
       last_name: customer.last_name,
       email: customer.email,
       phone: customer.phone,
       shop_id: customer.shop_id,
       loyalty_points: customer.loyalty_points || 0,
-    }])
+    })
     .select()
     .single();
 
