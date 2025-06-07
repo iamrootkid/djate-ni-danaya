@@ -22,10 +22,14 @@ const SuperAdminLogin = () => {
     try {
       console.log('Attempting to create/sign in super admin...');
       
+      // Use a valid email format instead of .local domain
+      const superAdminEmail = 'superadmin@example.com';
+      const superAdminPassword = 'SuperAdmin123!@#';
+      
       // Try to sign in with existing credentials first
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: 'superadmin@system.local',
-        password: 'SuperAdmin123!@#'
+        email: superAdminEmail,
+        password: superAdminPassword
       });
 
       if (!signInError && signInData.user) {
@@ -36,7 +40,7 @@ const SuperAdminLogin = () => {
           .from('profiles')
           .upsert({
             id: signInData.user.id,
-            email: 'superadmin@system.local',
+            email: superAdminEmail,
             first_name: 'Super',
             last_name: 'Admin',
             role: 'super_admin'
@@ -52,8 +56,8 @@ const SuperAdminLogin = () => {
       // If sign in failed, try to create the account
       console.log('Creating new super admin account...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: 'superadmin@system.local',
-        password: 'SuperAdmin123!@#',
+        email: superAdminEmail,
+        password: superAdminPassword,
         options: {
           data: {
             first_name: 'Super',
@@ -65,6 +69,20 @@ const SuperAdminLogin = () => {
 
       if (authError) {
         console.error('Auth creation error:', authError);
+        
+        // If user already exists, try to sign in
+        if (authError.message.includes('already registered')) {
+          console.log('User already exists, attempting sign in...');
+          const { data: retrySignIn, error: retryError } = await supabase.auth.signInWithPassword({
+            email: superAdminEmail,
+            password: superAdminPassword
+          });
+          
+          if (!retryError && retrySignIn.user) {
+            return true;
+          }
+        }
+        
         throw authError;
       }
 
@@ -74,7 +92,7 @@ const SuperAdminLogin = () => {
           .from('profiles')
           .upsert({
             id: authData.user.id,
-            email: 'superadmin@system.local',
+            email: superAdminEmail,
             first_name: 'Super',
             last_name: 'Admin',
             role: 'super_admin'
@@ -173,6 +191,9 @@ const SuperAdminLogin = () => {
           <div className="mt-6 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
             <p className="text-xs text-blue-800">
               <strong>Code PIN par défaut:</strong> 123456
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              <strong>Email Super Admin:</strong> superadmin@example.com
             </p>
           </div>
 
