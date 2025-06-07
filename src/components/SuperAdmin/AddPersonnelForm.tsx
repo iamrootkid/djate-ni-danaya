@@ -68,7 +68,7 @@ export const AddPersonnelForm = ({ shops }: AddPersonnelFormProps) => {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      console.log('Creating personnel:', data);
+      console.log('Creating personnel for shop:', data);
 
       // Create the user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -141,12 +141,12 @@ export const AddPersonnelForm = ({ shops }: AddPersonnelFormProps) => {
       <DialogTrigger asChild>
         <Button className="flex items-center gap-2">
           <UserPlus className="h-4 w-4" />
-          Ajouter Personnel
+          Ajouter Personnel Magasin
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Ajouter un nouveau personnel</DialogTitle>
+          <DialogTitle>Ajouter un personnel pour un magasin</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -194,7 +194,7 @@ export const AddPersonnelForm = ({ shops }: AddPersonnelFormProps) => {
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Téléphone</FormLabel>
+                  <FormLabel>Téléphone (optionnel)</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -228,7 +228,7 @@ export const AddPersonnelForm = ({ shops }: AddPersonnelFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Administrateur</SelectItem>
+                      <SelectItem value="admin">Administrateur Magasin</SelectItem>
                       <SelectItem value="employee">Employé</SelectItem>
                     </SelectContent>
                   </Select>

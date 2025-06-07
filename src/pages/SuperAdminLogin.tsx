@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,15 +14,49 @@ const SuperAdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Default Super Admin PIN - in production this should be configurable
-  const SUPER_ADMIN_PIN = "123456";
+  // Super Admin PIN - changed to 1280 for easier access
+  const SUPER_ADMIN_PIN = "1280";
 
   const createSuperAdminUser = async () => {
     try {
-      // Create super admin user with auth
+      console.log('Attempting to create/sign in super admin...');
+      
+      // Use a valid email format instead of .local domain
+      const superAdminEmail = 'superadmin@example.com';
+      const superAdminPassword = 'SuperAdmin123!@#';
+      
+      // Try to sign in with existing credentials first
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: superAdminEmail,
+        password: superAdminPassword
+      });
+
+      if (!signInError && signInData.user) {
+        console.log('Super admin signed in successfully');
+        
+        // Update profile to ensure super admin role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: signInData.user.id,
+            email: superAdminEmail,
+            first_name: 'Super',
+            last_name: 'Admin',
+            role: 'super_admin'
+          });
+
+        if (profileError) {
+          console.error('Profile error:', profileError);
+        }
+        
+        return true;
+      }
+
+      // If sign in failed, try to create the account
+      console.log('Creating new super admin account...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: 'superadmin@system.local',
-        password: 'SuperAdmin123!@#',
+        email: superAdminEmail,
+        password: superAdminPassword,
         options: {
           data: {
             first_name: 'Super',
@@ -34,32 +67,39 @@ const SuperAdminLogin = () => {
       });
 
       if (authError) {
-        console.log('Auth user might already exist, trying to sign in...');
+        console.error('Auth creation error:', authError);
         
-        // Try to sign in with existing credentials
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: 'superadmin@system.local',
-          password: 'SuperAdmin123!@#'
-        });
-
-        if (signInError) {
-          throw signInError;
+        // If user already exists, try to sign in
+        if (authError.message.includes('already registered')) {
+          console.log('User already exists, attempting sign in...');
+          const { data: retrySignIn, error: retryError } = await supabase.auth.signInWithPassword({
+            email: superAdminEmail,
+            password: superAdminPassword
+          });
+          
+          if (!retryError && retrySignIn.user) {
+            return true;
+          }
         }
+        
+        throw authError;
       }
 
-      // Update profile to ensure super admin role
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: (await supabase.auth.getUser()).data.user?.id,
-          email: 'superadmin@system.local',
-          first_name: 'Super',
-          last_name: 'Admin',
-          role: 'super_admin'
-        });
+      if (authData.user) {
+        // Update profile with super admin role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            email: superAdminEmail,
+            first_name: 'Super',
+            last_name: 'Admin',
+            role: 'super_admin'
+          });
 
-      if (profileError) {
-        console.error('Profile error:', profileError);
+        if (profileError) {
+          console.error('Profile error:', profileError);
+        }
       }
 
       return true;
@@ -83,7 +123,7 @@ const SuperAdminLogin = () => {
           toast.success("Accès Super Admin autorisé");
           navigate('/super-admin');
         } else {
-          toast.error("Erreur lors de la création du compte Super Admin");
+          toast.error("Erreur lors de l'authentification Super Admin");
         }
       } else {
         toast.error("Code PIN incorrect");
@@ -149,7 +189,10 @@ const SuperAdminLogin = () => {
 
           <div className="mt-6 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
             <p className="text-xs text-blue-800">
-              <strong>Code PIN par défaut:</strong> 123456
+              <strong>Code PIN par défaut:</strong> 1280
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              <strong>Email Super Admin:</strong> superadmin@example.com
             </p>
           </div>
 
