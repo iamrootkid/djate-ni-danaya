@@ -63,6 +63,10 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
     throw error;
   }
 
+  if (!data) {
+    throw new Error('No data returned from customer creation');
+  }
+
   return {
     id: data.id,
     first_name: data.first_name,
@@ -102,6 +106,10 @@ export const updateCustomer = async (
   if (error) {
     console.error('Error updating customer:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('No data returned from customer update');
   }
 
   return {

@@ -52,6 +52,10 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
     throw error;
   }
 
+  if (!data) {
+    throw new Error('No data returned from category creation');
+  }
+
   return {
     id: data.id,
     name: data.name,
@@ -80,6 +84,10 @@ export const updateCategory = async (id: string, updates: Partial<Omit<Category,
   if (error) {
     console.error('Error updating category:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('No data returned from category update');
   }
 
   return {
