@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,8 +14,8 @@ const SuperAdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Default Super Admin PIN - in production this should be configurable
-  const SUPER_ADMIN_PIN = "123456";
+  // Super Admin PIN - changed to 1280 for easier access
+  const SUPER_ADMIN_PIN = "1280";
 
   const createSuperAdminUser = async () => {
     try {
@@ -190,7 +189,7 @@ const SuperAdminLogin = () => {
 
           <div className="mt-6 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
             <p className="text-xs text-blue-800">
-              <strong>Code PIN par défaut:</strong> 123456
+              <strong>Code PIN par défaut:</strong> 1280
             </p>
             <p className="text-xs text-blue-600 mt-1">
               <strong>Email Super Admin:</strong> superadmin@example.com

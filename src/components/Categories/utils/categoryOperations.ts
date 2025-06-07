@@ -39,11 +39,11 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
   
   const { data, error } = await supabase
     .from('categories')
-    .insert({
+    .insert([{
       name: category.name,
       description: category.description,
       shop_id: category.shop_id,
-    })
+    }])
     .select()
     .single();
 
@@ -65,13 +65,14 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
 export const updateCategory = async (id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>): Promise<Category> => {
   console.log('Updating category:', id, updates);
   
+  const updateData: any = {};
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.description !== undefined) updateData.description = updates.description;
+  if (updates.shop_id !== undefined) updateData.shop_id = updates.shop_id;
+  
   const { data, error } = await supabase
     .from('categories')
-    .update({
-      name: updates.name,
-      description: updates.description,
-      shop_id: updates.shop_id,
-    })
+    .update(updateData)
     .eq('id', id)
     .select()
     .single();

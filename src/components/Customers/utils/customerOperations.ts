@@ -47,14 +47,14 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
   
   const { data, error } = await supabase
     .from('customers')
-    .insert({
+    .insert([{
       first_name: customer.first_name,
       last_name: customer.last_name,
       email: customer.email,
       phone: customer.phone,
       shop_id: customer.shop_id,
       loyalty_points: customer.loyalty_points || 0,
-    })
+    }])
     .select()
     .single();
 
@@ -84,16 +84,17 @@ export const updateCustomer = async (
 ): Promise<Customer> => {
   console.log('Updating customer:', id, updates);
   
+  const updateData: any = {};
+  if (updates.first_name !== undefined) updateData.first_name = updates.first_name;
+  if (updates.last_name !== undefined) updateData.last_name = updates.last_name;
+  if (updates.email !== undefined) updateData.email = updates.email;
+  if (updates.phone !== undefined) updateData.phone = updates.phone;
+  if (updates.shop_id !== undefined) updateData.shop_id = updates.shop_id;
+  if (updates.loyalty_points !== undefined) updateData.loyalty_points = updates.loyalty_points;
+  
   const { data, error } = await supabase
     .from('customers')
-    .update({
-      first_name: updates.first_name,
-      last_name: updates.last_name,
-      email: updates.email,
-      phone: updates.phone,
-      shop_id: updates.shop_id,
-      loyalty_points: updates.loyalty_points,
-    })
+    .update(updateData)
     .eq('id', id)
     .select()
     .single();
