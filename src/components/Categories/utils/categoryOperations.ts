@@ -24,14 +24,7 @@ export const fetchCategories = async (shopId: string): Promise<Category[]> => {
     throw error;
   }
 
-  return (data || []).map(item => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    shop_id: item.shop_id,
-    created_at: item.created_at,
-    updated_at: item.updated_at,
-  }));
+  return (data || []) as Category[];
 };
 
 export const createCategory = async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> => {
@@ -39,11 +32,7 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
   
   const { data, error } = await supabase
     .from('categories')
-    .insert([{
-      name: category.name,
-      description: category.description,
-      shop_id: category.shop_id,
-    }])
+    .insert(category)
     .select()
     .single();
 
@@ -52,27 +41,15 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
     throw error;
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    shop_id: data.shop_id,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
-  };
+  return data as Category;
 };
 
 export const updateCategory = async (id: string, updates: Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>): Promise<Category> => {
   console.log('Updating category:', id, updates);
   
-  const updateData: any = {};
-  if (updates.name !== undefined) updateData.name = updates.name;
-  if (updates.description !== undefined) updateData.description = updates.description;
-  if (updates.shop_id !== undefined) updateData.shop_id = updates.shop_id;
-  
   const { data, error } = await supabase
     .from('categories')
-    .update(updateData)
+    .update(updates)
     .eq('id', id)
     .select()
     .single();
@@ -82,14 +59,7 @@ export const updateCategory = async (id: string, updates: Partial<Omit<Category,
     throw error;
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    shop_id: data.shop_id,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
-  };
+  return data as Category;
 };
 
 export const deleteCategory = async (id: string): Promise<void> => {
