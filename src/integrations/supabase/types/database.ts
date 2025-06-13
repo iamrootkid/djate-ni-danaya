@@ -1,4 +1,3 @@
-
 import { ReturnedItem } from "@/types/invoice";
 import { InvoiceModification, StockSummary } from "./functions";
 
@@ -44,6 +43,52 @@ export interface Database {
           is_modified?: boolean;
           modification_reason?: string;
           new_total_amount?: number;
+        };
+      };
+      shops: {
+        Row: {
+          id: string;
+          pin_code: string;
+          name: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          pin_code: string;
+          name: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          pin_code?: string;
+          name?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      profiles: {
+        Row: {
+          id: string; // auth.users.id
+          name: string | null;
+          shop_id: string | null; // UUID from shops table
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string | null;
+          shop_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string | null;
+          shop_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
       };
       // Add other tables as needed

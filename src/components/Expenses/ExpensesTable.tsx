@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -34,59 +33,61 @@ export const ExpensesTable = ({ expenses, onActionSelect }: ExpensesTableProps) 
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Montant</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Employé</TableHead>
-          <TableHead className="w-[50px]"></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {expenses?.map((expense) => (
-          <TableRow key={expense.id}>
-            <TableCell>
-              {new Date(expense.date).toLocaleDateString()}
-            </TableCell>
-            <TableCell>{typeLabels[expense.type]}</TableCell>
-            <TableCell>{expense.amount.toLocaleString()} F CFA</TableCell>
-            <TableCell>{expense.description || "-"}</TableCell>
-            <TableCell>
-              {expense.profiles
-                ? `${expense.profiles.first_name || ''} ${expense.profiles.last_name || ''}`
-                : "-"}
-            </TableCell>
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => onActionSelect(expense, "edit")}
-                  >
-                    Modifier
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => onActionSelect(expense, "delete")}
-                  >
-                    Supprimer
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Montant</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Employé</TableHead>
+            <TableHead className="w-[50px]"></TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {expenses?.map((expense) => (
+            <TableRow key={expense.id}>
+              <TableCell>
+                {new Date(expense.date).toLocaleDateString()}
+              </TableCell>
+              <TableCell>{typeLabels[expense.type]}</TableCell>
+              <TableCell>{expense.amount.toLocaleString()} F CFA</TableCell>
+              <TableCell>{expense.description || "-"}</TableCell>
+              <TableCell>
+                {expense.profiles
+                  ? `${expense.profiles.first_name || ''} ${expense.profiles.last_name || ''}`
+                  : "-"}
+              </TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => onActionSelect(expense, "edit")}
+                    >
+                      Modifier
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => onActionSelect(expense, "delete")}
+                    >
+                      Supprimer
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

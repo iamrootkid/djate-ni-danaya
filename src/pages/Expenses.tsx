@@ -18,11 +18,11 @@ const Expenses = () => {
 
   return (
     <AppLayout>
-      <div className={isMobile ? "space-y-4 p-2" : "space-y-6"}>
-        <Card className={isMobile ? "bg-white dark:bg-[#18181b] rounded-xl shadow-sm" : undefined}>
-          <CardContent className={isMobile ? "p-4" : "p-6"}>
-            <div className={isMobile ? "flex flex-col gap-4" : "flex justify-between items-center"}>
-              <div className={isMobile ? "w-full flex flex-col gap-2" : "flex items-center gap-4"}>
+      <div className="space-y-6 p-4 md:p-6">
+        <Card className="bg-white dark:bg-[#18181b] rounded-xl shadow-sm">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
+              <div className="w-full flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
                 <ExpensesHeader
                   dateRange={dateRange}
                   onDateRangeChange={setDateRange}
@@ -33,14 +33,14 @@ const Expenses = () => {
             </div>
           </CardContent>
         </Card>
-        <div className={isMobile ? "space-y-4" : undefined}>
-          <Card className={isMobile ? "bg-white dark:bg-[#18181b] rounded-xl shadow-sm" : undefined}>
-            <CardContent className={isMobile ? "p-4" : "p-6"}>
+        <div className="grid grid-cols-1 gap-6">
+          <Card className="bg-white dark:bg-[#18181b] rounded-xl shadow-sm">
+            <CardContent className="p-4 md:p-6">
               <ExpensesStats filterType={filterType} dateRange={dateRange} />
             </CardContent>
           </Card>
-          <Card className={isMobile ? "bg-white dark:bg-[#18181b] rounded-xl shadow-sm" : undefined}>
-            <CardContent className={isMobile ? "p-4" : "p-6"}>
+          <Card className="bg-white dark:bg-[#18181b] rounded-xl shadow-sm">
+            <CardContent className="p-4 md:p-6">
               <ExpensesList filterType={filterType} dateRange={dateRange} />
             </CardContent>
           </Card>

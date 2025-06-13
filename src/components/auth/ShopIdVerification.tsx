@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,7 @@ import { AlertCircle } from "lucide-react";
 import { isQueryError, safeSingleResult, asParam } from "@/utils/safeFilters";
 
 const shopIdSchema = z.object({
-  shopId: z.string().uuid("L'identifiant du magasin doit être un UUID valide").min(1, "L'identifiant du magasin est requis"),
+  shopId: z.string().length(6, "The shop ID must be a 6-digit PIN.").regex(/^\d+$/, "The shop ID must contain only digits.").min(1, "The shop ID is required."),
 });
 
 type ShopIdValues = z.infer<typeof shopIdSchema>;
@@ -54,33 +53,33 @@ export const ShopIdVerification = ({
       
       const { data: shopData, error } = await supabase
         .from('shops')
-        .select('id, name')
-        .eq('id', asParam(values.shopId))
+        .select('id, name, pin_code')
+        .eq('pin_code', values.shopId)
         .limit(1)
         .maybeSingle();
       
       console.log("Shop query response:", { data: shopData, error });
       
       if (error) {
-        throw new Error(`Erreur lors de la vérification du magasin: ${error.message}`);
+        throw new Error(`Error verifying shop: ${error.message}`);
       }
       
-      if (!shopData || isQueryError(shopData)) {
-        throw new Error("Magasin non trouvé. Veuillez vérifier l'identifiant du magasin.");
+      if (!shopData) {
+        throw new Error("Shop not found. Please check the shop ID.");
       }
       
-      const shop = safeSingleResult<{id: string, name: string}>(shopData);
+      const shop = shopData;
       if (!shop?.name) {
-        throw new Error("Données du magasin invalides");
+        throw new Error("Invalid shop data.");
       }
       
-      toast.success(`Magasin vérifié: ${shop.name}`);
-      localStorage.setItem('shopId', values.shopId);
-      onVerified(true, values.shopId);
+      toast.success(`Shop verified: ${shop.name}`);
+      localStorage.setItem('shopId', shop.id);
+      onVerified(true, shop.id);
     } catch (error: any) {
       console.error("Shop verification error:", error);
-      setError(error.message || "Erreur lors de la vérification");
-      toast.error(error.message || "Erreur lors de la vérification");
+      setError(error.message || "Error during verification");
+      toast.error(error.message || "Error during verification");
       form.reset();
     } finally {
       setLoading(false);
@@ -105,7 +104,7 @@ export const ShopIdVerification = ({
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="Ex: 123e4567-e89b-12d3-a456-426614174000"
+                  placeholder="Ex: 123456"
                 />
               </FormControl>
               <FormMessage />

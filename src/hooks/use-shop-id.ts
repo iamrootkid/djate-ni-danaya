@@ -1,15 +1,15 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { safeGetProfileData } from "@/utils/supabaseHelpers";
+import { Database } from "@/integrations/supabase/types/database";
 
 // Create a cache for shop IDs to reduce redundant fetches
 type ShopCache = {
   id: string | null;
+  pinCode: string | null; // Add pinCode to cache
   timestamp: number;
 }
 
@@ -47,62 +47,86 @@ export const useShopId = () => {
       if (now - lastRefreshTime < 60000) {
         console.log("Throttling shop ID refresh to avoid rate limits");
         // Return the cached value from local storage if available
-        const cachedShopId = localStorage.getItem("shopId");
-        return cachedShopId;
+        const cachedData = localStorage.getItem(SHOP_CACHE_KEY);
+        if (cachedData) {
+          const cache: ShopCache = JSON.parse(cachedData);
+          return cache; // Return the cached object
+        }
+        return { id: null, pinCode: null, timestamp: now }; // Return a default ShopCache if no cache
       }
 
       setLastRefreshTime(now);
       
       if (!user) {
-        console.log("No authenticated user, returning null for shopId");
-        return null;
+        console.log("No authenticated user, returning null for shopId and pinCode");
+        return { id: null, pinCode: null, timestamp: Date.now() }; // Always return ShopCache
       }
 
       console.log("Refreshing shop ID for user:", user.id);
       
       // Safely execute the query
       try {
-        const { data: profile, error } = await supabase
+        const { data: profileResult, error: profileError } = await supabase
           .from("profiles")
           .select("shop_id")
           .eq("id", user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error("Error fetching shop ID:", error);
-          if (error.code === "406" || error.code === "429") {
-            toast.error("Erreur de connexion au serveur. Veuillez vous reconnecter.");
+        // Check for profile error or no data
+        if (profileError || !profileResult) {
+          console.error("Error fetching shop ID from profile:", profileError);
+          if (profileError?.code === "406" || profileError?.code === "429") {
+            toast.error("Server connection error. Please reconnect.");
             await supabase.auth.signOut();
             navigate("/login");
-            return null;
           }
-          return null;
+          return { id: null, pinCode: null, timestamp: Date.now() };
         }
         
-        if (!profile?.shop_id) {
+        const profile: { shop_id: string | null } = profileResult;
+
+        // Check if shop_id is null/undefined
+        if (!profile.shop_id) {
           console.warn("User has no associated shop ID");
-          return null;
+          return { id: null, pinCode: null, timestamp: Date.now() };
         }
         
-        // Update local storage with current shop ID and cache
-        console.log("Setting shop ID in localStorage:", profile.shop_id);
-        localStorage.setItem("shopId", profile.shop_id);
-        
-        // Update the cache
+        const shopId = profile.shop_id;
+
+        // Fetch pin_code from shops table using the shopId
+        const { data: shopDetailsResult, error: shopDetailsError } = await supabase
+          .from("shops")
+          .select("pin_code")
+          .eq("id", shopId)
+          .maybeSingle();
+
+        // Check for shop details error or no data
+        if (shopDetailsError || !shopDetailsResult) {
+          console.error("Error fetching shop pin code:", shopDetailsError);
+          return { id: shopId, pinCode: null, timestamp: Date.now() };
+        }
+
+        const shopDetails: { pin_code: string | null } = shopDetailsResult;
+
+        const pinCode = shopDetails?.pin_code || null;
+
+        // Update local storage with current shop ID and pinCode
+        console.log("Setting shop ID and PIN in localStorage:", { id: shopId, pinCode: pinCode });
         const cacheData: ShopCache = {
-          id: profile.shop_id,
+          id: shopId,
+          pinCode: pinCode,
           timestamp: Date.now()
         };
         localStorage.setItem(SHOP_CACHE_KEY, JSON.stringify(cacheData));
         
-        return profile.shop_id;
+        return cacheData;
       } catch (error) {
         console.error("Error in shop ID query:", error);
-        return null;
+        return { id: null, pinCode: null, timestamp: Date.now() };
       }
     } catch (error) {
       console.error("Error in refreshShopId:", error);
-      return null;
+      return { id: null, pinCode: null, timestamp: Date.now() };
     }
   }, [user, lastRefreshTime, navigate]);
 
@@ -122,9 +146,9 @@ export const useShopId = () => {
     const initializeShopId = async () => {
       if (!isSubscribed) return;
       
-      const shopId = await refreshShopId();
-      if (shopId && isSubscribed) {
-        queryClient.setQueryData(["shop-id"], shopId);
+      const shopData = await refreshShopId();
+      if (shopData && shopData.id && isSubscribed) {
+        queryClient.setQueryData<ShopCache>(["shop-id"], shopData);
       }
     };
 
@@ -139,7 +163,13 @@ export const useShopId = () => {
       if (!isSubscribed) return null;
       
       try {
-        const shopId = localStorage.getItem("shopId");
+        const cachedData = localStorage.getItem(SHOP_CACHE_KEY);
+        let shopId: string | null = null; 
+        if (cachedData) {
+          const cache: ShopCache = JSON.parse(cachedData);
+          shopId = cache.id;
+        }
+
         if (!shopId) return null;
 
         console.log("Setting up profiles changes subscription for shop:", shopId);
@@ -190,7 +220,7 @@ export const useShopId = () => {
     };
   }, [queryClient, user, authLoading, refreshShopId]);
 
-  const { data: shopId, error } = useQuery({
+  const { data: shopData, error } = useQuery<ShopCache>({
     queryKey: ["shop-id"],
     queryFn: refreshShopId,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
@@ -199,9 +229,5 @@ export const useShopId = () => {
     enabled: !!user && !authLoading,
   });
 
-  if (error) {
-    console.error("Error in shopId query:", error);
-  }
-
-  return { shopId, refreshShopId };
+  return { shopId: shopData?.id, pinCode: shopData?.pinCode, error };
 };
