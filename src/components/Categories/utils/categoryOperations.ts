@@ -22,19 +22,24 @@ export const getCategories = async (shopId: string): Promise<Category[]> => {
     throw error;
   }
 
-  return data as Category[];
+  return (data || []) as Category[];
 };
 
-export const createCategory = async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Category> => {
+export const createCategory = async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>, shopId?: string): Promise<Category> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) {
+    throw new Error('Shop ID is required to create a category.');
+  }
+
   const categoryData = {
     name: category.name,
-    description: category.description,
-    shop_id: shopId,
+    description: category.description || null,
+    shop_id: currentShopId,
   };
 
   const { data, error } = await supabase
     .from('categories')
-    .insert(categoryData)
+    .insert([categoryData])
     .select()
     .single();
 
@@ -46,7 +51,11 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
   return data as Category;
 };
 
-export const updateCategory = async (id: string, category: Partial<Omit<Category, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Category> => {
+export const updateCategory = async (id: string, category: Partial<Omit<Category, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId?: string): Promise<Category> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) {
+    throw new Error('Shop ID is required to update a category.');
+  }
   const updateData: any = {};
   
   if (category.name !== undefined) {
@@ -60,7 +69,7 @@ export const updateCategory = async (id: string, category: Partial<Omit<Category
     .from('categories')
     .update(updateData)
     .eq('id', id)
-    .eq('shop_id', shopId)
+    .eq('shop_id', currentShopId)
     .select()
     .single();
 
@@ -72,12 +81,16 @@ export const updateCategory = async (id: string, category: Partial<Omit<Category
   return data as Category;
 };
 
-export const deleteCategory = async (id: string, shopId: string): Promise<void> => {
+export const deleteCategory = async (id: string, shopId?: string): Promise<void> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) {
+    throw new Error('Shop ID is required to delete a category.');
+  }
   const { error } = await supabase
     .from('categories')
     .delete()
     .eq('id', id)
-    .eq('shop_id', shopId);
+    .eq('shop_id', currentShopId);
 
   if (error) {
     console.error('Error deleting category:', error);

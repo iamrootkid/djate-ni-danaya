@@ -26,23 +26,26 @@ export const getExpenses = async (shopId: string): Promise<Expense[]> => {
     throw error;
   }
 
-  return data as Expense[];
+  return (data || []) as Expense[];
 };
 
-export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Expense> => {
+export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' | 'updated_at'>, shopId?: string): Promise<Expense> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) throw new Error("Shop ID is required to create an expense.");
+
   const expenseData = {
     amount: expense.amount,
     date: expense.date,
-    description: expense.description,
+    description: expense.description || null,
     type: expense.type,
-    employee_id: expense.employee_id,
-    supplier_id: expense.supplier_id,
-    shop_id: shopId,
+    employee_id: expense.employee_id || null,
+    supplier_id: expense.supplier_id || null,
+    shop_id: currentShopId,
   };
 
   const { data, error } = await supabase
     .from('expenses')
-    .insert(expenseData)
+    .insert([expenseData])
     .select()
     .single();
 
@@ -54,7 +57,10 @@ export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' |
   return data as Expense;
 };
 
-export const updateExpense = async (id: string, expense: Partial<Omit<Expense, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Expense> => {
+export const updateExpense = async (id: string, expense: Partial<Omit<Expense, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId?: string): Promise<Expense> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) throw new Error("Shop ID is required to update an expense.");
+
   const updateData: any = {};
   
   if (expense.amount !== undefined) {
@@ -80,7 +86,7 @@ export const updateExpense = async (id: string, expense: Partial<Omit<Expense, '
     .from('expenses')
     .update(updateData)
     .eq('id', id)
-    .eq('shop_id', shopId)
+    .eq('shop_id', currentShopId)
     .select()
     .single();
 
@@ -92,12 +98,15 @@ export const updateExpense = async (id: string, expense: Partial<Omit<Expense, '
   return data as Expense;
 };
 
-export const deleteExpense = async (id: string, shopId: string): Promise<void> => {
+export const deleteExpense = async (id: string, shopId?: string): Promise<void> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) throw new Error("Shop ID is required to delete an expense.");
+  
   const { error } = await supabase
     .from('expenses')
     .delete()
     .eq('id', id)
-    .eq('shop_id', shopId);
+    .eq('shop_id', currentShopId);
 
   if (error) {
     console.error('Error deleting expense:', error);

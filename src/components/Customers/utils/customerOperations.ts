@@ -25,22 +25,25 @@ export const getCustomers = async (shopId: string): Promise<Customer[]> => {
     throw error;
   }
 
-  return data as Customer[];
+  return (data || []) as Customer[];
 };
 
-export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Customer> => {
+export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>, shopId?: string): Promise<Customer> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) throw new Error("Shop ID is required to create a customer.");
+
   const customerData = {
-    first_name: customer.first_name,
-    last_name: customer.last_name,
-    email: customer.email,
-    phone: customer.phone,
+    first_name: customer.first_name || null,
+    last_name: customer.last_name || null,
+    email: customer.email || null,
+    phone: customer.phone || null,
     loyalty_points: customer.loyalty_points || 0,
-    shop_id: shopId,
+    shop_id: currentShopId,
   };
 
   const { data, error } = await supabase
     .from('customers')
-    .insert(customerData)
+    .insert([customerData])
     .select()
     .single();
 
@@ -52,7 +55,10 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
   return data as Customer;
 };
 
-export const updateCustomer = async (id: string, customer: Partial<Omit<Customer, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Customer> => {
+export const updateCustomer = async (id: string, customer: Partial<Omit<Customer, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId?: string): Promise<Customer> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) throw new Error("Shop ID is required to update a customer.");
+
   const updateData: any = {};
   
   if (customer.first_name !== undefined) {
@@ -75,7 +81,7 @@ export const updateCustomer = async (id: string, customer: Partial<Omit<Customer
     .from('customers')
     .update(updateData)
     .eq('id', id)
-    .eq('shop_id', shopId)
+    .eq('shop_id', currentShopId)
     .select()
     .single();
 
@@ -87,12 +93,15 @@ export const updateCustomer = async (id: string, customer: Partial<Omit<Customer
   return data as Customer;
 };
 
-export const deleteCustomer = async (id: string, shopId: string): Promise<void> => {
+export const deleteCustomer = async (id: string, shopId?: string): Promise<void> => {
+  const currentShopId = shopId || localStorage.getItem('shopId');
+  if (!currentShopId) throw new Error("Shop ID is required to delete a customer.");
+
   const { error } = await supabase
     .from('customers')
     .delete()
     .eq('id', id)
-    .eq('shop_id', shopId);
+    .eq('shop_id', currentShopId);
 
   if (error) {
     console.error('Error deleting customer:', error);
