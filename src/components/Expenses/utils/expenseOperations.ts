@@ -1,84 +1,118 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { ExpenseType } from "@/types/expense";
-import { filterByUUID, asUUID } from "@/utils/supabaseHelpers";
+import { Database } from "@/integrations/supabase/types";
 
-interface ExpenseUpdateData {
-  amount: number;
-  description: string;
-  type: ExpenseType;
-}
+type Expense = Database["public"]["Tables"]["expenses"]["Row"];
+type ExpenseInsert = Database["public"]["Tables"]["expenses"]["Insert"];
 
-export const deleteExpense = async (expenseId: string) => {
+export const fetchExpenses = async (shopId: string): Promise<Expense[]> => {
+  if (!shopId) {
+    console.warn("No shop ID provided for fetching expenses");
+    return [];
+  }
+
   try {
-    // Use proper UUID handling for the ID parameter
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("expenses")
-      .delete()
-      .match(filterByUUID("id", expenseId));
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("date", { ascending: false });
 
-    if (error) throw error;
-    
-    return { success: true };
-  } catch (error: any) {
-    console.error("Error deleting expense:", error);
+    if (error) {
+      console.error("Error fetching expenses:", error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchExpenses:", error);
+    return [];
+  }
+};
+
+export const createExpense = async (
+  expenseData: Omit<ExpenseInsert, "shop_id">,
+  shopId: string
+): Promise<Expense> => {
+  if (!shopId) {
+    throw new Error("Shop ID is required for creating an expense");
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("expenses")
+      .insert([{ ...expenseData, shop_id: shopId }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating expense:", error);
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error("No data returned from expense creation");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in createExpense:", error);
     throw error;
   }
 };
 
 export const updateExpense = async (
   expenseId: string,
-  data: ExpenseUpdateData
-) => {
+  expenseData: Partial<Omit<ExpenseInsert, "shop_id">>,
+  shopId: string
+): Promise<Expense> => {
+  if (!shopId) {
+    throw new Error("Shop ID is required for updating an expense");
+  }
+
   try {
-    // Cast the expense type correctly for Supabase
-    const updateData: any = {
-      amount: data.amount,
-      description: data.description
-    };
-    // Only add type if it's valid
-    if (data.type) {
-      updateData.type = data.type;
+    const { data, error } = await supabase
+      .from("expenses")
+      .update(expenseData)
+      .eq("id", expenseId)
+      .eq("shop_id", shopId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating expense:", error);
+      throw error;
     }
 
-    const { error } = await supabase
-      .from("expenses")
-      .update(updateData)
-      .match(filterByUUID("id", expenseId));
+    if (!data) {
+      throw new Error("No data returned from expense update");
+    }
 
-    if (error) throw error;
-    
-    return { success: true };
-  } catch (error: any) {
-    console.error("Error updating expense:", error);
+    return data;
+  } catch (error) {
+    console.error("Error in updateExpense:", error);
     throw error;
   }
 };
 
-export const exportExpenseToCsv = (expense: any) => {
-  // Convert expense object to CSV
-  const headers = ["Date", "Type", "Amount", "Description"];
-  const data = [
-    expense.date,
-    expense.type,
-    expense.amount,
-    expense.description || ""
-  ];
+export const deleteExpense = async (expenseId: string, shopId: string): Promise<void> => {
+  if (!shopId) {
+    throw new Error("Shop ID is required for deleting an expense");
+  }
 
-  const csvContent = [
-    headers.join(","),
-    data.join(",")
-  ].join("\n");
+  try {
+    const { error } = await supabase
+      .from("expenses")
+      .delete()
+      .eq("id", expenseId)
+      .eq("shop_id", shopId);
 
-  // Create a blob and download
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `expense_${expense.id}.csv`);
-  link.style.visibility = "hidden";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    if (error) {
+      console.error("Error deleting expense:", error);
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error in deleteExpense:", error);
+    throw error;
+  }
 };
