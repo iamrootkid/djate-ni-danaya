@@ -17,7 +17,7 @@ export const getCustomers = async (shopId: string): Promise<Customer[]> => {
   const { data, error } = await supabase
     .from('customers')
     .select('*')
-    .eq('shop_id', shopId)
+    .eq('shop_id', shopId as any)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -80,8 +80,8 @@ export const updateCustomer = async (id: string, customer: Partial<Omit<Customer
   const { data, error } = await supabase
     .from('customers')
     .update(updateData)
-    .eq('id', id)
-    .eq('shop_id', currentShopId)
+    .eq('id', id as any)
+    .eq('shop_id', currentShopId as any)
     .select()
     .single();
 
@@ -100,8 +100,8 @@ export const deleteCustomer = async (id: string, shopId?: string): Promise<void>
   const { error } = await supabase
     .from('customers')
     .delete()
-    .eq('id', id)
-    .eq('shop_id', currentShopId);
+    .eq('id', id as any)
+    .eq('shop_id', currentShopId as any);
 
   if (error) {
     console.error('Error deleting customer:', error);

@@ -14,7 +14,7 @@ export const getCategories = async (shopId: string): Promise<Category[]> => {
   const { data, error } = await supabase
     .from('categories')
     .select('*')
-    .eq('shop_id', shopId)
+    .eq('shop_id', shopId as any)
     .order('name');
 
   if (error) {
@@ -68,8 +68,8 @@ export const updateCategory = async (id: string, category: Partial<Omit<Category
   const { data, error } = await supabase
     .from('categories')
     .update(updateData)
-    .eq('id', id)
-    .eq('shop_id', currentShopId)
+    .eq('id', id as any)
+    .eq('shop_id', currentShopId as any)
     .select()
     .single();
 
@@ -89,8 +89,8 @@ export const deleteCategory = async (id: string, shopId?: string): Promise<void>
   const { error } = await supabase
     .from('categories')
     .delete()
-    .eq('id', id)
-    .eq('shop_id', currentShopId);
+    .eq('id', id as any)
+    .eq('shop_id', currentShopId as any);
 
   if (error) {
     console.error('Error deleting category:', error);

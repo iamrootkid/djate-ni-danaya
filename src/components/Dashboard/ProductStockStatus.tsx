@@ -31,7 +31,7 @@ export const ProductStockStatus = ({ limit = 10 }: ProductStockStatusProps) => {
         const { data, error } = await supabase
           .from('products')
           .select('*')
-          .eq('shop_id', shopId)
+          .eq('shop_id', shopId as any)
           .order('stock', { ascending: true })
           .limit(limit);
 

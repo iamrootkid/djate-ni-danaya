@@ -18,7 +18,7 @@ export const getExpenses = async (shopId: string): Promise<Expense[]> => {
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
-    .eq('shop_id', shopId)
+    .eq('shop_id', shopId as any)
     .order('date', { ascending: false });
 
   if (error) {
@@ -85,8 +85,8 @@ export const updateExpense = async (id: string, expense: Partial<Omit<Expense, '
   const { data, error } = await supabase
     .from('expenses')
     .update(updateData)
-    .eq('id', id)
-    .eq('shop_id', currentShopId)
+    .eq('id', id as any)
+    .eq('shop_id', currentShopId as any)
     .select()
     .single();
 
@@ -105,8 +105,8 @@ export const deleteExpense = async (id: string, shopId?: string): Promise<void> 
   const { error } = await supabase
     .from('expenses')
     .delete()
-    .eq('id', id)
-    .eq('shop_id', currentShopId);
+    .eq('id', id as any)
+    .eq('shop_id', currentShopId as any);
 
   if (error) {
     console.error('Error deleting expense:', error);
