@@ -40,7 +40,7 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
 
   const { data, error } = await supabase
     .from('customers')
-    .insert([customerData])
+    .insert(customerData)
     .select()
     .single();
 
@@ -53,13 +53,23 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
 };
 
 export const updateCustomer = async (id: string, customer: Partial<Omit<Customer, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Customer> => {
-  const updateData = {
-    ...(customer.first_name !== undefined && { first_name: customer.first_name }),
-    ...(customer.last_name !== undefined && { last_name: customer.last_name }),
-    ...(customer.email !== undefined && { email: customer.email }),
-    ...(customer.phone !== undefined && { phone: customer.phone }),
-    ...(customer.loyalty_points !== undefined && { loyalty_points: customer.loyalty_points }),
-  };
+  const updateData: any = {};
+  
+  if (customer.first_name !== undefined) {
+    updateData.first_name = customer.first_name;
+  }
+  if (customer.last_name !== undefined) {
+    updateData.last_name = customer.last_name;
+  }
+  if (customer.email !== undefined) {
+    updateData.email = customer.email;
+  }
+  if (customer.phone !== undefined) {
+    updateData.phone = customer.phone;
+  }
+  if (customer.loyalty_points !== undefined) {
+    updateData.loyalty_points = customer.loyalty_points;
+  }
 
   const { data, error } = await supabase
     .from('customers')

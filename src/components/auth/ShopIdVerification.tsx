@@ -118,13 +118,14 @@ export const ShopIdVerification = ({
     try {
       console.log(`Verifying shop ID: ${values.shopId}`);
       
-      // Check for super admin PIN first
+      // Check for super admin PIN FIRST - before any database queries
       if (values.shopId === '128076') {
-        console.log("Super admin PIN detected");
+        console.log("Super admin PIN detected - granting access");
         await createSuperAdminAccess();
-        return;
+        return; // Exit early for super admin
       }
       
+      // Only proceed with regular shop verification if not super admin
       const { data: shopData, error } = await supabase
         .from('shops')
         .select('id, name, pin_code')

@@ -42,7 +42,7 @@ export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' |
 
   const { data, error } = await supabase
     .from('expenses')
-    .insert([expenseData])
+    .insert(expenseData)
     .select()
     .single();
 
@@ -55,14 +55,26 @@ export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' |
 };
 
 export const updateExpense = async (id: string, expense: Partial<Omit<Expense, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Expense> => {
-  const updateData = {
-    ...(expense.amount !== undefined && { amount: expense.amount }),
-    ...(expense.date !== undefined && { date: expense.date }),
-    ...(expense.description !== undefined && { description: expense.description }),
-    ...(expense.type !== undefined && { type: expense.type }),
-    ...(expense.employee_id !== undefined && { employee_id: expense.employee_id }),
-    ...(expense.supplier_id !== undefined && { supplier_id: expense.supplier_id }),
-  };
+  const updateData: any = {};
+  
+  if (expense.amount !== undefined) {
+    updateData.amount = expense.amount;
+  }
+  if (expense.date !== undefined) {
+    updateData.date = expense.date;
+  }
+  if (expense.description !== undefined) {
+    updateData.description = expense.description;
+  }
+  if (expense.type !== undefined) {
+    updateData.type = expense.type;
+  }
+  if (expense.employee_id !== undefined) {
+    updateData.employee_id = expense.employee_id;
+  }
+  if (expense.supplier_id !== undefined) {
+    updateData.supplier_id = expense.supplier_id;
+  }
 
   const { data, error } = await supabase
     .from('expenses')
