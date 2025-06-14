@@ -51,14 +51,14 @@ export const ShopIdVerification = ({
       await supabase.auth.signOut(); // Start with a clean slate
 
       let authResponse = await supabase.auth.signInWithPassword({
-        email: 'superadmin@system.local',
+        email: 'superadmin@system.app',
         password: 'SuperAdmin123!',
       });
 
       // If sign-in fails because user doesn't exist, try signing up
       if (authResponse.error && authResponse.error.message.includes('Invalid login credentials')) {
         authResponse = await supabase.auth.signUp({
-          email: 'superadmin@system.local',
+          email: 'superadmin@system.app',
           password: 'SuperAdmin123!',
         });
       }
@@ -76,7 +76,7 @@ export const ShopIdVerification = ({
         .from('profiles')
         .upsert({
           id: authResponse.data.user.id,
-          email: 'superadmin@system.local',
+          email: 'superadmin@system.app',
           role: 'super_admin',
           first_name: 'Super',
           last_name: 'Admin',
