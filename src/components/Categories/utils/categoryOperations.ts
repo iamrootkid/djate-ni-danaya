@@ -22,7 +22,7 @@ export const getCategories = async (shopId: string): Promise<Category[]> => {
     throw error;
   }
 
-  return (data || []) as Category[];
+  return (data || []) as any as Category[];
 };
 
 export const createCategory = async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>, shopId?: string): Promise<Category> => {
@@ -39,7 +39,7 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
 
   const { data, error } = await supabase
     .from('categories')
-    .insert([categoryData])
+    .insert([categoryData] as any)
     .select()
     .single();
 
@@ -48,7 +48,7 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
     throw error;
   }
 
-  return data as Category;
+  return data as any as Category;
 };
 
 export const updateCategory = async (id: string, category: Partial<Omit<Category, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId?: string): Promise<Category> => {
@@ -78,7 +78,7 @@ export const updateCategory = async (id: string, category: Partial<Omit<Category
     throw error;
   }
 
-  return data as Category;
+  return data as any as Category;
 };
 
 export const deleteCategory = async (id: string, shopId?: string): Promise<void> => {

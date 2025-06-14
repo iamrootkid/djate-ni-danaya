@@ -25,7 +25,7 @@ export const getCustomers = async (shopId: string): Promise<Customer[]> => {
     throw error;
   }
 
-  return (data || []) as Customer[];
+  return (data || []) as any as Customer[];
 };
 
 export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>, shopId?: string): Promise<Customer> => {
@@ -43,7 +43,7 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
 
   const { data, error } = await supabase
     .from('customers')
-    .insert([customerData])
+    .insert([customerData] as any)
     .select()
     .single();
 
@@ -52,7 +52,7 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
     throw error;
   }
 
-  return data as Customer;
+  return data as any as Customer;
 };
 
 export const updateCustomer = async (id: string, customer: Partial<Omit<Customer, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId?: string): Promise<Customer> => {
@@ -90,7 +90,7 @@ export const updateCustomer = async (id: string, customer: Partial<Omit<Customer
     throw error;
   }
 
-  return data as Customer;
+  return data as any as Customer;
 };
 
 export const deleteCustomer = async (id: string, shopId?: string): Promise<void> => {
