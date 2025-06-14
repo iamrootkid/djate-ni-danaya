@@ -48,68 +48,53 @@ export const ShopIdVerification = ({
 
   const createSuperAdminAccess = async () => {
     try {
-      // Check if there's an existing session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // Update existing user to super admin
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: session.user.id,
-            email: session.user.email || 'superadmin@system.local',
-            role: 'super_admin',
-            first_name: 'Super',
-            last_name: 'Admin',
-            shop_id: '00000000-0000-0000-0000-000000000001',
-          });
+      await supabase.auth.signOut(); // Start with a clean slate
 
-        if (profileError) {
-          console.error("Error updating profile:", profileError);
-          throw new Error("Failed to update profile to super admin");
-        }
-      } else {
-        // Create a super admin user account
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+      let authResponse = await supabase.auth.signInWithPassword({
+        email: 'superadmin@system.local',
+        password: 'SuperAdmin123!',
+      });
+
+      // If sign-in fails because user doesn't exist, try signing up
+      if (authResponse.error && authResponse.error.message.includes('Invalid login credentials')) {
+        authResponse = await supabase.auth.signUp({
           email: 'superadmin@system.local',
           password: 'SuperAdmin123!',
         });
-
-        if (authError) {
-          console.error("Error creating super admin:", authError);
-          throw new Error("Failed to create super admin account");
-        }
-
-        if (authData.user) {
-          // Update the profile to super_admin role
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({
-              id: authData.user.id,
-              email: 'superadmin@system.local',
-              role: 'super_admin',
-              first_name: 'Super',
-              last_name: 'Admin',
-              shop_id: '00000000-0000-0000-0000-000000000001',
-            });
-
-          if (profileError) {
-            console.error("Error updating profile:", profileError);
-            throw new Error("Failed to set super admin role");
-          }
-        }
       }
 
-      // Store super admin status
+      if (authResponse.error) {
+        throw authResponse.error;
+      }
+
+      if (!authResponse.data.user) {
+        throw new Error("Failed to authenticate super admin user.");
+      }
+
+      // Ensure the profile is set to super_admin
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authResponse.data.user.id,
+          email: 'superadmin@system.local',
+          role: 'super_admin',
+          first_name: 'Super',
+          last_name: 'Admin',
+          shop_id: '00000000-0000-0000-0000-000000000001',
+        });
+
+      if (profileError) {
+        throw new Error("Failed to update profile to super admin");
+      }
+
       localStorage.setItem('userRole', 'super_admin');
       localStorage.setItem('shopId', '00000000-0000-0000-0000-000000000001');
       
       toast.success("Super Admin access granted");
       navigate('/super-admin');
-    } catch (error) {
-      console.error("Super admin creation error:", error);
-      toast.error("Failed to create super admin access");
-      throw error;
+    } catch (error: any) {
+      console.error("Super admin access error:", error);
+      toast.error(error.message || "Failed to grant super admin access");
     }
   };
 
@@ -118,24 +103,17 @@ export const ShopIdVerification = ({
     setError(null);
     
     try {
-      console.log(`Verifying shop ID: ${values.shopId}`);
-      
-      // Check for super admin PIN FIRST
       if (values.shopId === '128076') {
-        console.log("Super admin PIN detected - granting access");
         await createSuperAdminAccess();
-        return; // Exit early for super admin
+        return;
       }
       
-      // Regular shop verification
       const { data: shopData, error } = await supabase
         .from('shops')
         .select('id, name, pin_code')
         .eq('pin_code', values.shopId)
         .limit(1)
         .maybeSingle();
-      
-      console.log("Shop query response:", { data: shopData, error });
       
       if (error) {
         throw new Error(`Error verifying shop: ${error.message}`);

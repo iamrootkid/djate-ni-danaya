@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Expense {
@@ -110,5 +111,30 @@ export const deleteExpense = async (id: string, shopId?: string): Promise<void> 
   if (error) {
     console.error('Error deleting expense:', error);
     throw error;
+  }
+};
+
+export const exportExpenseToCsv = (expenses: Expense[]) => {
+  if (!expenses || expenses.length === 0) {
+    return;
+  }
+
+  const header = Object.keys(expenses[0]).join(',');
+  const csv = expenses.map(row => 
+    Object.values(row).map(value => 
+      `"${String(value ?? '').replace(/"/g, '""')}"`
+    ).join(',')
+  ).join('\n');
+
+  const blob = new Blob([header + '\n' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "expenses.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 };

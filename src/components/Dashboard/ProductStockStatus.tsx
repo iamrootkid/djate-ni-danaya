@@ -46,7 +46,9 @@ export const ProductStockStatus = ({ limit = 10 }: ProductStockStatusProps) => {
       }
     };
 
-    fetchProducts();
+    if (shopId) {
+      fetchProducts();
+    }
   }, [limit, shopId]);
 
   const getStockStatus = (stock: number) => {
@@ -98,7 +100,7 @@ export const ProductStockStatus = ({ limit = 10 }: ProductStockStatusProps) => {
             <p className="text-center text-muted-foreground">Aucun produit à afficher</p>
           ) : (
             products.map((item) => {
-              const stock = typeof item.stock === "number" ? item.stock : typeof item.stock_quantity === "number" ? item.stock_quantity : 0;
+              const stock = typeof item.stock === "number" ? item.stock : 0;
               return (
                 <div 
                   key={item.id} 
