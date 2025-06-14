@@ -25,7 +25,7 @@ export const getCustomers = async (shopId: string): Promise<Customer[]> => {
     throw error;
   }
 
-  return (data || []) as Customer[];
+  return data as Customer[];
 };
 
 export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Customer> => {
@@ -40,7 +40,7 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
 
   const { data, error } = await supabase
     .from('customers')
-    .insert([customerData])
+    .insert(customerData)
     .select()
     .single();
 

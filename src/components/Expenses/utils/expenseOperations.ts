@@ -26,7 +26,7 @@ export const getExpenses = async (shopId: string): Promise<Expense[]> => {
     throw error;
   }
 
-  return (data || []) as Expense[];
+  return data as Expense[];
 };
 
 export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Expense> => {
@@ -42,7 +42,7 @@ export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' |
 
   const { data, error } = await supabase
     .from('expenses')
-    .insert([expenseData])
+    .insert(expenseData)
     .select()
     .single();
 

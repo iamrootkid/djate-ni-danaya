@@ -61,6 +61,7 @@ export const ShopIdVerification = ({
             role: 'super_admin',
             first_name: 'Super',
             last_name: 'Admin',
+            shop_id: '00000000-0000-0000-0000-000000000001',
           });
 
         if (profileError) {
@@ -89,6 +90,7 @@ export const ShopIdVerification = ({
               role: 'super_admin',
               first_name: 'Super',
               last_name: 'Admin',
+              shop_id: '00000000-0000-0000-0000-000000000001',
             });
 
           if (profileError) {
@@ -100,7 +102,7 @@ export const ShopIdVerification = ({
 
       // Store super admin status
       localStorage.setItem('userRole', 'super_admin');
-      localStorage.setItem('shopId', 'super_admin');
+      localStorage.setItem('shopId', '00000000-0000-0000-0000-000000000001');
       
       toast.success("Super Admin access granted");
       navigate('/super-admin');
@@ -118,14 +120,14 @@ export const ShopIdVerification = ({
     try {
       console.log(`Verifying shop ID: ${values.shopId}`);
       
-      // Check for super admin PIN FIRST - before any database queries
+      // Check for super admin PIN FIRST
       if (values.shopId === '128076') {
         console.log("Super admin PIN detected - granting access");
         await createSuperAdminAccess();
         return; // Exit early for super admin
       }
       
-      // Only proceed with regular shop verification if not super admin
+      // Regular shop verification
       const { data: shopData, error } = await supabase
         .from('shops')
         .select('id, name, pin_code')
