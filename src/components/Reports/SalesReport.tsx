@@ -1,11 +1,12 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 import { useSalesReport } from "@/hooks/use-sales-report";
+import { useBestSellingProducts } from "@/hooks/use-best-selling-products";
 import { DateRange } from "react-day-picker";
-import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 interface SalesReportProps {
   dateRange: DateRange;
@@ -13,7 +14,7 @@ interface SalesReportProps {
 
 export const SalesReport = ({ dateRange }: SalesReportProps) => {
   const { data: salesData, isLoading: salesLoading } = useSalesReport(dateRange);
-  const bestSellingProducts: any[] = []; // Placeholder, will need to be replaced
+  const { data: bestSellingProducts, isLoading: productsLoading } = useBestSellingProducts(dateRange);
   const isMobile = useIsMobile();
 
   // Process sales data for the chart with safe type handling
@@ -62,7 +63,9 @@ export const SalesReport = ({ dateRange }: SalesReportProps) => {
               <CardTitle className="text-lg">Meilleurs produits</CardTitle>
             </CardHeader>
             <CardContent>
-              {!bestSellingProducts || !Array.isArray(bestSellingProducts) || bestSellingProducts.length === 0 ? (
+              {productsLoading ? (
+                <div className="flex justify-center items-center h-24">Chargement...</div>
+              ) : !bestSellingProducts || !Array.isArray(bestSellingProducts) || bestSellingProducts.length === 0 ? (
                 <div className="flex justify-center items-center h-24">Aucun produit vendu pour le moment</div>
               ) : (
                 <div className="space-y-2">
@@ -113,7 +116,9 @@ export const SalesReport = ({ dateRange }: SalesReportProps) => {
               <CardTitle>Meilleurs produits</CardTitle>
             </CardHeader>
             <CardContent>
-              {!bestSellingProducts || !Array.isArray(bestSellingProducts) || bestSellingProducts.length === 0 ? (
+              {productsLoading ? (
+                <div className="flex justify-center items-center h-[400px]">Chargement...</div>
+              ) : !bestSellingProducts || !Array.isArray(bestSellingProducts) || bestSellingProducts.length === 0 ? (
                 <div className="flex justify-center items-center h-[400px]">Aucun produit vendu pour le moment</div>
               ) : (
                 <div className="flex justify-center">

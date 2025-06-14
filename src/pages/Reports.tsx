@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { addDays } from "date-fns";
@@ -10,11 +11,11 @@ import { SalesReport } from "@/components/Reports/SalesReport";
 import { PerformanceReport } from "@/components/Reports/PerformanceReport";
 import { SalesSummary } from "@/components/Reports/SalesSummary";
 import { useSalesReport } from "@/hooks/use-sales-report";
+import { useBestSellingProducts } from "@/hooks/use-best-selling-products";
 import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InventoryReport } from "@/components/Reports/InventoryReport";
 import { FinancialReport } from "@/components/Reports/FinancialReport";
-import { FileBarChart2, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { useShopId } from "@/hooks/use-shop-id";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,8 +32,8 @@ const Reports = () => {
     to: new Date(),
   });
   const [reportType, setReportType] = useState("sales");
-  const [activeTab, setActiveTab] = useState("sales");
   const { data: salesData } = useSalesReport(dateRange);
+  const { data: bestSellingProducts } = useBestSellingProducts(dateRange);
   const { shopId } = useShopId();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
