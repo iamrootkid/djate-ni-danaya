@@ -42,7 +42,7 @@ export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' |
 
   const { data, error } = await supabase
     .from('expenses')
-    .insert(expenseData)
+    .insert([expenseData])
     .select()
     .single();
 
