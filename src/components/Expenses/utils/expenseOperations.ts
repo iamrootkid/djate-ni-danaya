@@ -26,12 +26,17 @@ export const getExpenses = async (shopId: string): Promise<Expense[]> => {
     throw error;
   }
 
-  return data || [];
+  return (data || []) as Expense[];
 };
 
 export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Expense> => {
   const expenseData = {
-    ...expense,
+    amount: expense.amount,
+    date: expense.date,
+    description: expense.description,
+    type: expense.type,
+    employee_id: expense.employee_id,
+    supplier_id: expense.supplier_id,
     shop_id: shopId,
   };
 
@@ -46,13 +51,22 @@ export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' |
     throw error;
   }
 
-  return data;
+  return data as Expense;
 };
 
-export const updateExpense = async (id: string, expense: Partial<Omit<Expense, 'shop_id'>>, shopId: string): Promise<Expense> => {
+export const updateExpense = async (id: string, expense: Partial<Omit<Expense, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Expense> => {
+  const updateData = {
+    ...(expense.amount !== undefined && { amount: expense.amount }),
+    ...(expense.date !== undefined && { date: expense.date }),
+    ...(expense.description !== undefined && { description: expense.description }),
+    ...(expense.type !== undefined && { type: expense.type }),
+    ...(expense.employee_id !== undefined && { employee_id: expense.employee_id }),
+    ...(expense.supplier_id !== undefined && { supplier_id: expense.supplier_id }),
+  };
+
   const { data, error } = await supabase
     .from('expenses')
-    .update(expense)
+    .update(updateData)
     .eq('id', id)
     .eq('shop_id', shopId)
     .select()
@@ -63,7 +77,7 @@ export const updateExpense = async (id: string, expense: Partial<Omit<Expense, '
     throw error;
   }
 
-  return data;
+  return data as Expense;
 };
 
 export const deleteExpense = async (id: string, shopId: string): Promise<void> => {

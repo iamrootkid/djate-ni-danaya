@@ -25,12 +25,16 @@ export const getCustomers = async (shopId: string): Promise<Customer[]> => {
     throw error;
   }
 
-  return data || [];
+  return (data || []) as Customer[];
 };
 
 export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Customer> => {
   const customerData = {
-    ...customer,
+    first_name: customer.first_name,
+    last_name: customer.last_name,
+    email: customer.email,
+    phone: customer.phone,
+    loyalty_points: customer.loyalty_points || 0,
     shop_id: shopId,
   };
 
@@ -45,13 +49,21 @@ export const createCustomer = async (customer: Omit<Customer, 'id' | 'created_at
     throw error;
   }
 
-  return data;
+  return data as Customer;
 };
 
-export const updateCustomer = async (id: string, customer: Partial<Omit<Customer, 'shop_id'>>, shopId: string): Promise<Customer> => {
+export const updateCustomer = async (id: string, customer: Partial<Omit<Customer, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Customer> => {
+  const updateData = {
+    ...(customer.first_name !== undefined && { first_name: customer.first_name }),
+    ...(customer.last_name !== undefined && { last_name: customer.last_name }),
+    ...(customer.email !== undefined && { email: customer.email }),
+    ...(customer.phone !== undefined && { phone: customer.phone }),
+    ...(customer.loyalty_points !== undefined && { loyalty_points: customer.loyalty_points }),
+  };
+
   const { data, error } = await supabase
     .from('customers')
-    .update(customer)
+    .update(updateData)
     .eq('id', id)
     .eq('shop_id', shopId)
     .select()
@@ -62,7 +74,7 @@ export const updateCustomer = async (id: string, customer: Partial<Omit<Customer
     throw error;
   }
 
-  return data;
+  return data as Customer;
 };
 
 export const deleteCustomer = async (id: string, shopId: string): Promise<void> => {
@@ -77,3 +89,6 @@ export const deleteCustomer = async (id: string, shopId: string): Promise<void> 
     throw error;
   }
 };
+
+// Add alias for backward compatibility
+export const addCustomer = createCustomer;

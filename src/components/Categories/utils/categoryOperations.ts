@@ -22,12 +22,13 @@ export const getCategories = async (shopId: string): Promise<Category[]> => {
     throw error;
   }
 
-  return data || [];
+  return (data || []) as Category[];
 };
 
 export const createCategory = async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Category> => {
   const categoryData = {
-    ...category,
+    name: category.name,
+    description: category.description,
     shop_id: shopId,
   };
 
@@ -42,13 +43,18 @@ export const createCategory = async (category: Omit<Category, 'id' | 'created_at
     throw error;
   }
 
-  return data;
+  return data as Category;
 };
 
-export const updateCategory = async (id: string, category: Partial<Omit<Category, 'shop_id'>>, shopId: string): Promise<Category> => {
+export const updateCategory = async (id: string, category: Partial<Omit<Category, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>, shopId: string): Promise<Category> => {
+  const updateData = {
+    ...(category.name && { name: category.name }),
+    ...(category.description !== undefined && { description: category.description }),
+  };
+
   const { data, error } = await supabase
     .from('categories')
-    .update(category)
+    .update(updateData)
     .eq('id', id)
     .eq('shop_id', shopId)
     .select()
@@ -59,7 +65,7 @@ export const updateCategory = async (id: string, category: Partial<Omit<Category
     throw error;
   }
 
-  return data;
+  return data as Category;
 };
 
 export const deleteCategory = async (id: string, shopId: string): Promise<void> => {
