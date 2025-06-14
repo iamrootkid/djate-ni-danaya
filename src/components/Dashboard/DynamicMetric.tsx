@@ -1,6 +1,5 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { DateFilter } from "@/types/invoice";
 import { useStockSummary } from "@/hooks/use-stock-summary";
@@ -20,6 +19,8 @@ export function DynamicMetric({ dateFilter }: DynamicMetricProps) {
   const [animatedValue, setAnimatedValue] = useState(0);
   const [previousValue, setPreviousValue] = useState(0);
   const [isIncreasing, setIsIncreasing] = useState(true);
+  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
   
   // Set up the animated counter
   useEffect(() => {
@@ -61,36 +62,62 @@ export function DynamicMetric({ dateFilter }: DynamicMetricProps) {
   
   // Set up real-time subscription for sales updates
   useEffect(() => {
-    const channel = supabase
-      .channel('dynamic-sales-updates')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'sales' 
-        },
-        (payload) => {
-          console.log("Sales change detected in dynamic metric:", payload);
-          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+    if (isSubscribedRef.current) {
+      return;
+    }
+
+    // Clean up any existing channel first
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+
+    try {
+      const channel = supabase
+        .channel('dynamic-sales-updates')
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'sales' 
+          },
+          (payload) => {
+            console.log("Sales change detected in dynamic metric:", payload);
+            queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'invoices' 
+          },
+          (payload) => {
+            console.log("Invoice change detected in dynamic metric:", payload);
+            queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
+          }
+        );
+
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+          channelRef.current = channel;
         }
-      )
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'invoices' 
-        },
-        (payload) => {
-          console.log("Invoice change detected in dynamic metric:", payload);
-          queryClient.invalidateQueries({ queryKey: ['stock-summary'] });
-        }
-      )
-      .subscribe();
+      });
+
+    } catch (error) {
+      console.error("Error setting up dynamic metric channel:", error);
+    }
       
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
+      }
     };
   }, [queryClient]);
   

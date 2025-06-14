@@ -284,51 +284,6 @@ export type Database = {
           },
         ]
       }
-      loyalty_activities: {
-        Row: {
-          activity_type: string
-          created_at: string | null
-          customer_id: string
-          id: string
-          points: number | null
-          related_sale_id: string | null
-          shop_id: string
-        }
-        Insert: {
-          activity_type: string
-          created_at?: string | null
-          customer_id: string
-          id?: string
-          points?: number | null
-          related_sale_id?: string | null
-          shop_id: string
-        }
-        Update: {
-          activity_type?: string
-          created_at?: string | null
-          customer_id?: string
-          id?: string
-          points?: number | null
-          related_sale_id?: string | null
-          shop_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loyalty_activities_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loyalty_activities_shop_id_fkey"
-            columns: ["shop_id"]
-            isOneToOne: false
-            referencedRelation: "shops"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       products: {
         Row: {
           category_id: string | null
@@ -420,38 +375,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_shop_id_fkey"
-            columns: ["shop_id"]
-            isOneToOne: false
-            referencedRelation: "shops"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      push_tokens: {
-        Row: {
-          created_at: string | null
-          id: string
-          shop_id: string | null
-          token: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          shop_id?: string | null
-          token: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          shop_id?: string | null
-          token?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "push_tokens_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
@@ -593,6 +516,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string | null
+          pin_code: string
           updated_at: string
         }
         Insert: {
@@ -601,6 +525,7 @@ export type Database = {
           id?: string
           name: string
           owner_id?: string | null
+          pin_code: string
           updated_at?: string
         }
         Update: {
@@ -609,6 +534,7 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string | null
+          pin_code?: string
           updated_at?: string
         }
         Relationships: []
@@ -699,75 +625,19 @@ export type Database = {
           },
         ]
       }
-      user_presence: {
-        Row: {
-          id: string
-          last_active: string | null
-          shop_id: string | null
-          status: string | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          last_active?: string | null
-          shop_id?: string | null
-          status?: string | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          last_active?: string | null
-          shop_id?: string | null
-          status?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_presence_shop_id_fkey"
-            columns: ["shop_id"]
-            isOneToOne: false
-            referencedRelation: "shops"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_roles: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          shop_id: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          shop_id?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          shop_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_shop_id_fkey"
-            columns: ["shop_id"]
-            isOneToOne: false
-            referencedRelation: "shops"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      assign_user_to_shop: {
+        Args: {
+          user_id_param: string
+          shop_id_param: string
+          role_param: string
+        }
+        Returns: boolean
+      }
       check_column_exists: {
         Args: { table_name: string; column_name: string }
         Returns: boolean
@@ -800,9 +670,50 @@ export type Database = {
         }
         Returns: Json
       }
+      create_shop_super_admin: {
+        Args: { shop_name: string; shop_address?: string }
+        Returns: {
+          id: string
+          name: string
+          address: string
+          pin_code: string
+          created_at: string
+        }[]
+      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_unique_pin_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_all_shops: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+          address: string
+          pin_code: string
+          created_at: string
+          updated_at: string
+          owner_id: string
+          total_sales: number
+          total_revenue: number
+        }[]
+      }
+      get_all_users_with_shops: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          email: string
+          first_name: string
+          last_name: string
+          role: string
+          shop_id: string
+          shop_name: string
+          created_at: string
+        }[]
       }
       get_best_selling_products: {
         Args:
@@ -819,6 +730,10 @@ export type Database = {
           total_quantity: number
           total_revenue: number
         }[]
+      }
+      get_shop_id_by_pin: {
+        Args: { pin_code_param: string }
+        Returns: string
       }
       get_stock_summary: {
         Args:
@@ -837,13 +752,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       update_product_stock: {
         Args: { product_id: string; quantity: number; shop_id: string }
         Returns: undefined
       }
     }
     Enums: {
-      app_role: "admin" | "manager" | "employee" | "cashier" | "warehouse"
+      app_role:
+        | "admin"
+        | "manager"
+        | "employee"
+        | "cashier"
+        | "warehouse"
+        | "super_admin"
       expense_type:
         | "salary"
         | "commission"
@@ -967,7 +892,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "employee", "cashier", "warehouse"],
+      app_role: [
+        "admin",
+        "manager",
+        "employee",
+        "cashier",
+        "warehouse",
+        "super_admin",
+      ],
       expense_type: [
         "salary",
         "commission",
