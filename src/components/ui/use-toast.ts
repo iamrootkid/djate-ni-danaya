@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { useContext, createContext } from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
@@ -11,6 +12,8 @@ type ToastType = ToastProps & {
   description?: React.ReactNode;
   action?: ToastActionElement;
 };
+
+type ToasterToast = Omit<ToastType, "id">;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -115,7 +118,11 @@ function toastReducer(state: State, action: Action): State {
 
 const ToastContext = createContext<{
   toasts: ToastType[];
-  toast: (props: ToastProps) => void;
+  toast: (props: ToasterToast) => {
+    id: string;
+    dismiss: () => void;
+    update: (props: ToasterToast) => void;
+  };
   dismiss: (toastId?: string) => void;
 } | undefined>(undefined);
 
@@ -137,7 +144,7 @@ export const ToastProvider = ({
   const [state, dispatch] = React.useReducer(toastReducer, initialState);
 
   const toast = React.useCallback(
-    ({ ...props }: ToastProps) => {
+    ({ ...props }: ToasterToast) => {
       const id = genId();
       const newToast = { id, ...props, open: true, duration: 3000 };
 
@@ -146,7 +153,7 @@ export const ToastProvider = ({
       return {
         id,
         dismiss: () => dispatch({ type: "DISMISS_TOAST", toastId: id }),
-        update: (props: ToastProps) => dispatch({
+        update: (props: ToasterToast) => dispatch({
           type: "UPDATE_TOAST",
           toast: { ...props, id },
         }),
@@ -198,7 +205,7 @@ export const ToastProvider = ({
 };
 
 // Export toast function for direct access
-export const toast = (props: ToastProps) => {
+export const toast = (props: ToasterToast) => {
   return useToast().toast(props);
 };
 

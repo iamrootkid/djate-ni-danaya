@@ -1,3 +1,4 @@
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -6,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ToastProviderContext as ToastProvider } from "@/hooks/use-toast";
 
 // Import pages
 import Login from "@/pages/Login";
@@ -91,11 +93,13 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <SidebarProvider>
-              <RouterProvider router={router} />
-              <Toaster />
-              <SonnerToaster />
-            </SidebarProvider>
+            <ToastProvider>
+              <SidebarProvider>
+                <RouterProvider router={router} />
+                <Toaster />
+                <SonnerToaster />
+              </SidebarProvider>
+            </ToastProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
