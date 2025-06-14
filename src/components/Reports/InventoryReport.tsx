@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useInventoryReport } from "@/hooks/use-inventory-report";
 import { isQueryError } from "@/utils/safeFilters";
+import { formatCurrency } from "@/utils/currency";
 
 interface ProductWithCategory {
   id: string;
@@ -20,9 +21,9 @@ export const InventoryReport: React.FC = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Inventory Report</CardTitle>
+          <CardTitle>Rapport d'inventaire</CardTitle>
         </CardHeader>
-        <CardContent>Loading inventory data...</CardContent>
+        <CardContent>Chargement des données d'inventaire...</CardContent>
       </Card>
     );
   }
@@ -31,9 +32,9 @@ export const InventoryReport: React.FC = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Inventory Report</CardTitle>
+          <CardTitle>Rapport d'inventaire</CardTitle>
         </CardHeader>
-        <CardContent>Error loading inventory data.</CardContent>
+        <CardContent>Erreur lors du chargement des données d'inventaire.</CardContent>
       </Card>
     );
   }
@@ -46,15 +47,15 @@ export const InventoryReport: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Inventory Report</CardTitle>
+        <CardTitle>Rapport d'inventaire</CardTitle>
       </CardHeader>
       <CardContent className="p-6">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product Name</TableHead>
-                <TableHead>Price</TableHead>
+                <TableHead>Nom du produit</TableHead>
+                <TableHead>Prix</TableHead>
                 <TableHead>Stock</TableHead>
               </TableRow>
             </TableHeader>
@@ -62,7 +63,7 @@ export const InventoryReport: React.FC = () => {
               {safeProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>{product.name}</TableCell>
-                  <TableCell>${product.price.toFixed(2)}</TableCell>
+                  <TableCell>{formatCurrency(product.price)}</TableCell>
                   <TableCell>{product.stock}</TableCell>
                 </TableRow>
               ))}

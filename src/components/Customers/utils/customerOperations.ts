@@ -116,3 +116,7 @@ export const deleteCustomer = async (customerId: string, shopId: string): Promis
     throw error;
   }
 };
+
+// Legacy aliases for backward compatibility
+export const getCustomers = fetchCustomers;
+export const addCustomer = createCustomer;
