@@ -1,118 +1,80 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 
-type Expense = Database["public"]["Tables"]["expenses"]["Row"];
-type ExpenseInsert = Database["public"]["Tables"]["expenses"]["Insert"];
+export interface Expense {
+  id: string;
+  amount: number;
+  date: string;
+  description: string | null;
+  type: string;
+  employee_id: string | null;
+  supplier_id: string | null;
+  shop_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
-export const fetchExpenses = async (shopId: string): Promise<Expense[]> => {
-  if (!shopId) {
-    console.warn("No shop ID provided for fetching expenses");
-    return [];
-  }
+export const getExpenses = async (shopId: string): Promise<Expense[]> => {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .eq('shop_id', shopId)
+    .order('date', { ascending: false });
 
-  try {
-    const { data, error } = await supabase
-      .from("expenses")
-      .select("*")
-      .eq("shop_id", shopId)
-      .order("date", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching expenses:", error);
-      throw error;
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error("Error in fetchExpenses:", error);
-    return [];
-  }
-};
-
-export const createExpense = async (
-  expenseData: Omit<ExpenseInsert, "shop_id">,
-  shopId: string
-): Promise<Expense> => {
-  if (!shopId) {
-    throw new Error("Shop ID is required for creating an expense");
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from("expenses")
-      .insert([{ ...expenseData, shop_id: shopId }])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error creating expense:", error);
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error("No data returned from expense creation");
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error in createExpense:", error);
+  if (error) {
+    console.error('Error fetching expenses:', error);
     throw error;
   }
+
+  return data || [];
 };
 
-export const updateExpense = async (
-  expenseId: string,
-  expenseData: Partial<Omit<ExpenseInsert, "shop_id">>,
-  shopId: string
-): Promise<Expense> => {
-  if (!shopId) {
-    throw new Error("Shop ID is required for updating an expense");
-  }
+export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Expense> => {
+  const expenseData = {
+    ...expense,
+    shop_id: shopId,
+  };
 
-  try {
-    const { data, error } = await supabase
-      .from("expenses")
-      .update(expenseData)
-      .eq("id", expenseId)
-      .eq("shop_id", shopId)
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert([expenseData])
+    .select()
+    .single();
 
-    if (error) {
-      console.error("Error updating expense:", error);
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error("No data returned from expense update");
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error in updateExpense:", error);
+  if (error) {
+    console.error('Error creating expense:', error);
     throw error;
   }
+
+  return data;
 };
 
-export const deleteExpense = async (expenseId: string, shopId: string): Promise<void> => {
-  if (!shopId) {
-    throw new Error("Shop ID is required for deleting an expense");
+export const updateExpense = async (id: string, expense: Partial<Omit<Expense, 'shop_id'>>, shopId: string): Promise<Expense> => {
+  const { data, error } = await supabase
+    .from('expenses')
+    .update(expense)
+    .eq('id', id)
+    .eq('shop_id', shopId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating expense:', error);
+    throw error;
   }
 
-  try {
-    const { error } = await supabase
-      .from("expenses")
-      .delete()
-      .eq("id", expenseId)
-      .eq("shop_id", shopId);
+  return data;
+};
 
-    if (error) {
-      console.error("Error deleting expense:", error);
-      throw error;
-    }
-  } catch (error) {
-    console.error("Error in deleteExpense:", error);
+export const deleteExpense = async (id: string, shopId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('id', id)
+    .eq('shop_id', shopId);
+
+  if (error) {
+    console.error('Error deleting expense:', error);
     throw error;
   }
 };

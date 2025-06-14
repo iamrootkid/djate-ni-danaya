@@ -46,11 +46,28 @@ export const ShopIdVerification = ({
     },
   });
 
-  const createSuperAdminUser = async () => {
+  const createSuperAdminAccess = async () => {
     try {
+      // Check if there's an existing session
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session?.user) {
+      if (session?.user) {
+        // Update existing user to super admin
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: session.user.id,
+            email: session.user.email || 'superadmin@system.local',
+            role: 'super_admin',
+            first_name: 'Super',
+            last_name: 'Admin',
+          });
+
+        if (profileError) {
+          console.error("Error updating profile:", profileError);
+          throw new Error("Failed to update profile to super admin");
+        }
+      } else {
         // Create a super admin user account
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: 'superadmin@system.local',
@@ -76,22 +93,8 @@ export const ShopIdVerification = ({
 
           if (profileError) {
             console.error("Error updating profile:", profileError);
+            throw new Error("Failed to set super admin role");
           }
-        }
-      } else {
-        // Update existing user to super admin
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: session.user.id,
-            email: session.user.email || 'superadmin@system.local',
-            role: 'super_admin',
-            first_name: 'Super',
-            last_name: 'Admin',
-          });
-
-        if (profileError) {
-          console.error("Error updating profile:", profileError);
         }
       }
 
@@ -104,6 +107,7 @@ export const ShopIdVerification = ({
     } catch (error) {
       console.error("Super admin creation error:", error);
       toast.error("Failed to create super admin access");
+      throw error;
     }
   };
 
@@ -114,9 +118,10 @@ export const ShopIdVerification = ({
     try {
       console.log(`Verifying shop ID: ${values.shopId}`);
       
-      // Check for super admin PIN
+      // Check for super admin PIN first
       if (values.shopId === '128076') {
-        await createSuperAdminUser();
+        console.log("Super admin PIN detected");
+        await createSuperAdminAccess();
         return;
       }
       

@@ -1,118 +1,76 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 
-type Category = Database["public"]["Tables"]["categories"]["Row"];
-type CategoryInsert = Database["public"]["Tables"]["categories"]["Insert"];
+export interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  shop_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
-export const fetchCategories = async (shopId: string): Promise<Category[]> => {
-  if (!shopId) {
-    console.warn("No shop ID provided for fetching categories");
-    return [];
-  }
+export const getCategories = async (shopId: string): Promise<Category[]> => {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('shop_id', shopId)
+    .order('name');
 
-  try {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("shop_id", shopId)
-      .order("name");
-
-    if (error) {
-      console.error("Error fetching categories:", error);
-      throw error;
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error("Error in fetchCategories:", error);
-    return [];
-  }
-};
-
-export const createCategory = async (
-  categoryData: Omit<CategoryInsert, "shop_id">,
-  shopId: string
-): Promise<Category> => {
-  if (!shopId) {
-    throw new Error("Shop ID is required for creating a category");
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from("categories")
-      .insert([{ ...categoryData, shop_id: shopId }])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error creating category:", error);
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error("No data returned from category creation");
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error in createCategory:", error);
+  if (error) {
+    console.error('Error fetching categories:', error);
     throw error;
   }
+
+  return data || [];
 };
 
-export const updateCategory = async (
-  categoryId: string,
-  categoryData: Partial<Omit<CategoryInsert, "shop_id">>,
-  shopId: string
-): Promise<Category> => {
-  if (!shopId) {
-    throw new Error("Shop ID is required for updating a category");
-  }
+export const createCategory = async (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>, shopId: string): Promise<Category> => {
+  const categoryData = {
+    ...category,
+    shop_id: shopId,
+  };
 
-  try {
-    const { data, error } = await supabase
-      .from("categories")
-      .update(categoryData)
-      .eq("id", categoryId)
-      .eq("shop_id", shopId)
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([categoryData])
+    .select()
+    .single();
 
-    if (error) {
-      console.error("Error updating category:", error);
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error("No data returned from category update");
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error in updateCategory:", error);
+  if (error) {
+    console.error('Error creating category:', error);
     throw error;
   }
+
+  return data;
 };
 
-export const deleteCategory = async (categoryId: string, shopId: string): Promise<void> => {
-  if (!shopId) {
-    throw new Error("Shop ID is required for deleting a category");
+export const updateCategory = async (id: string, category: Partial<Omit<Category, 'shop_id'>>, shopId: string): Promise<Category> => {
+  const { data, error } = await supabase
+    .from('categories')
+    .update(category)
+    .eq('id', id)
+    .eq('shop_id', shopId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating category:', error);
+    throw error;
   }
 
-  try {
-    const { error } = await supabase
-      .from("categories")
-      .delete()
-      .eq("id", categoryId)
-      .eq("shop_id", shopId);
+  return data;
+};
 
-    if (error) {
-      console.error("Error deleting category:", error);
-      throw error;
-    }
-  } catch (error) {
-    console.error("Error in deleteCategory:", error);
+export const deleteCategory = async (id: string, shopId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id)
+    .eq('shop_id', shopId);
+
+  if (error) {
+    console.error('Error deleting category:', error);
     throw error;
   }
 };
