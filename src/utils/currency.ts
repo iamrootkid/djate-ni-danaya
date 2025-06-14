@@ -15,7 +15,7 @@ export function formatCurrency(amount: number, currency: string = 'XOF'): string
     }).format(amount);
   } catch (error) {
     console.error('Error formatting currency:', error);
-    return `${amount.toLocaleString('fr-FR')} ${currency}`;
+    return `${amount.toLocaleString('fr-FR')} F CFA`;
   }
 }
 
