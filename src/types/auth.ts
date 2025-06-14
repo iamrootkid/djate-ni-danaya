@@ -1,9 +1,11 @@
 
-export type Role = 'admin' | 'employee';
+export type Role = 'admin' | 'employee' | 'super_admin';
 
 export interface LoginCredentials {
   email: string;
   password: string;
+  rememberMe?: boolean;
+  shopId?: string;
 }
 
 export interface AuthUser {
