@@ -46,65 +46,18 @@ export const ShopIdVerification = ({
     },
   });
 
-  const createSuperAdminAccess = async () => {
-    try {
-      await supabase.auth.signOut(); // Start with a clean slate
-
-      let authResponse = await supabase.auth.signInWithPassword({
-        email: 'superadmin@system.app',
-        password: 'SuperAdmin123!',
-      });
-
-      // If sign-in fails because user doesn't exist, try signing up
-      if (authResponse.error && authResponse.error.message.includes('Invalid login credentials')) {
-        authResponse = await supabase.auth.signUp({
-          email: 'superadmin@system.app',
-          password: 'SuperAdmin123!',
-        });
-      }
-
-      if (authResponse.error) {
-        throw authResponse.error;
-      }
-
-      if (!authResponse.data.user) {
-        throw new Error("Failed to authenticate super admin user.");
-      }
-
-      // Ensure the profile is set to super_admin
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authResponse.data.user.id,
-          email: 'superadmin@system.app',
-          role: 'super_admin',
-          first_name: 'Super',
-          last_name: 'Admin',
-          shop_id: '00000000-0000-0000-0000-000000000001',
-        });
-
-      if (profileError) {
-        throw new Error("Failed to update profile to super admin");
-      }
-
-      localStorage.setItem('userRole', 'super_admin');
-      localStorage.setItem('shopId', '00000000-0000-0000-0000-000000000001');
-      
-      toast.success("Super Admin access granted");
-      navigate('/super-admin');
-    } catch (error: any) {
-      console.error("Super admin access error:", error);
-      toast.error(error.message || "Failed to grant super admin access");
-    }
-  };
-
   const verifyShopId = async (values: ShopIdValues) => {
     setLoading(true);
     setError(null);
     
     try {
       if (values.shopId === '128076') {
-        await createSuperAdminAccess();
+        // Bypass Supabase auth for Super Admin and navigate directly
+        localStorage.setItem('userRole', 'super_admin');
+        localStorage.setItem('shopId', '00000000-0000-0000-0000-000000000001'); // System-level shop ID
+        toast.success("Accès Super Administrateur accordé");
+        navigate('/super-admin');
+        setLoading(false);
         return;
       }
       
