@@ -16,7 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
 import { isQueryError, safeQueryResult } from "@/utils/safeFilters";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-is-mobile";
 
 interface SaleItem {
   id: string;
@@ -61,12 +61,18 @@ export function InvoiceViewDialog({
     queryFn: async () => {
       if (!invoice?.id) return [];
 
+      const validInvoiceId = asUUID(invoice.id);
+      if (!validInvoiceId) {
+        console.error("Invalid invoice ID for fetching items:", invoice.id);
+        return [];
+      }
+
       try {
         // Get the sale ID first
         const { data: invoiceData, error: invoiceError } = await supabase
           .from("invoices")
           .select("sale_id")
-          .eq("id", asUUID(invoice.id) || '')
+          .eq("id", validInvoiceId)
           .maybeSingle();
         
         if (invoiceError) throw invoiceError;

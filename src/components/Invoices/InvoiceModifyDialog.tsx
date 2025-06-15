@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast, toast, CustomToastProps } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -12,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ReturnedItem, InvoiceModification } from "@/types/invoice";
+import { ReturnedItem, Invoice } from "@/types/invoice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ type ModificationFormValues = z.infer<typeof modificationSchema>;
 interface InvoiceModifyDialogProps {
   open: boolean;
   onClose: () => void;
-  invoice: any;
+  invoice: Invoice;
   onModified: () => void;
 }
 
@@ -84,8 +85,8 @@ export const InvoiceModifyDialog = ({ open, onClose, invoice, onModified }: Invo
         const { data, error } = await supabase
           .from('invoices')
           .select('shop_id')
-          .match({ id: invoice.id }) // FIX: use plain object
-          .single();
+          .eq('id', invoice.id)
+          .maybeSingle();
           
         if (error) throw error;
         
