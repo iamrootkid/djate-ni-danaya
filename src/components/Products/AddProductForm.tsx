@@ -46,7 +46,7 @@ export const AddProductForm = () => {
         const { data, error } = await supabase
           .from("categories")
           .select("*")
-          .eq("shop_id", shopId)
+          .eq("shop_id", shopId as any)
           .order("name");
 
         if (error) {
@@ -54,12 +54,7 @@ export const AddProductForm = () => {
           return;
         }
 
-        // Type guard to filter out any error objects that might be in the data
-        const validCategories = data.filter((category): category is Category => {
-          return !isQueryError(category);
-        });
-
-        setCategories(validCategories || []);
+        setCategories((data as any) || []);
       } catch (error) {
         console.error("Error in categories fetch:", error);
       } finally {

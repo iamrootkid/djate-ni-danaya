@@ -71,7 +71,7 @@ export function InvoiceViewDialog({
         const { data: invoiceData, error: invoiceError } = await supabase
           .from("invoices")
           .select("sale_id")
-          .eq("id", validInvoiceId)
+          .eq("id", validInvoiceId as any)
           .maybeSingle();
         
         if (invoiceError) throw invoiceError;
@@ -95,10 +95,10 @@ export function InvoiceViewDialog({
 
         if (error) throw error;
         
-        const saleItems = (data || []) as SaleItem[];
+        const saleItems = (data || []) as any;
         
         // Transform the raw data into the expected format with proper type checking
-        const validItems: InvoiceItem[] = saleItems.map(item => ({
+        const validItems: InvoiceItem[] = saleItems.map((item: any) => ({
             id: item.id || "",
             name: item.products?.name || "Unknown Product",
             quantity: item.quantity || 0,

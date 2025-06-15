@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { useContext, createContext } from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
@@ -201,11 +202,6 @@ export const ToastProvider = ({
     { value: { toasts: state.toasts, toast, dismiss } },
     children
   );
-};
-
-// Export toast function for direct access
-export const toast = (props: ToasterToast) => {
-  return useToast().toast(props);
 };
 
 // Types
