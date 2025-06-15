@@ -76,8 +76,9 @@ export function InvoiceViewDialog({
           .maybeSingle();
         
         if (invoiceError) throw invoiceError;
+        if (!invoiceData) return [];
         
-        const saleId = safeDataAccess(invoiceData, 'sale_id');
+        const saleId = invoiceData.sale_id;
         if (!saleId) return [];
         
         // Then get the sale items using the sale_id
@@ -95,23 +96,16 @@ export function InvoiceViewDialog({
           .eq("sale_id", saleId);
 
         if (error) throw error;
+        if (!data) return [];
         
         // Transform the raw data into the expected format with proper type checking
-        const validItems: InvoiceItem[] = [];
-        
-        if (data && Array.isArray(data)) {
-          data.forEach(item => {
-            if (item) {
-              validItems.push({
-                id: item.id || "",
-                name: item.products?.name || "Unknown Product",
-                quantity: item.quantity || 0,
-                price: item.price_at_sale || 0,
-                returned_quantity: item.returned_quantity
-              });
-            }
-          });
-        }
+        const validItems: InvoiceItem[] = data.map(item => ({
+            id: item.id || "",
+            name: item.products?.name || "Unknown Product",
+            quantity: item.quantity || 0,
+            price: item.price_at_sale || 0,
+            returned_quantity: item.returned_quantity || undefined
+        }));
         
         return validItems;
       } catch (error) {

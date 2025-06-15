@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +47,7 @@ export const AddExpenseDialog = ({ open, onOpenChange }: AddExpenseDialogProps) 
             last_name,
             role
           `)
-          .eq("shop_id", shopId!);
+          .eq("shop_id", shopId);
 
         console.log("Staff data:", staffData, "Error:", staffError);
 
@@ -68,7 +67,7 @@ export const AddExpenseDialog = ({ open, onOpenChange }: AddExpenseDialogProps) 
               last_name,
               role
             `)
-            .eq("shop_id", shopId!)
+            .eq("shop_id", shopId)
             .not("role", "eq", "admin");
 
           console.log("Profile data:", profileData, "Error:", profileError);
