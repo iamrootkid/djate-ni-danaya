@@ -7,33 +7,31 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Role, isRole } from "@/utils/types";
-import { safeData, safeGet, isQueryError } from "@/utils/safeFilters";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
-  const [userRole, setUserRole] = useState<Role>("employee");
+  const [userRole, setUserRole] = useState<'admin' | 'employee'>("employee");
   const navigate = useNavigate();
 
   useEffect(() => {
     const getRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Use any type to avoid type conversion issues
         const { data, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', session.user.id as any)
-          .single() as { data: any, error: any };
+          .eq('id', session.user.id)
+          .single();
         
         if (error) {
           console.error("Error fetching user role:", error);
           return;
         }
         
-        if (data && data.role && isRole(data.role)) {
+        if (data && data.role && (data.role === 'admin' || data.role === 'employee')) {
           setUserRole(data.role);
           if (data.role === "admin" && window.location.pathname === '/sales') {
             navigate('/dashboard');

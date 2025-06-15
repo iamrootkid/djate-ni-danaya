@@ -1,5 +1,5 @@
 
-export type Role = 'admin' | 'employee' | 'super_admin';
+export type Role = 'admin' | 'employee';
 
 export interface LoginCredentials {
   email: string;

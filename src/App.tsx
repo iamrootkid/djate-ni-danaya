@@ -1,3 +1,4 @@
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -6,7 +7,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ToastProvider } from "@/components/ui/use-toast";
 
 // Import pages
 import Login from "@/pages/Login";
@@ -20,7 +20,6 @@ import Expenses from "@/pages/Expenses";
 import Reports from "@/pages/Reports";
 import Invoices from "@/pages/Invoices";
 import Settings from "@/pages/Settings";
-import SuperAdmin from "@/pages/SuperAdmin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,10 +79,6 @@ const router = createBrowserRouter([
     path: "/settings",
     element: <Settings />,
   },
-  {
-    path: "/super-admin",
-    element: <SuperAdmin />,
-  },
 ]);
 
 function App() {
@@ -92,13 +87,11 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <ToastProvider>
-              <SidebarProvider>
-                <RouterProvider router={router} />
-                <Toaster />
-                <SonnerToaster />
-              </SidebarProvider>
-            </ToastProvider>
+            <SidebarProvider>
+              <RouterProvider router={router} />
+              <Toaster />
+              <SonnerToaster />
+            </SidebarProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

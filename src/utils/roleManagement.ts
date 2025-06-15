@@ -1,4 +1,3 @@
-
 import { Role } from '@/types/auth';
 
 export interface RoleConfig {
@@ -46,19 +45,6 @@ export const ROLE_CONFIGS: Record<Role, RoleConfig> = {
     defaultRoute: '/sales',
     permissions: ['make_sales', 'view_products'],
     menuItems: ['sales']
-  },
-  super_admin: {
-    allowedRoutes: ['/super-admin'],
-    defaultRoute: '/super-admin',
-    permissions: [
-      'manage_all_shops',
-      'manage_all_users',
-      'create_shops',
-      'assign_users',
-      'view_all_reports',
-      'system_management'
-    ],
-    menuItems: ['super_admin']
   }
 };
 
@@ -83,13 +69,12 @@ export function getMenuItems(userRole: Role | null): string[] {
 }
 
 export function isValidRole(role: unknown): role is Role {
-  return typeof role === 'string' && (role === 'admin' || role === 'employee' || role === 'super_admin');
+  return typeof role === 'string' && (role === 'admin' || role === 'employee');
 }
 
 export const ROLES = {
   ADMIN: 'admin',
   EMPLOYEE: 'employee',
-  SUPER_ADMIN: 'super_admin'
 } as const;
 
 export type RoleType = typeof ROLES[keyof typeof ROLES];
@@ -97,7 +82,6 @@ export type RoleType = typeof ROLES[keyof typeof ROLES];
 // Renamed to avoid duplication with the function above
 export const checkRoleHierarchy = (userRole: Role, requiredRole: Role): boolean => {
   const roleHierarchy = {
-    [ROLES.SUPER_ADMIN]: 4,
     [ROLES.ADMIN]: 3,
     [ROLES.EMPLOYEE]: 1
   };
