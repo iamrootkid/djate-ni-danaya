@@ -14,9 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { InvoiceData, InvoiceModification } from "@/types/invoice";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { asUUID, safeDataAccess } from "@/utils/supabaseHelpers";
-import { isQueryError, safeQueryResult } from "@/utils/safeFilters";
-import { useIsMobile } from "@/hooks/use-is-mobile";
+import { asUUID } from "@/utils/supabaseHelpers";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SaleItem {
   id: string;
@@ -56,7 +55,7 @@ export function InvoiceViewDialog({
   const [showModifications, setShowModifications] = useState(false);
   const isMobile = useIsMobile();
 
-  const { data: items = [] } = useQuery({
+  const { data: items = [] } = useQuery<InvoiceItem[]>({
     queryKey: ["invoice-items", invoice?.id],
     queryFn: async () => {
       if (!invoice?.id) return [];
@@ -76,10 +75,9 @@ export function InvoiceViewDialog({
           .maybeSingle();
         
         if (invoiceError) throw invoiceError;
-        if (!invoiceData) return [];
+        if (!invoiceData || !invoiceData.sale_id) return [];
         
         const saleId = invoiceData.sale_id;
-        if (!saleId) return [];
         
         // Then get the sale items using the sale_id
         const { data, error } = await supabase
@@ -96,10 +94,11 @@ export function InvoiceViewDialog({
           .eq("sale_id", saleId);
 
         if (error) throw error;
-        if (!data) return [];
+        
+        const saleItems = (data || []) as SaleItem[];
         
         // Transform the raw data into the expected format with proper type checking
-        const validItems: InvoiceItem[] = data.map(item => ({
+        const validItems: InvoiceItem[] = saleItems.map(item => ({
             id: item.id || "",
             name: item.products?.name || "Unknown Product",
             quantity: item.quantity || 0,
