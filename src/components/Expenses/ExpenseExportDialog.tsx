@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { exportExpenseToCsv } from "./utils/expenseOperations";
-import { useToast, CustomToastProps } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ExpenseExportDialogProps {
   expense: any;
