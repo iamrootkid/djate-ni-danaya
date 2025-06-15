@@ -1,9 +1,10 @@
+
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { InvoiceList } from "@/components/Invoices/InvoiceList";
 import { InvoiceFilters } from "@/components/Invoices/InvoiceFilters";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { useInvoiceSubscriptions } from "@/hooks/invoices/use-invoice-subscriptions";
