@@ -1,6 +1,7 @@
+import { useEffect } from "react";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { DashboardContent } from "@/components/Dashboard/DashboardContent";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { useDashboardSales } from "@/hooks/use-dashboard-sales";

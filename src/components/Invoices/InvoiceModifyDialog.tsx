@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -21,6 +20,7 @@ import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { asUUID, safeDataAccess, filterByUUID } from "@/utils/supabaseHelpers";
 import { applyDateFilter } from "@/utils/date-filters";
+import { useInvoiceModifications } from "@/hooks/use-invoice-modifications";
 
 const modificationSchema = z.object({
   modType: z.enum(["price", "return", "other"], {

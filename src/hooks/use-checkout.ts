@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "./use-shop-id";
 import { CartItem } from "@/types/sales";
 import { v4 as uuidv4 } from "uuid";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 interface CheckoutProps {
   cart: CartItem[];
@@ -25,7 +24,6 @@ export const useCheckout = ({
   onError,
 }: CheckoutProps) => {
   const { shopId } = useShopId();
-  const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
 
   // Use mutation for creating a sale and invoice
@@ -61,7 +59,7 @@ export const useCheckout = ({
         total_amount: cartTotal,
         payment_method: paymentMethod || "cash",
         employee_id: (await supabase.auth.getUser()).data.user?.id,
-      });
+      } as any);
 
       if (saleError) throw new Error(`Error creating sale: ${saleError.message}`);
 
@@ -75,7 +73,7 @@ export const useCheckout = ({
 
       const { error: itemsError } = await supabase
         .from("sale_items")
-        .insert(saleItems);
+        .insert(saleItems as any);
 
       if (itemsError) throw new Error(`Error creating sale items: ${itemsError.message}`);
 
@@ -93,11 +91,12 @@ export const useCheckout = ({
         throw new Error(`Failed to create invoice: ${invoiceError.message}`);
       }
 
-      if (!invoiceData || invoiceData.length === 0) {
+      const invoiceResult = invoiceData as any;
+      if (!invoiceResult || invoiceResult.length === 0) {
         throw new Error("No invoice number generated");
       }
 
-      return { invoiceNumber: invoiceData[0].invoice_number };
+      return { invoiceNumber: invoiceResult[0].invoice_number };
     } catch (error) {
       console.error("Error in checkout:", error);
       throw error;
@@ -109,8 +108,7 @@ export const useCheckout = ({
   const createSaleMutation = useMutation({
     mutationFn,
     onSuccess: (data) => {
-      toast({
-        title: "Vente réussie",
+      toast.success("Vente réussie", {
         description: "La facture a été générée avec succès",
       });
       
@@ -119,10 +117,8 @@ export const useCheckout = ({
       }
     },
     onError: (error: Error) => {
-      toast({
-        title: "Erreur",
+      toast.error("Erreur", {
         description: error.message || "Une erreur est survenue lors du traitement de la vente",
-        variant: "destructive",
       });
       
       if (onError) {

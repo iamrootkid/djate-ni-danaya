@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoleSelection } from "@/components/auth/RoleSelection";
@@ -7,7 +6,6 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { ShopIdVerification } from "@/components/auth/ShopIdVerification";
 import { useAuth } from "@/contexts/AuthContext";
-import { getCurrentUserRole } from "@/utils/roleUtils";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -18,13 +16,6 @@ const Login = () => {
   const [showShopIdForm, setShowShopIdForm] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    const userRole = getCurrentUserRole();
-    if (isAuthenticated && userRole === 'super_admin') {
-      navigate('/super-admin', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
 
   const handleRoleSelect = (role: 'admin' | 'employee') => {
     setSelectedRole(role);

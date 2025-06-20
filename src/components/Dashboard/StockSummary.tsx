@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockSummary as StockSummaryType } from "@/integrations/supabase/types/functions";
 import { ArrowUp, ArrowDown, DollarSign, Banknote, RefreshCw } from "lucide-react";
@@ -10,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShopId } from "@/hooks/use-shop-id";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@/types/user";
 
 interface StockSummaryProps {

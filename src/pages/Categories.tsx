@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Pencil, Trash2 } from "lucide-react";
 import { useShopData } from "@/hooks/use-shop-data";
 import { AddCategoryForm } from "@/components/Categories/AddCategoryForm";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/ui/DeleteDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

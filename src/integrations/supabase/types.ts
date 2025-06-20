@@ -670,16 +670,6 @@ export type Database = {
         }
         Returns: Json
       }
-      create_shop_super_admin: {
-        Args: { shop_name: string; shop_address?: string }
-        Returns: {
-          id: string
-          name: string
-          address: string
-          pin_code: string
-          created_at: string
-        }[]
-      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -749,10 +739,6 @@ export type Database = {
         }[]
       }
       is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

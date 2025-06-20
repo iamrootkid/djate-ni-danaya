@@ -1,9 +1,11 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { filterByUUID } from "@/utils/supabaseHelpers";
+import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 
 export const UserProfile = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);

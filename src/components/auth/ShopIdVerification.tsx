@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,34 +50,21 @@ export const ShopIdVerification = ({
     setError(null);
     
     try {
-      if (values.shopId === '128076') {
-        // Bypass Supabase auth for Super Admin and navigate directly
-        localStorage.setItem('userRole', 'super_admin');
-        localStorage.setItem('shopId', '00000000-0000-0000-0000-000000000001'); // System-level shop ID
-        toast.success("Accès Super Administrateur accordé");
-        navigate('/super-admin');
-        setLoading(false);
-        return;
-      }
-      
-      const { data: shopData, error } = await supabase
+      const { data: shopData, error: queryError } = await supabase
         .from('shops')
         .select('id, name, pin_code')
-        .eq('pin_code', values.shopId)
+        .eq('pin_code', values.shopId as any)
         .limit(1)
         .maybeSingle();
       
-      if (error) {
-        throw new Error(`Error verifying shop: ${error.message}`);
+      if (queryError) {
+        throw new Error(`Error verifying shop: ${queryError.message}`);
       }
       
-      if (!shopData) {
-        throw new Error("Shop not found. Please check the shop ID.");
-      }
-      
-      const shop = shopData;
-      if (!shop?.name) {
-        throw new Error("Invalid shop data.");
+      const shop = shopData as { id: string; name: string; pin_code: string } | null;
+
+      if (!shop || !shop.id || !shop.name) {
+        throw new Error("Shop not found or data is invalid. Please check the shop ID.");
       }
       
       toast.success(`Shop verified: ${shop.name}`);
@@ -112,7 +98,7 @@ export const ShopIdVerification = ({
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="Ex: 123456 ou 128076 (Super Admin)"
+                  placeholder="Ex: 123456"
                 />
               </FormControl>
               <FormMessage />

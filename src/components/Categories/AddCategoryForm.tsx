@@ -10,9 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { createCategory } from "./utils/categoryOperations";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useShopId } from "@/hooks/use-shop-id";
 import { Category } from "@/types/category";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useShopData } from "@/hooks/use-shop-data";
 
 interface AddCategoryFormProps {
   open: boolean;

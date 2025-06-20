@@ -2,7 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { exportExpenseToCsv } from "./utils/expenseOperations";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import {supabase} from '@/integrations/supabase/client'
+import { useState } from "react";
 
 interface ExpenseExportDialogProps {
   expense: any;
