@@ -1,7 +1,0 @@
-{
-  "deno.ignore": [
-    "node_modules",
-    ".git",
-    "dist"
-  ]
-} 
